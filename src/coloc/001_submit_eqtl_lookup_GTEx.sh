@@ -25,7 +25,7 @@ Rscript ./src/coloc/001_run_eqtl_lookup_GTEx.R $TISSUE $CREDSET
 tissue=('Stomach' 'Small Intestine Terminal Ileum' 'Lung' 'Esophagus Muscularis' 'Esophagus Gastroesophageal Junction' 'Colon Transverse' 'Colon Sigmoid' 'Artery Tibial' 'Artery Coronary','Artery Aorta')
 
 
-cs=('SA_8_81292599_A_C' 'SA_6_90963614_A_AT' 'SA_5_110401872_T_C' 'SA_2_242692858_C_T' 'SA_15_67442596_C_T' 'SA_12_56435504_G_C' 'SA_11_76296671_A_G' 'SA_9_6209697_A_G' 'SA_6_32586794_T_G' 'SA_5_131885240_G_C' 'SA_3_33042712_T_C' 'SA_2_102913642_A_AAAAC' 'SA_17_38168828_A_G' 'SA_16_27359021_A_C'  'SA_15_61068954_T_C' 'SA_12_48202941_C_T' 'SA_10_9064716_T_C')
+cs=('SA_8_81292599_C_A' 'SA_6_90963614_AT_T' 'SA_5_110401872_C_T' 'SA_2_242692858_T_C' 'SA_15_67442596_T_C' 'SA_12_56435504_C_G' 'SA_11_76296671_G_A' 'SA_9_6209697_G_A' 'SA_6_32586794_G_T' 'SA_5_131885240_C_G' 'SA_3_33042712_C_T' 'SA_2_102913642_AAAAC_A' 'SA_17_38168828_G_A' 'SA_16_27359021_C_A'  'SA_15_61068954_C_T' 'SA_12_48202941_T_C' 'SA_10_9064716_C_T')
 
 
 for t in ${!tissue[*]}; do

@@ -11,9 +11,9 @@ tissue   = args[1]
 cred_set = args[2]
 gene     = args[3]
 
-tissue = "Lung"
-cred_set = "SA_8_81292599_A_C"
-gene = "ENSG00000240540.2"
+#tissue = "Lung"
+#cred_set = "SA_8_81292599_C_A"
+#gene = "ENSG00000240540.2"
 
 tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 
@@ -68,18 +68,18 @@ coloc_all = coloc.abf(dataset1=list(beta=GWAS$beta, varbeta=GWAS$varbeta,
 saveRDS(coloc_all, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
 
 #look at the results:
-#coloc <- readRDS(paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
+coloc <- readRDS(paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
 #sensitivity plot:
 sensitivity(coloc,"H4 > 0.9")
 #
 
 
 ############################
-COLOC.SUSIE to allow presence of multiple causal variants
+##COLOC.SUSIE to allow presence of multiple causal variants
 ############################
 # 1) Format LD matrix
 ############################
-#8_81292599_A_C_SA_Lung.raw
+#8_81292599_C_A_SA_Lung.raw
 ld = data.table::fread(
     paste0(tmp_path, signal, "_", pheno, "_", tissue, ".raw")
   ) %>% 
@@ -111,17 +111,19 @@ LDmatrix[is.na(LDmatrix)] <- 0
 ############################
 # 2) Format asthma GWAS
 ############################
-#8_81292599_A_C_SA_Lung.bim
+#8_81292599_C_A_SA_Lung.bim
 bim = read_tsv(
     paste0(tmp_path, signal, "_", pheno, "_", tissue, ".bim"),
     col_names=c("chr", "snp", "morgans", "position", "allele1", "allele2")
   ) %>% 
   select(!morgans) # Read bim file to check same set of SNPs and allele alignment
 
-GWAS %>%
+GWAS_df <- GWAS %>%
   filter(snp %in% colnames(LDmatrix)) %>% # Must be the same set of SNPs
   inner_join(bim) %>%
-  mutate(beta=ifelse(allele1!=allele1.gwas, -(beta), beta)) %>% # Check allele alignment
+  mutate(beta=ifelse(allele1!=allele1.gwas, -(beta), beta)) # Check allele alignment
+
+GWAS_df %>%
   as.list -> GWAS
 
 GWAS$type = "cc"
@@ -132,11 +134,12 @@ GWAS$LD = LDmatrix
 ############################
 # 3) Format eQTL GWAS  
 ############################
-eqtlGWAS  %>% 
+eqtlGWAS_df <- eqtlGWAS  %>%
   filter(snp %in% colnames(LDmatrix)) %>% # Must be the same set of SNPs 
   inner_join(bim) %>%
-  mutate(beta=ifelse(allele1!=ref, -(beta), beta)) %>% # Check allele alignment
-  as.list -> eqtlGWAS
+  mutate(beta=ifelse(allele1!=ref, -(beta), beta)) # Check allele alignment
+
+eqtlGWAS <- eqtlGWAS_df %>% as.list
 
 eqtlGWAS$type = "quant"
 eqtlGWAS$LD = LDmatrix
@@ -165,10 +168,10 @@ susie_GWAS = runsusie(GWAS, r2.prune=0.2, check_R=FALSE)
 susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE)
 susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
 
-#to understand which causal variant colocalise:
+#If, more than one signals, to understand which causal variant colocalise:
 if(requireNamespace("susieR",quietly=TRUE)) {
-  sensitivity(susie.res,"H4 > 0.9",row=1,dataset1=D3,dataset2=D4)
-  sensitivity(susie.res,"H4 > 0.9",row=2,dataset1=D3,dataset2=D4)
+  sensitivity(susie_all,"H4 > 0.9",row=1,dataset1=GWAS_df,dataset2=eqtlGWAS_df)
+  sensitivity(susie_all,"H4 > 0.9",row=2,dataset1=GWAS_df,dataset2=eqtlGWAS_df)
 }
 
 write_tsv(susie_all$summary, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
