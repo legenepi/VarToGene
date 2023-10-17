@@ -39,8 +39,9 @@ GWAS = read_delim(paste0(tmp_path, cred_set, "_GWASpairs.txt.gz")) %>%
   arrange(chr, pos) %>%
   drop_na(beta) %>%
   mutate(varbeta = SE^2) %>%
-  rename(position=pos) %>%
-  unite("snp", chr:a2) %>%
+  rename(position=pos)
+GWAS$allele1.gwas <- GWAS$a1
+GWAS <- GWAS %>% unite("snp", chr:a2) %>%
   distinct(snp, .keep_all=TRUE)
 
 GWAS$N <- as.numeric(38405)
@@ -66,11 +67,21 @@ coloc_all = coloc.abf(dataset1=list(beta=GWAS$beta, varbeta=GWAS$varbeta,
 
 saveRDS(coloc_all, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
 
+#look at the results:
+#coloc <- readRDS(paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
+#sensitivity plot:
+sensitivity(coloc,"H4 > 0.9")
+#
+
+
+############################
+COLOC.SUSIE to allow presence of multiple causal variants
 ############################
 # 1) Format LD matrix
 ############################
+#8_81292599_A_C_SA_Lung.raw
 ld = data.table::fread(
-    paste0("/scratch/gen1/agib1/orion/eQTL/", signal, "_", credible_set, "_", tissue, ".raw")
+    paste0(tmp_path, signal, "_", pheno, "_", tissue, ".raw")
   ) %>% 
   select(!c(FID:PHENOTYPE))
 
@@ -100,6 +111,7 @@ LDmatrix[is.na(LDmatrix)] <- 0
 ############################
 # 2) Format asthma GWAS
 ############################
+#8_81292599_A_C_SA_Lung.bim
 bim = read_tsv(
     paste0(tmp_path, signal, "_", pheno, "_", tissue, ".bim"),
     col_names=c("chr", "snp", "morgans", "position", "allele1", "allele2")
@@ -107,15 +119,15 @@ bim = read_tsv(
   select(!morgans) # Read bim file to check same set of SNPs and allele alignment
 
 GWAS %>%
-  filter(snp %in% colnames(LDmatrix)) %>% # Mst be the same set of SNPs
+  filter(snp %in% colnames(LDmatrix)) %>% # Must be the same set of SNPs
   inner_join(bim) %>%
-  mutate(beta=ifelse(allele1!=ref, -(beta), beta)) %>% # Check allele alignment
+  mutate(beta=ifelse(allele1!=allele1.gwas, -(beta), beta)) %>% # Check allele alignment
   as.list -> GWAS
 
 GWAS$type = "cc"
-GWAS$LD = LDmatrix
 N = as.integer(mean(GWAS$N))
 GWAS$N = N
+GWAS$LD = LDmatrix
 
 ############################
 # 3) Format eQTL GWAS  
@@ -152,6 +164,12 @@ if (is.null(GWAS_check) & is.null(eqtlGWAS_check)){
 susie_GWAS = runsusie(GWAS, r2.prune=0.2, check_R=FALSE)
 susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE)
 susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
+
+#to understand which causal variant colocalise:
+if(requireNamespace("susieR",quietly=TRUE)) {
+  sensitivity(susie.res,"H4 > 0.9",row=1,dataset1=D3,dataset2=D4)
+  sensitivity(susie.res,"H4 > 0.9",row=2,dataset1=D3,dataset2=D4)
+}
 
 write_tsv(susie_all$summary, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
 saveRDS(susie_all, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_susie.rds"))

@@ -59,7 +59,7 @@ Code: src/
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Variant_annotation_FAVOR.R'), eval=FALSE, hide=TRUE}
 ```
 
-## Quantitative trait expression analysis (QTL)
+## Colocalisation with Quantitative trait loci (QTL) expression analysis
 Code: src/
 <br>
 Structure of the code:
@@ -77,11 +77,35 @@ Structure of the code:
 ```
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/src/coloc/001_run_GWASpairs.R'), eval=FALSE, hide=TRUE}
 ```
-
-For this analysis, I run eQTL using GTExV8, eQTLGen blood, and UBC lung eQTL; sQTL using GTExV8; pQTL using deCODE plasma
+Quantitative trait loci (QTL) allows us to measure a trait, such as RNA expression of genes or protein levels, in a specific tissue
+and test for association of genes within the interested tissue with genetic variant. In other words, the expression trait is
+used as a quantitative trait for a genome-wide analysis.
+<br>
+Looking at QTL and GWAS summary statistics, we can use statistical methods -colocalisation- to assess if both study reveal statistically significant
+association in the same loci for the same variant. If so, we can then declare that the variant we found from the GWAS show evidence of association
+with a gene in a specific tissue.
+<br>
+For this reason, QTL colocalisation is used as one of the variant-to-gene mapping analysis.
+<br>
+Different types of QTL data are available, based on the quantitative trait we study as well as at the type of variant-gene relationship we want to look at.
+<br>
+To expand on this, expression QTL looks at mRNA expression,; in addition, if the analysis is only for variants near
+the gene's transcription start site (usually +/-1Mb), this QTL is called 'cis'-eQTL; if the analysis is for variants further away
+that can have an effect on gene expression via the 3D conformation on DNA, they are called 'trans'-eQTL. If, instead, we want
+to investigate the role of the variant on the splicing of the mRNA, we call it 's'QTL; they can be both cis or trans- sQTL.
+<br>
+If we are looking at protein level, we call it 'p'QTL; if looking at methylation quantitative measure, we call it 'm'QTL.
+<br>
+For my asthma project, I run eQTL using GTExV8, eQTLGen blood, and UBC lung eQTL; sQTL using GTExV8; pQTL using deCODE plasma
 pQTL, pQTL UKBiobank, SCALLOP pQTL, and INTERVAL pQTL.
 <br>
-I created separate files for each locus credible set (17 locus --> 17 files).
+GTExV8 is a collection of eQTL data for significant variant-gene association in 49 tissues with at least 70 samples (https://www.gtexportal.org/home/methods).
+<br>
+I used filtered GTExv8 data including variant-gene pairs for each tissue with false discovery rate (FDR) > 0.05, as done by my colleague
+Kayesha Coley, who created the filtered files and split into chromosomes. She also added information on allele frequency for European
+ancestry individuals.
+<br>
+For the fine-mapped loci, I created separate files for each locus' credible set (17 locus --> 17 files).
 
 ## Polygenic Priority Score (PoPS)
 
