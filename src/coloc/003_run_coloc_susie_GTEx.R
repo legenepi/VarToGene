@@ -11,9 +11,9 @@ tissue   = args[1]
 cred_set = args[2]
 gene     = args[3]
 
-#tissue = "Lung"
-#cred_set = "SA_8_81292599_C_A"
-#gene = "ENSG00000240540.2"
+tissue = "Lung"
+cred_set = "SA_8_81292599_C_A"
+gene = "ENSG00000240540.2"
 
 tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 
@@ -41,14 +41,15 @@ GWAS = read_delim(paste0(tmp_path, cred_set, "_GWASpairs.txt.gz")) %>%
   mutate(varbeta = SE^2) %>%
   rename(position=pos)
 GWAS$allele1.gwas <- GWAS$a1
-GWAS <- GWAS %>% unite("snp", chr:a2) %>%
+GWAS <- GWAS %>% mutate(snp = paste0(chr, "_", position, "_", pmin(a1, a2), "_", pmax(a1, a2))) %>%
+  select(c(snp,beta,SE,eaf,pval,MAF,varbeta,allele1.gwas)) %>%
   distinct(snp, .keep_all=TRUE)
 
 GWAS$N <- as.numeric(38405)
 
 eqtlGWAS = read_delim(paste0(tmp_path, cred_set, "_", tissue, "_pairs.txt.gz")) %>%
-  mutate(ID      = gsub(x=ID, pattern=":", replacement="_"), 
-         varbeta = se^2) %>% 
+  mutate(ID      = gsub(x=ID, pattern=":", replacement="_"),
+         varbeta = se^2) %>%
   arrange(chrom, pos)  %>%
   drop_na(beta) %>%
   filter(gene_id==gene, 
@@ -89,7 +90,8 @@ ld %>%
   names %>% 
   as_tibble %>% 
   separate(value,c("c", "p", "a1", "a2")) %>% 
-  unite("snp", c:a2, sep="_") %>% 
+  mutate(snp = paste0(chr, "_", p, "_", pmin(a1, a2), "_", pmax(a1, a2))) %>%
+  select(snps) %>%
   pull -> snps
 
 ld = t(ld) %>%
@@ -170,12 +172,14 @@ susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
 
 #If, more than one signals, to understand which causal variant colocalise:
 if(requireNamespace("susieR",quietly=TRUE)) {
+  if(!is.na(susie_all)){
   sensitivity(susie_all,"H4 > 0.9",row=1,dataset1=GWAS_df,dataset2=eqtlGWAS_df)
   sensitivity(susie_all,"H4 > 0.9",row=2,dataset1=GWAS_df,dataset2=eqtlGWAS_df)
-}
-
-write_tsv(susie_all$summary, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
-saveRDS(susie_all, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
-write_tsv(susie_all$summary %>% as_tibble, 
+  write_tsv(susie_all$summary, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
+  saveRDS(susie_all, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
+  write_tsv(susie_all$summary %>% as_tibble,
           paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
-
+  } else {
+  paste0(signal," ",tissue," GTExv8: No colocalisation because runsusie does not find credset for one of the dataset")
+  }
+}
