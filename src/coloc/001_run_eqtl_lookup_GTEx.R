@@ -16,6 +16,8 @@ location = as.numeric(tmp[3])
 
 tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 
+##allele are place in alphabetical order ! (no dependency on effect allele, reference/alternative)
+
 #eqtl:
 eqtl = fread(paste0("/data/gen1/ACEI/colocalisation_datasets/eQTL/GTeX/", tissue, ".v8.EUR.allpairs.chr", chr, ".hg19.txt.gz"), 
              select=c("phenotype_id", "CHROM", "POS", "REF", "ALT", "maf", "ma_samples", "slope", "slope_se", "pval_nominal"), 
@@ -36,7 +38,7 @@ gwas_sumstat <- gwas_sumstat %>% setnames(c("b37chr","bp","a1","a2"),c("chrom","
 
 #credible set:
 cs <- fread(paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/", cred_set))
-cs <- cs %>% setnames(c("chromosome","allele1","allele2"),c("chrom","allele2","allele1"))
+cs <- cs %>% setnames("chromosome","chrom")
 
 #merge credible set with gwas sumstat:
 cs_gwas_sumstat <- inner_join(cs,gwas_sumstat, by=c("chrom","position","allele1","allele2","snpid"))

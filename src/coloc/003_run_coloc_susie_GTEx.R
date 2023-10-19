@@ -11,12 +11,7 @@ tissue   = args[1]
 cred_set = args[2]
 gene     = args[3]
 
-tissue = "Lung"
-cred_set = "SA_8_81292599_C_A"
-gene = "ENSG00000240540.2"
-
 tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
-
 
 cred_set %>%
   as_tibble %>%
@@ -80,7 +75,6 @@ sensitivity(coloc,"H4 > 0.9")
 ############################
 # 1) Format LD matrix
 ############################
-#8_81292599_C_A_SA_Lung.raw
 ld = data.table::fread(
     paste0(tmp_path, signal, "_", pheno, "_", tissue, ".raw")
   ) %>% 
@@ -90,8 +84,8 @@ ld %>%
   names %>% 
   as_tibble %>% 
   separate(value,c("c", "p", "a1", "a2")) %>% 
-  mutate(snp = paste0(chr, "_", p, "_", pmin(a1, a2), "_", pmax(a1, a2))) %>%
-  select(snps) %>%
+  mutate(snp = paste0(c, "_", p, "_", pmin(a1, a2), "_", pmax(a1, a2))) %>%
+  select(snp) %>%
   pull -> snps
 
 ld = t(ld) %>%
@@ -113,7 +107,6 @@ LDmatrix[is.na(LDmatrix)] <- 0
 ############################
 # 2) Format asthma GWAS
 ############################
-#8_81292599_C_A_SA_Lung.bim
 bim = read_tsv(
     paste0(tmp_path, signal, "_", pheno, "_", tissue, ".bim"),
     col_names=c("chr", "snp", "morgans", "position", "allele1", "allele2")
