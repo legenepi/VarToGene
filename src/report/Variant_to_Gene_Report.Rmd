@@ -15,18 +15,16 @@ output:
 #library(reticulate)
 #To run this .rmd file in a terminal being in the project folder:
 #export PATH=${PATH}:/cm/shared/apps/R/deps/rstudio/bin/pandoc
-#file="./report/Cell_tissue_type.Rmd"
+#file="./report/Variant_to_Gene_Report.Rmd"
 #Rscript -e 'rmarkdown::render("'$file'")'
 ```
 
-# To run this .rmd file in a terminal:
-#export PATH=${PATH}:/cm/shared/apps/R/deps/rstudio/bin/pandoc
-#file="./report/cell_tissue_type.Rmd"
-#module unload R/4.2.1
-#module load R/4.1.0
-#Rscript -e 'rmarkdown::render("'$file'")'
-
 # Rationale
+Master Code
+<br>
+src/Var_to_Gene_pipeline.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Var_to_Gene_pipeline.sh'), eval=FALSE, hide=TRUE}
+```
 Prioritise genes using variant-to-gene mapping tools with credible sets variants from fine-mapping results of GWAS on severe asthma in UK Biobank European individuals.
 <br>
 I used several methods, following the Shrine et al. methodology (https://www.nature.com/articles/s41588-023-01314-0).
@@ -37,6 +35,12 @@ Genes with more than X evidence of being mapped with associated variants are sel
 # Analysis
 
 ## Variant Annotation
+<br>
+Code
+<br>
+src/Variant_annotation_FAVOR.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Variant_annotation_FAVOR.R'), eval=FALSE, hide=TRUE}
+```
 Variant annotation can be represented in qualitative terms, such as variant effect predictor category or in quantitative
 terms with a score including protein function, conservation, epigenetics, integrative function
 (ref https://www.nature.com/articles/s41588-020-0676-4).
@@ -54,29 +58,44 @@ FAVOR aggregates different sources and categories of annotation. I decided to fo
 
  3.Clinical annotation: annotation from ClinVar about effect on a disease
 
-<br>
-Code: src/
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Variant_annotation_FAVOR.R'), eval=FALSE, hide=TRUE}
-```
-
 ## Colocalisation with Quantitative trait loci (QTL) expression analysis
-Code: src/
+Code
 <br>
-Structure of the code:
-001_submit_eqtl_lookup_GTEx.sh > preprocess_cs.R and 001_run_eqtl_lookup_GTEx.R
-<br>
-001_submit_GWASpairs.sh > 001_run_GWASpairs.R
+NB: There are different scripts for this pipeline. Please, refer to 'Var_to_Gene_pipeline.sh' script to have a look at the pipeline workflow.
+Codes below are ordered as in their order of appearance in 'Var_to_Gene_pipeline.sh' scrip.
 
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/src/coloc/001_submit_eqtl_lookup_GTEx.sh'), eval=FALSE, hide=TRUE}
+src/coloc/preprocess_cs.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/preprocess_cs.R'), eval=FALSE, hide=TRUE}
 ```
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/src/coloc/preprocess_cs.R'), eval=FALSE, hide=TRUE}
+src/coloc/001_submit_GWASpairs.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_submit_GWASpairs.sh'), eval=FALSE, hide=TRUE}
 ```
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/src/coloc/001_run_eqtl_lookup_GTEx.R'), eval=FALSE, hide=TRUE}
+src/coloc/001_run_GWASpairs.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_run_GWASpairs.R'), eval=FALSE, hide=TRUE}
 ```
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/src/coloc/001_submit_GWASpairs.sh'), eval=FALSE, hide=TRUE}
+src/coloc/001_submit_eqtl_lookup_GTEx.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_submit_eqtl_lookup_GTEx.sh'), eval=FALSE, hide=TRUE}
 ```
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/src/coloc/001_run_GWASpairs.R'), eval=FALSE, hide=TRUE}
+src/coloc/001_run_eqtl_lookup_GTEx.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_run_eqtl_lookup_GTEx.R'), eval=FALSE, hide=TRUE}
 ```
+src/coloc/002_prepare_LDinput.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/002_prepare_LDinput.R'), eval=FALSE, hide=TRUE}
+```
+src/coloc/002_get_LD.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/002_get_LD.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc/003_submit_coloc_susie_GTEx.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/003_submit_coloc_susie_GTEx.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc/003_run_coloc_susie_GTEx.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/003_run_coloc_susie_GTEx.R'), eval=FALSE, hide=TRUE}
+```
+src/coloc/004_concat_results.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/004_concat_results.R'), eval=FALSE, hide=TRUE}
+```
+
+
 Quantitative trait loci (QTL) allows us to measure a trait, such as RNA expression of genes or protein levels, in a specific tissue
 and test for association of genes within the interested tissue with genetic variant. In other words, the expression trait is
 used as a quantitative trait for a genome-wide analysis.
@@ -124,5 +143,3 @@ For the fine-mapped loci, I created separate files for each locus' credible set 
 # Conclusion
 
 # Notes
-
-#comment line
