@@ -61,10 +61,10 @@ coloc_all = coloc.abf(dataset1=list(beta=GWAS$beta, varbeta=GWAS$varbeta,
                      dataset2=list(beta=eqtlGWAS$beta, varbeta=eqtlGWAS$varbeta, 
                                    N=eqtlGWAS$N, type="quant", MAF=eqtlGWAS$MAF, snp=eqtlGWAS$snp))
 
-saveRDS(coloc_all, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
+saveRDS(coloc_all, paste0(tmp_path,"results/gtex/",cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
 
 #look at the results:
-coloc <- readRDS(paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
+coloc <- readRDS(paste0(tmp_path,"results/gtex/", cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
 #sensitivity plot:
 sensitivity(coloc,"H4 > 0.9")
 #
@@ -168,10 +168,10 @@ if(requireNamespace("susieR",quietly=TRUE)) {
   if(!is.na(susie_all)){
   sensitivity(susie_all,"H4 > 0.9",row=1,dataset1=GWAS_df,dataset2=eqtlGWAS_df)
   sensitivity(susie_all,"H4 > 0.9",row=2,dataset1=GWAS_df,dataset2=eqtlGWAS_df)
-  write_tsv(susie_all$summary, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
-  saveRDS(susie_all, paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
+  write_tsv(susie_all$summary, paste0(tmp_path,"results/", cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
+  saveRDS(susie_all, paste0(tmp_path,"results/gtex/", cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
   write_tsv(susie_all$summary %>% as_tibble,
-          paste0(tmp_path, cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
+          paste0(tmp_path, "results/gtex/, "cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
   } else {
   paste0(signal," ",tissue," GTExv8: No colocalisation because runsusie does not find credset for one of the dataset")
   }
