@@ -62,10 +62,12 @@ FAVOR aggregates different sources and categories of annotation. I decided to fo
 Code
 <br>
 NB: There are different scripts for this pipeline. Please, refer to 'Var_to_Gene_pipeline.sh' script to have a look at the pipeline workflow.
-Codes below are ordered as in their order of appearance in 'Var_to_Gene_pipeline.sh' scrip.
-
-src/coloc/preprocess_cs.R
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/preprocess_cs.R'), eval=FALSE, hide=TRUE}
+Codes below are ordered as in their order of appearance in 'Var_to_Gene_pipeline.sh' script.
+src/coloc/000_liftover_b38_to_b37_GTExv8.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000_liftover_b38_to_b37_GTExv8.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc/000_preprocess_cs.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000_preprocess_cs.R'), eval=FALSE, hide=TRUE}
 ```
 src/coloc/001_submit_GWASpairs.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_submit_GWASpairs.sh'), eval=FALSE, hide=TRUE}
@@ -115,10 +117,26 @@ to investigate the role of the variant on the splicing of the mRNA, we call it '
 <br>
 If we are looking at protein level, we call it 'p'QTL; if looking at methylation quantitative measure, we call it 'm'QTL.
 <br>
-For my asthma project, I run eQTL using GTExV8, eQTLGen blood, and UBC lung eQTL; sQTL using GTExV8; pQTL using deCODE plasma
-pQTL, pQTL UKBiobank, SCALLOP pQTL, and INTERVAL pQTL.
+For my asthma project, I run the following cis-QTL types with the listed dataset:
+ 1. eQTL: GTExV8, eQTLGen blood, UBC lung eQTL, and U-BIOPRED;
+
+ 2. sQTL: GTExV8; pQTL using deCODE plasma;
+
+ 3. pQTL: pQTL UKBiobank, SCALLOP pQTL, and INTERVAL pQTL.
 <br>
 GTExV8 is a collection of eQTL data for significant variant-gene association in 49 tissues with at least 70 samples (https://www.gtexportal.org/home/methods).
+<br>
+eQTLGen blood is
+<br>
+UBC lung eQTL is
+<br>
+U-BIORPED is
+<br>
+deCODE is
+<br>
+SCALLOP is
+<br>
+INTERVAL is
 <br>
 I used filtered GTExv8 data including variant-gene pairs for each tissue with false discovery rate (FDR) > 0.05, as done by my colleague
 Kayesha Coley, who created the filtered files and split into chromosomes. She also added information on allele frequency for European
