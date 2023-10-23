@@ -60,9 +60,9 @@ GWAS %>% filter(snp %in% eqtlGWAS$snp) -> GWAS
 ############################
 eqtlGWAS_sign <- eqtlGWAS %>% filter(pval <= 0.000005)
 if (dim(eqtlGWAS_sign)[1] < 1){
-    stop(paste0(signal," ",tissue," GTExv8: No colocalisation is possible because eQTL data has pvalue >= 5x10-6."))
+    stop(paste0(signal," ",tissue, " ", gene, " GTExv8: No colocalisation is possible because eQTL data has pvalue >= 5x10-6."))
 } else {
-    paste0(signal," ",tissue," GTExv8: Starting colocalisation because eQTL data has pvalue <= 5x10-6.")
+    paste0(signal," ",tissue, " ", gene, " GTExv8: Starting colocalisation because eQTL data has pvalue <= 5x10-6.")
 }
 
 ############################
@@ -78,7 +78,7 @@ saveRDS(coloc_all, paste0(tmp_path,"results/gtex/",cred_set, "_", tissue, "_", g
 #look at the results:
 coloc <- readRDS(paste0(tmp_path,"results/gtex/", cred_set, "_", tissue, "_", gene, "_all_coloc.rds"))
 #sensitivity plot:
-sensitivity(coloc,"H4 > 0.9")
+sensitivity(coloc,"H4 > 0.8")
 #
 
 
@@ -177,12 +177,12 @@ susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
 
 #If, more than one signals, to understand which causal variant colocalise:
 if(requireNamespace("susieR",quietly=TRUE)) {
-  if(!is.na(susie_all)){
-  paste0(signal," ",tissue," GTExv8: Running coloc.susie because runsusie finds credsets for both datasets")
+  if(length(susie_all) < 1){
+  paste0(signal," ",tissue, " ", gene, " GTExv8: No coloc.susie because runsusie does not find credset for one of the dataset")
+  } else {
+  paste0(signal," ",tissue, " ", gene, " GTExv8: Running coloc.susie because runsusie finds credsets for both datasets")
   saveRDS(susie_all, paste0(tmp_path,"results/gtex/", cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
   write_tsv(susie_all$summary %>% as_tibble,
           paste0(tmp_path, "results/gtex/", cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
-  } else {
-  paste0(signal," ",tissue," GTExv8: No coloc.susie because runsusie does not find credset for one of the dataset")
   }
 }
