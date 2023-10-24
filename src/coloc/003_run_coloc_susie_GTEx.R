@@ -54,15 +54,18 @@ eqtlGWAS = read_delim(paste0(tmp_path, cred_set, "_", tissue, "_pairs.txt.gz")) 
 GWAS %>% filter(snp %in% eqtlGWAS$snp) -> GWAS
 
 
-
 ############################
-#Do colocalisation ONLY IF eqtlGWAS (eQTL tissue-gene) contains pvalue <= 5x10-6.
+#Do colocalisation ONLY IF GWAS and eqtlGWAS (eQTL tissue-gene) contains pvalue <= 5x10-6.
 ############################
+GWAS_sign <- GWAS %>% filter(pval <= 0.000005)
 eqtlGWAS_sign <- eqtlGWAS %>% filter(pval <= 0.000005)
 if (dim(eqtlGWAS_sign)[1] < 1){
     stop(paste0(signal," ",tissue, " ", gene, " GTExv8: No colocalisation is possible because eQTL data has pvalue >= 5x10-6."))
+}
+if (dim(GWAS_sign)[1] < 1){
+    stop(paste0(signal," ",tissue, " ", gene, " GTExv8: No colocalisation is possible because GWAS data has pvalue >= 5x10-6."))
 } else {
-    paste0(signal," ",tissue, " ", gene, " GTExv8: Starting colocalisation because eQTL data has pvalue <= 5x10-6.")
+    paste0(signal," ",tissue, " ", gene, " GTExv8: Starting colocalisation because both GWAS and eQTL data has pvalue <= 5x10-6.")
 }
 
 ############################
@@ -130,6 +133,12 @@ GWAS_df <- GWAS %>%
   inner_join(bim) %>%
   mutate(beta=ifelse(allele1!=allele1.gwas, -(beta), beta)) # Check allele alignment
 
+#Check GWAS has at least one variant with pval <= 0.000005:
+GWAS_sign <- GWAS_df %>% filter(pval <= 0.000005)
+if (dim(GWAS_sign)[1] < 1){
+    stop(paste0(signal," ",tissue, " ", gene, " GTExv8: No coloc.susie is possible because GWAS data has pvalue >= 5x10-6."))
+}
+
 GWAS_df %>%
   as.list -> GWAS
 
@@ -146,12 +155,21 @@ eqtlGWAS_df <- eqtlGWAS  %>%
   inner_join(bim) %>%
   mutate(beta=ifelse(allele1!=ref, -(beta), beta)) # Check allele alignment
 
+#Check eqtlGWAS has at least one variant with pval <= 0.000005:
+eqtlGWAS_sign <- eqtlGWAS_df %>% filter(pval <= 0.000005)
+if (dim(eqtlGWAS_sign)[1] < 1){
+    stop(paste0(signal," ",tissue, " ", gene, " GTExv8: No coloc.susie is possible because eQTL-GWAS data has pvalue >= 5x10-6."))
+} else {
+    paste0(signal," ",tissue, " ", gene, " GTExv8: Starting coloc.susie because both GWAS and eQTL data has pvalue <= 5x10-6.")
+}
+
 eqtlGWAS <- eqtlGWAS_df %>% as.list
 
 eqtlGWAS$type = "quant"
 eqtlGWAS$LD = LDmatrix
 N = as.integer(mean(eqtlGWAS$N))
 eqtlGWAS$N = N
+
 
 ############################
 # Check datasets are ok
@@ -175,14 +193,6 @@ susie_GWAS = runsusie(GWAS, r2.prune=0.2, check_R=FALSE)
 susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE)
 susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
 
-#If, more than one signals, to understand which causal variant colocalise:
-if(requireNamespace("susieR",quietly=TRUE)) {
-  if(length(susie_all) < 1){
-  paste0(signal," ",tissue, " ", gene, " GTExv8: No coloc.susie because runsusie does not find credset for one of the dataset")
-  } else {
-  paste0(signal," ",tissue, " ", gene, " GTExv8: Running coloc.susie because runsusie finds credsets for both datasets")
-  saveRDS(susie_all, paste0(tmp_path,"results/gtex/", cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
-  write_tsv(susie_all$summary %>% as_tibble,
+saveRDS(susie_all, paste0(tmp_path,"results/gtex/", cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
+write_tsv(susie_all$summary %>% as_tibble,
           paste0(tmp_path, "results/gtex/", cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))
-  }
-}

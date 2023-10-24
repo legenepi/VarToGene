@@ -93,8 +93,8 @@ src/coloc/003_submit_coloc_susie_GTEx.sh
 src/coloc/003_run_coloc_susie_GTEx.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/003_run_coloc_susie_GTEx.R'), eval=FALSE, hide=TRUE}
 ```
-src/coloc/004_concat_results.R
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/004_concat_results.R'), eval=FALSE, hide=TRUE}
+src/coloc/004_concat_coloc_results.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/004_concat_coloc_results.R'), eval=FALSE, hide=TRUE}
 ```
 
 
