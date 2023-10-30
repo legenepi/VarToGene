@@ -29,7 +29,8 @@ Prioritise genes using variant-to-gene mapping tools with credible sets variants
 <br>
 I used several methods, following the Shrine et al. methodology (https://www.nature.com/articles/s41588-023-01314-0).
 <br>
-Colocalisation was based on codes from Jing Cheng
+Colocalisation was based on codes from Jing Cheng, and as adapted from Alex Williams.
+<br>
 Genes with more than X evidence of being mapped with associated variants are selected for following analysis.
 
 # Analysis
@@ -46,12 +47,13 @@ terms with a score including protein function, conservation, epigenetics, integr
 (ref https://www.nature.com/articles/s41588-020-0676-4).
 When dealing with quantitative measures for the same functional category,
 these can be summed up using principal components, as implemented for the first time in the STAAR
-framework (ref https://www.nature.com/articles/s41588-020-0676-4) and adopted in FAVOR as well.
+framework (ref https://www.nature.com/articles/s41588-020-0676-4) and adopted in Functional Annotation of Variants Online Resources (FAVOR) as well.
 Annotation Principal Component (aPC) is the first PC among standardised individual score for a specific functional
 category. AnnotationPC is transformed in PHRED-scale score, as CADD. CADD authors suggest 15 as a good threshold for functionally
 relevant variants (https://cadd.gs.washington.edu/info). Details on thresholds and information used are stored in Supplementary Information (link to the .xlsx file).
 <br>
 FAVOR aggregates different sources and categories of annotation. I decided to focus on:
+
  1.Categorical annotation: information from Gencode on coding with exonic details or non-coding variant, gene affected or nearby;
 
  2.Functional integrative score: integrative scores for different categories;
@@ -110,7 +112,7 @@ For this reason, QTL colocalisation is used as one of the variant-to-gene mappin
 <br>
 Different types of QTL data are available, based on the quantitative trait we study as well as at the type of variant-gene relationship we want to look at.
 <br>
-To expand on this, expression QTL looks at mRNA expression,; in addition, if the analysis is only for variants near
+As an example, expression QTL looks at mRNA expression; in addition, if the analysis is only for variants near
 the gene's transcription start site (usually +/-1Mb), this QTL is called 'cis'-eQTL; if the analysis is for variants further away
 that can have an effect on gene expression via the 3D conformation on DNA, they are called 'trans'-eQTL. If, instead, we want
 to investigate the role of the variant on the splicing of the mRNA, we call it 's'QTL; they can be both cis or trans- sQTL.
@@ -120,9 +122,9 @@ If we are looking at protein level, we call it 'p'QTL; if looking at methylation
 For my asthma project, I run the following cis-QTL types with the listed dataset:
  1. eQTL: GTExV8, eQTLGen blood, UBC lung eQTL, and U-BIOPRED;
 
- 2. sQTL: GTExV8; pQTL using deCODE plasma;
+ 2. sQTL: GTExV8;
 
- 3. pQTL: pQTL UKBiobank, SCALLOP pQTL, and INTERVAL pQTL.
+ 3. pQTL: pQTL UKBiobank, SCALLOP pQTL, INTERVAL pQTL; deCODE plasma
 <br>
 GTExV8 is a collection of eQTL data for significant variant-gene association in 49 tissues with at least 70 samples (https://www.gtexportal.org/home/methods).
 <br>
@@ -138,8 +140,10 @@ SCALLOP is
 <br>
 INTERVAL is
 <br>
-I used filtered GTExv8 data including variant-gene pairs for each tissue with false discovery rate (FDR) > 0.05, as done by my colleague
-Kayesha Coley, who created the filtered files and split into chromosomes. She also added information on allele frequency for European
+In GTExv8, I run co-localisation for the following tissues: 'Artery_Aorta', 'Artery_Coronary', 'Artery_Tibial', 'Colon_Sigmoid', 'Colon_Transverse', 'Esophagus_Gastroesophageal_Junction', 'Esophagus_Muscularis',  'Lung', 'Small_Intestine_Terminal_Ileum', 'Stomach'.
+<br>
+I used filtered GTExv8 data including variant-gene pairs for each tissue with both either GWAS or eQTL pvalues <= 5x10-6.
+Kayesha Coley, my colleague, created the filtered files and split into chromosomes. She also added information on allele frequency for European
 ancestry individuals.
 <br>
 For the fine-mapped loci, I created separate files for each locus' credible set (17 locus --> 17 files).
