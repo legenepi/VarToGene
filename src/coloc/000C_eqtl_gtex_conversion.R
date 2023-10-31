@@ -16,8 +16,6 @@ options(scipen=999)
 args <- commandArgs(T)
 
 chr <- args[1]
-if (chr == 23) {
-  chr <- "X" }
 
 setwd("/scratch/gen1/nnp5/Var_to_Gen_tmp/liftover_gtexv8")
 
@@ -44,7 +42,7 @@ for (file in file.names) {
   ## As multiple duplicate variants are present, remove these
   cat("Wrangling liftOver data...\n")
   if (chr == "X") {
-    
+
     liftover <- liftover %>%
       select(CHROM = V1, GENPOS = V2, ID = V4) %>%
       mutate(CHROM = str_replace(CHROM, "chr", ""),
