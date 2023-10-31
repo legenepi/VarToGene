@@ -19,8 +19,6 @@ options(scipen=999)
 args <- commandArgs(T)
 
 chr <- args[1]
-if (chr == 23) {
-  chr <- 'X' }
 
 setwd("/data/gen1/reference/GTEx_Analysis_v8_QTLs/GTEx_Analysis_v8_EUR_eQTL_all_associations")
 

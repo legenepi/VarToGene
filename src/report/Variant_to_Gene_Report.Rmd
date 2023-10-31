@@ -65,11 +65,20 @@ Code
 <br>
 NB: There are different scripts for this pipeline. Please, refer to 'Var_to_Gene_pipeline.sh' script to have a look at the pipeline workflow.
 Codes below are ordered as in their order of appearance in 'Var_to_Gene_pipeline.sh' script.
-src/coloc/000_liftover_b38_to_b37_GTExv8.sh
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000_liftover_b38_to_b37_GTExv8.sh'), eval=FALSE, hide=TRUE}
-```
 src/coloc/000_preprocess_cs.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000_preprocess_cs.R'), eval=FALSE, hide=TRUE}
+```
+src/coloc/000A_submit_eqtl_gtex_extraction.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000A_submit_eqtl_gtex_extraction.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc/000A_eqtl_gtex_extraction.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000A_eqtl_gtex_extraction.R'), eval=FALSE, hide=TRUE}
+```
+src/coloc/000B_eqtl_gtex_liftover.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000B_eqtl_gtex_liftover.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc/000C_eqtl_gtex_conversion.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000C_eqtl_gtex_conversion.R'), eval=FALSE, hide=TRUE}
 ```
 src/coloc/001_submit_GWASpairs.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_submit_GWASpairs.sh'), eval=FALSE, hide=TRUE}
@@ -98,8 +107,6 @@ src/coloc/003_run_coloc_susie_GTEx.R
 src/coloc/004_concat_coloc_results.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/004_concat_coloc_results.R'), eval=FALSE, hide=TRUE}
 ```
-
-
 Quantitative trait loci (QTL) allows us to measure a trait, such as RNA expression of genes or protein levels, in a specific tissue
 and test for association of genes within the interested tissue with genetic variant. In other words, the expression trait is
 used as a quantitative trait for a genome-wide analysis.
@@ -161,6 +168,20 @@ For the fine-mapped loci, I created separate files for each locus' credible set 
 
 
 # Results
+
+## Variant Annotation
+Looking at the integrative score, I was able to appreciate a positive correlation between aPC.Epigenetics.Active and aPC.Transcription.Factor (0.69);
+aPC.Mutation.Density and aPC.Local.Nucleotide.Diversity (0.63); CADD.phred and aPCs.Conservation (0.91). There is also, although weaker, negative correlation
+between aPC.Epigenetics.Transcription and aPC.Epigenetics.Repressed (-0.45).
+```{r echo=FALSE, out.width = "30%", fig.align = "center"}
+knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/corrplot_integrative_score_15.png")
+```
+<br>
+I obtained a total of 40 genes from the functional annotation analysis. The Venn diagram shows the discovery overlap
+between the three different annotation sources:
+```{r echo=FALSE, out.width = "30%", fig.align = "center"}
+knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/FAVOR_venn_diagramm_genes.png")
+```
 
 # Conclusion
 

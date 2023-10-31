@@ -17,7 +17,8 @@
 #SBATCH --export=NONE
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=nnp5@le.ac.uk
-#SBATCH --array=1-23           # array ranks to run
+#SBATCH --array=1-22           # array ranks to run
+
 
 i=$SLURM_ARRAY_TASK_ID
 module load R
