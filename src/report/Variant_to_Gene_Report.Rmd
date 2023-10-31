@@ -77,6 +77,9 @@ src/coloc/000A_eqtl_gtex_extraction.R
 src/coloc/000B_eqtl_gtex_liftover.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000B_eqtl_gtex_liftover.sh'), eval=FALSE, hide=TRUE}
 ```
+src/coloc/000C_submit_eqtl_gtex_conversion.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000C_submit_eqtl_gtex_conversion.sh'), eval=FALSE, hide=TRUE}
+```
 src/coloc/000C_eqtl_gtex_conversion.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000C_eqtl_gtex_conversion.R'), eval=FALSE, hide=TRUE}
 ```

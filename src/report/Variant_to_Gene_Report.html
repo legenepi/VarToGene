@@ -1617,15 +1617,15 @@ mkdir ${tmp_path}/liftover_gtexv8
 mkdir ${tmp_path}/liftover_gtexv8/bed
 
 dos2unix src/coloc/000A_eqtl_gtex_extraction.R src/coloc/000B_eqtl_gtex_liftover.sh \
-    src/coloc/000C_eqtl_gtex_conversion.R src/coloc/000A_submit_eqtl_gtex_extraction.sh
+    src/coloc/000C_eqtl_gtex_conversion.R src/coloc/000A_submit_eqtl_gtex_extraction.sh src/coloc/000C_submit_eqtl_gtex_conversion.sh
 chmod o+x src/coloc/000A_eqtl_gtex_extraction.R src/coloc/000B_eqtl_gtex_liftover.sh \
-    src/coloc/000C_eqtl_gtex_conversion.R src/coloc/000A_submit_eqtl_gtex_extraction.sh
+    src/coloc/000C_eqtl_gtex_conversion.R src/coloc/000A_submit_eqtl_gtex_extraction.sh src/coloc/000C_submit_eqtl_gtex_conversion.sh
 
 sbatch --array=1-22 src/coloc/000A_submit_eqtl_gtex_extraction.sh
 
 sbatch src/coloc/000B_eqtl_gtex_liftover.sh
 
-Rscript src/coloc/000C_eqtl_gtex_conversion.R
+sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_conversion.sh
 
 
 ##variables needed:
@@ -1932,7 +1932,7 @@ fwrite(cs_tmp, paste0(tmp_path,&quot;SA_&quot;,chr,&quot;_&quot;,location,&quot;
 # Author:      NNP
 # Date:        31 October 2023
 # Rationale:   Submit .
-# Submission:  sbatch --array=1-23 src/coloc/000A_submit_eqtl_gtex_extraction.sh
+# Submission:  sbatch --array=1-22 src/coloc/000A_submit_eqtl_gtex_extraction.sh
 #==================================================================
 
 #SBATCH --job-name=eqtl_gtex_extraction
@@ -2057,6 +2057,32 @@ do
   ${name}.unlifted.bed
 
 done</code></pre>
+<p>src/coloc/000C_submit_eqtl_gtex_conversion.sh</p>
+<pre class="r"><code>#!/bin/bash
+
+#==================================================================
+# File:        000A_submit_eqtl_gtex_conversion.sh
+# Project:     SevereAsthma
+# Author:      NNP
+# Date:        31 October 2023
+# Rationale:   Submit .
+# Submission:  sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_conversion.sh
+#==================================================================
+
+#SBATCH --job-name=eqtl_gtex_extraction
+#SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
+#SBATCH --time=3:0:0
+#SBATCH --mem=100gb
+#SBATCH --account=gen1
+#SBATCH --export=NONE
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=nnp5@le.ac.uk
+#SBATCH --array=1-22           # array ranks to run
+
+
+i=$SLURM_ARRAY_TASK_ID
+module load R
+Rscript src/coloc/000C_eqtl_gtex_conversion.R ${i}</code></pre>
 <p>src/coloc/000C_eqtl_gtex_conversion.R</p>
 <pre class="r"><code>#!/usr/bin/env Rscript
 
@@ -2076,8 +2102,6 @@ options(scipen=999)
 args &lt;- commandArgs(T)
 
 chr &lt;- args[1]
-if (chr == 23) {
-  chr &lt;- &quot;X&quot; }
 
 setwd(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/liftover_gtexv8&quot;)
 
@@ -2104,7 +2128,7 @@ for (file in file.names) {
   ## As multiple duplicate variants are present, remove these
   cat(&quot;Wrangling liftOver data...\n&quot;)
   if (chr == &quot;X&quot;) {
-    
+
     liftover &lt;- liftover %&gt;%
       select(CHROM = V1, GENPOS = V2, ID = V4) %&gt;%
       mutate(CHROM = str_replace(CHROM, &quot;chr&quot;, &quot;&quot;),

@@ -6,7 +6,7 @@
 # Author:      NNP
 # Date:        31 October 2023
 # Rationale:   Submit .
-# Submission:  sbatch --array=1-22 src/coloc/000A_submit_eqtl_gtex_conversion.sh
+# Submission:  sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_conversion.sh
 #==================================================================
 
 #SBATCH --job-name=eqtl_gtex_extraction
