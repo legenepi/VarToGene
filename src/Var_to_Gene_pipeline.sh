@@ -34,11 +34,11 @@ sbatch --array=1-22 src/coloc/000A_submit_eqtl_gtex_extraction.sh
 
 sbatch src/coloc/000B_eqtl_gtex_liftover.sh
 
-sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_conversion.sh
+sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_extraction.sh
 
 
 ##variables needed:
-tissue=('Stomach' 'Small_Intestine_Terminal_Ileum' 'Lung' 'Esophagus_Muscularis' 'Esophagus_Gastroesophageal_Junction' 'Colon_Transverse' 'Colon_Sigmoid' 'Artery_Tibial' 'Artery_Coronary' 'Artery_Aorta')
+tissue=('Stomach' 'Small_Intestine_Terminal_Ileum' 'Lung' 'Esophagus_Muscularis' 'Esophagus_Gastroesophageal_Junction' 'Artery_Tibial' 'Artery_Coronary' 'Artery_Aorta' 'Colon_Transverse' 'Colon_Sigmoid' 'Skin_Sun_Exposed_Lower_leg' 'Skin_Not_Sun_Exposed_Suprapubic')
 cs=('SA_8_81292599_C_A' 'SA_6_90963614_AT_A' 'SA_5_110401872_C_T' 'SA_2_242692858_T_C' 'SA_15_67442596_T_C' 'SA_12_56435504_C_G' 'SA_11_76296671_G_A' 'SA_9_6209697_G_A' 'SA_5_131885240_C_G' 'SA_3_33042712_C_T' 'SA_2_102913642_AAAAC_A' 'SA_17_38168828_G_A' 'SA_16_27359021_C_A'  'SA_15_61068954_C_T' 'SA_12_48202941_T_C' 'SA_10_9064716_C_T')
 cs_all="/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt"
 
@@ -77,6 +77,7 @@ for t in ${!tissue[*]}; do Rscript ./src/coloc/002_prepare_LDinput.R "${tissue[t
 sbatch ./src/coloc/002_get_LD.sh
 
 ##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-81713.out
+##after adding Colon and Skin tissues, to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-153659.out
 
 
 ##Run the colocalisation for GTExV8:
@@ -94,6 +95,8 @@ tissue='Artery_Coronary'
 tissue='Artery_Aorta'
 tissue='Colon_Transverse'
 tissue='Colon_Sigmoid'
+tissue='Skin_Sun_Exposed_Lower_leg'
+tissue='Skin_Not_Sun_Exposed_Suprapubic'
 
 for c in ${!cs[*]}; do
 
@@ -106,6 +109,8 @@ for c in ${!cs[*]}; do
 done
 
 ######QUALITY CHECKS:
+#to find number of genes:
+#wc -l SA_*_${tissue}.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
 #'Stomach' 575
 #'Small_Intestine_Terminal_Ileum' 635
 #'Lung' 633
@@ -114,8 +119,10 @@ done
 #tissue='Artery_Tibial' 573
 #tissue='Artery_Coronary' 603
 #tissue='Artery_Aorta' 586
-#tissue='Colon_Transverse'
-#tissue='Colon_Sigmoid'
+#tissue='Colon_Transverse' 610
+#tissue='Colon_Sigmoid' 585
+#tissue='Skin_Sun_Exposed_Lower_leg' 673
+#tissue='Skin_Not_Sun_Exposed_Suprapubic' 670
 
 ##Check that all genes for each tissue have been analysed:
 grep ${tissue} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $1}' | sort -u | wc -l
