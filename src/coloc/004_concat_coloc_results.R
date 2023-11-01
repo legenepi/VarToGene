@@ -5,6 +5,7 @@
 library(plyr)
 library(tidyverse)
 library(purrr)
+suppressMessages(library(xlsx))
 
 ###############
 ### GTEx v8 ###
@@ -112,7 +113,7 @@ tmp_4 <- tmp_3[nonnull]
 
 file_split$n_index <- index_row
 
-data_summary = ldply(tmp_4) %>%
+data_summary_colocsusie = ldply(tmp_4) %>%
   as_tibble %>%
   left_join(file_split,by=c("snp","n_index")) %>%
   select(-file) %>%
@@ -120,11 +121,17 @@ data_summary = ldply(tmp_4) %>%
   arrange(desc(PP.H4.abf))
 
 # Check if there are any colocalisations
-data_summary %>% filter(coloc_susie) %>% select(snp, pheno, gene)
+data_summary_colocsusie %>% filter(coloc_susie) %>% select(snp, pheno, gene)
 
 
 # Save all results to file
-write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/colocsusie_asthma_GTEx.tsv")
+write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/colocsusie_asthma_GTEx.tsv")
+
+#SAVE COLOC AND COLOC.SUSIE GENES INTO XLSX FILE:
+gene_coloc <- as.data.frame(data_summary %>% filter(coloc) %>% select(gene))
+gene_colocsusie <- as.data.frame(data_summary_colocsusie %>% filter(coloc_susie) %>% select(gene))
+gene_gtex <- rbind(gene_coloc,gene_colocsusie) %>% unique()
+write.xlsx(gene_gtex,"/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx",sheetName = "GTExV8_eQTL_genes", row.names=FALSE, col.names=FALSE, append=TRUE)
 
 ###############
 ### eqtlGen ###

@@ -131,5 +131,5 @@ grep ${tissue} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $
 ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
 ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
 
-#Find statistically significant colocalisation results:
+#Find statistically significant colocalisation results and add results into var2gene_raw.xlsx:
 Rscript ./src/coloc/004_concat_coloc_results.R
