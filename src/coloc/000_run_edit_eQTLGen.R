@@ -1,4 +1,16 @@
+#!/usr/bin/env Rscript
+
+#==================================================================
+# File:        000_run_edit_eQTL.R
+# Project:     SevereAsthma
+# Author:      NNP - edited from AW
+# Date:        1 November 2023
+# Rationale:   Load eqtlGen data to add allele frequency
+#==================================================================
+
 library(tidyverse)
+
+tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen"
 
 freq = read_tsv("/data/gen1/LF_HRC_transethnic/eQTL/eQTLgen/2018-07-18_SNP_AF_for_AlleleB_combined_allele_counts_and_MAF_pos_added.txt.gz", 
                 col_select=c("hg19_chr", "hg19_pos", "AlleleA", "AlleleB", "AlleleB_all")) %>%
@@ -12,5 +24,5 @@ eqtl = read_tsv("/data/gen1/reference/eqtlgen/2019-12-11-cis-eQTLsFDR-ProbeLevel
   mutate(beta = Zscore / sqrt(2 * AssessedAllele_freq * (1 - AssessedAllele_freq) * (NrSamples + Zscore^2)), 
          se   = 1 / sqrt(2 * AssessedAllele_freq * (1 - AssessedAllele_freq) * (NrSamples + Zscore^2)))
 
-write_tsv(x=eqtl, file="/scratch/gen1/atw20/pain/results/coloc/eqtlgen/whole_blood_cis_eqtls_withAF.txt.gz")
+write_tsv(x=eqtl, file=paste0(tmp_path,"/whole_blood_cis_eqtls_withAF.txt.gz"))
 

@@ -11,14 +11,19 @@ tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 
 #Rationale: pipeline for Variant to Gene mapping analysis. Output from each analysis: list of genes
 
-
-#1.Variant annotation
+################
+#1.VARIANT ANNOTATION
 Rscript src/Variant_annotation_FAVOR.R
+################
 
 
-#2.Quantitative trait loci:
+################
+#2.QUANTITATIVE TRAIT LOCI
+################
 ##Exclude chromosome 6 - no eQTL colocalisation for this locus.
 ##Genomic boundaries: PIP-max causal variant +/- 1000Mb
+
+###GTExv8 eQTL###
 
 ##Create eQTl files in hg19 for Colon Transverse, Colon Sigmoid, Skin_Not_Sun_Exposed_Suprapubic, Skin_Sun_Exposed_Lower_leg
 #From GTExV8 .parquet files and in hg38.
@@ -79,7 +84,6 @@ sbatch ./src/coloc/002_get_LD.sh
 ##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-81713.out
 ##after adding Colon and Skin tissues, to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-153659.out
 
-
 ##Run the colocalisation for GTExV8:
 #.sh will run .R script:
 mkdir ${tmp_path}/results
@@ -133,3 +137,10 @@ ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
 
 #Find statistically significant colocalisation results and add results into var2gene_raw.xlsx:
 Rscript ./src/coloc/004_concat_coloc_results.R
+
+###eqtlGen eQTL###
+mkdir ${tmp_path}/results/eqtlgen
+mkdir ${tmp_path}/eqtlgen
+dos2unix src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
+chmod +x src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
+sbatch src/coloc/000_submit_edit_eQTLGen.sh
