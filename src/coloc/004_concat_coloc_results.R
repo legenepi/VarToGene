@@ -53,7 +53,7 @@ data_summary = ldply(lapply(data_list, summary_fct)) %>%
   as_tibble %>%
   bind_cols(file_split) %>%
   select(-file) %>%
-  mutate(coloc = if_else(PP.H4.abf > 0.8, TRUE, FALSE)) %>%
+  mutate(coloc = if_else(PP.H4.abf >= 0.9, TRUE, FALSE)) %>%
   arrange(desc(PP.H4.abf))
 
 # Check if there are any colocalisations
@@ -117,7 +117,7 @@ data_summary_colocsusie = ldply(tmp_4) %>%
   as_tibble %>%
   left_join(file_split,by=c("snp","n_index")) %>%
   select(-file) %>%
-  mutate(coloc_susie = if_else(PP.H4.abf > 0.8, TRUE, FALSE)) %>%
+  mutate(coloc_susie = if_else(PP.H4.abf >= 0.9, TRUE, FALSE)) %>%
   arrange(desc(PP.H4.abf))
 
 # Check if there are any colocalisations
@@ -131,7 +131,7 @@ write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/col
 gene_coloc <- as.data.frame(data_summary %>% filter(coloc) %>% select(gene))
 gene_colocsusie <- as.data.frame(data_summary_colocsusie %>% filter(coloc_susie) %>% select(gene))
 gene_gtex <- rbind(gene_coloc,gene_colocsusie) %>% unique()
-write.xlsx(gene_gtex,"/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx",sheetName = "GTExV8_eQTL_genes", row.names=FALSE, col.names=FALSE, append=TRUE)
+write.xlsx(gene_gtex,"/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx", sheetName = "GTExV8_eQTL_genes", row.names=FALSE, col.names=FALSE, append=TRUE)
 
 ###############
 ### eqtlGen ###
