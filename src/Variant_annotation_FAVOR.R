@@ -12,6 +12,9 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(data.table))
 suppressMessages(library(corrplot))
 suppressMessages(library(xlsx))
+suppressMessages(library(qdap))
+suppressMessages(library(VennDiagram))
+library(RColorBrewer)
 
 args <- commandArgs(T)
 
@@ -67,7 +70,11 @@ inscores.aPCs <- inscores %>% select("CADD.phred","aPC.Protein.Function", "aPC.C
                                       "aPC.Mutation.Density", "aPC.Transcription.Factor", "aPC.Mappability")
 M2 <- cor(inscores.aPCs)
 head(round(M,3))
-corrplot(M2, method="number")
+#Save the corplot x the report:
+png(file = "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/corrplot_integrative_score_15.png")
+corplot_integrativescore <- corrplot(M2, method="number")
+dev.off()
+
 
 #Clinical annotation:
 clinvar <- favor.digest %>% filter(!is.na(Clinical.Significance))
@@ -75,8 +82,57 @@ clin_genes <- unique(clinvar$Gene.Reported)
 
 #Genes from Variant Annotation:
 #fantom5_genes, inscores_genes, clin_genes
+##Polish the genes (remove GeneID, remove ensembl, remove where mutation occurs, keep only gene name)
+#fantom_genes: everything inside parenthesis needs to be deleted, and divide genes listed together
+fantom5_genes <- bracketX(fantom5_genes) %>% unique()
+fantom5_genes <- unlist(strsplit(fantom5_genes, "\\s*,\\s*"))
+
+#inscores_genes: everything inside parenthesis needs to be deleted, and divide genes listed together
+inscores_genes <- bracketX(inscores_genes) %>% unique()
+inscores_genes <- unlist(strsplit(inscores_genes, "\\s*,\\s*"))
+inscores_genes <- unlist(strsplit(inscores_genes, ';', fixed=TRUE))
+
+#clin_genes: separate element if '|' present, and then remove GeneID-after the ':'
+clin_genes <- unlist(strsplit(clin_genes, '|', fixed=TRUE))
+clin_genes <- gsub(":.*", "", clin_genes) %>% unique()
+
+
+##Venn diagram to visualise overlap:
+myCol <- brewer.pal(3, "Pastel2")
+
+# Chart
+venn.diagram(
+        x = list(fantom5_genes, inscores_genes, clin_genes),
+        category.names = c("fantom5" , "inscores" , "clin"),
+        filename = '/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/FAVOR_venn_diagramm_genes.png',
+        output=TRUE,
+
+        # Output features
+        imagetype="png" ,
+        height = 520 ,
+        width = 650 ,
+        resolution = 400,
+        compression = "lzw",
+
+        # Circles
+        lwd = 2,
+        lty = 'blank',
+        fill = myCol,
+
+        # Numbers
+        cex = .3,
+        fontface = "bold",
+        fontfamily = "sans",
+
+        # Set names
+        cat.cex = 0.3,
+        cat.fontface = "bold",
+        cat.default.pos = "outer",
+        cat.fontfamily = "sans",
+        rotation = 1
+)
+
 varannot_genes <- list(unique(c(fantom5_genes,inscores_genes,clin_genes)))
 
 #Save the genes:
-write.xlsx(varannot_genes,"/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx",sheetName = "varannot_genes", row.names=FALSE)
-
+write.xlsx(varannot_genes,"/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx",sheetName = "varannot_genes", row.names=FALSE, col.names=FALSE)
