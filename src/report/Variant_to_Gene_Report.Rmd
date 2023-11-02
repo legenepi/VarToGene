@@ -89,12 +89,6 @@ src/coloc/001_submit_GWASpairs.sh
 src/coloc/001_run_GWASpairs.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_run_GWASpairs.R'), eval=FALSE, hide=TRUE}
 ```
-src/coloc/001_submit_eqtl_lookup_GTEx.sh
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_submit_eqtl_lookup_GTEx.sh'), eval=FALSE, hide=TRUE}
-```
-src/coloc/001_run_eqtl_lookup_GTEx.R
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_run_eqtl_lookup_GTEx.R'), eval=FALSE, hide=TRUE}
-```
 src/coloc/002_prepare_LDinput.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/002_prepare_LDinput.R'), eval=FALSE, hide=TRUE}
 ```
@@ -106,6 +100,27 @@ src/coloc/003_submit_coloc_susie_GTEx.sh
 ```
 src/coloc/003_run_coloc_susie_GTEx.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/003_run_coloc_susie_GTEx.R'), eval=FALSE, hide=TRUE}
+```
+src/coloc/000_submit_edit_eQTLGen.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000_submit_edit_eQTLGen.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc/000_run_edit_eQTLGen.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000_run_edit_eQTLGen.R'), eval=FALSE, hide=TRUE}
+```
+src/coloc/001_submit_eqtl_lookup_GTEx.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_submit_eqtl_lookup_GTEx.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc/001_run_eqtl_lookup_GTEx.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/001_run_eqtl_lookup_GTEx.R'), eval=FALSE, hide=TRUE}
+```
+src/coloc/002_prepare_LDinput_eqtlgen.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/002_prepare_LDinput_eqtlgen.R'), eval=FALSE, hide=TRUE}
+```
+src/coloc/003_submit_coloc_susie_eQTLGen.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/003_submit_coloc_susie_eQTLGen.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc/003_run_coloc_susie_eQTLGen.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/003_run_coloc_susie_eQTLGen.R'), eval=FALSE, hide=TRUE}
 ```
 src/coloc/004_concat_coloc_results.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/004_concat_coloc_results.R'), eval=FALSE, hide=TRUE}
@@ -130,15 +145,22 @@ to investigate the role of the variant on the splicing of the mRNA, we call it '
 If we are looking at protein level, we call it 'p'QTL; if looking at methylation quantitative measure, we call it 'm'QTL.
 <br>
 For my asthma project, I run the following cis-QTL types with the listed dataset:
- 1. eQTL: GTExV8, eQTLGen blood, UBC lung eQTL, and U-BIOPRED;
+
+ 1. cis-eQTL: GTExV8, eQTLGen blood, UBC lung eQTL, and U-BIOPRED;
 
  2. sQTL: GTExV8;
 
  3. pQTL: pQTL UKBiobank, SCALLOP pQTL, INTERVAL pQTL; deCODE plasma
+
 <br>
 GTExV8 is a collection of eQTL data for significant variant-gene association in 49 tissues with at least 70 samples (https://www.gtexportal.org/home/methods).
+I run co-localisation for the following tissues: 'Artery_Aorta', 'Artery_Coronary', 'Artery_Tibial', 'Colon_Sigmoid', 'Colon_Transverse', 'Esophagus_Gastroesophageal_Junction', 'Esophagus_Muscularis',  'Lung', 'Small_Intestine_Terminal_Ileum', 'Stomach'.
 <br>
-eQTLGen blood is
+I used filtered GTExv8 data including variant-gene pairs for each tissue with both either GWAS or eQTL pvalues <= 5x10-6.
+Kayesha Coley, my colleague, created the filtered files and split into chromosomes. She also added information on allele frequency for European
+ancestry individuals.
+<br>
+eQTLGen blood is a source for 16,989 eQTL genes from 37 dataset and a total of 31,684 individuals: 11M SNPs with MAF >=1% and within 1Mb from the analysed genes. (https://www.eqtlgen.org/phase1.html)
 <br>
 UBC lung eQTL is
 <br>
@@ -150,11 +172,7 @@ SCALLOP is
 <br>
 INTERVAL is
 <br>
-In GTExv8, I run co-localisation for the following tissues: 'Artery_Aorta', 'Artery_Coronary', 'Artery_Tibial', 'Colon_Sigmoid', 'Colon_Transverse', 'Esophagus_Gastroesophageal_Junction', 'Esophagus_Muscularis',  'Lung', 'Small_Intestine_Terminal_Ileum', 'Stomach'.
-<br>
-I used filtered GTExv8 data including variant-gene pairs for each tissue with both either GWAS or eQTL pvalues <= 5x10-6.
-Kayesha Coley, my colleague, created the filtered files and split into chromosomes. She also added information on allele frequency for European
-ancestry individuals.
+
 <br>
 For the fine-mapped loci, I created separate files for each locus' credible set (17 locus --> 17 files).
 

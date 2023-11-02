@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-#Rationale: Run coloc and coloc.susie
+#Rationale: Run coloc and coloc.susie in GTExV8 tissues
 
 suppressMessages(library(tidyverse))
 library(coloc)

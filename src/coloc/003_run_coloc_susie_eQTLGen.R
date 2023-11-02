@@ -1,63 +1,89 @@
+#!/usr/bin/env Rscript
+
+#Rationale: Run coloc and coloc.susie in eQTLGen wholeblood tissue
+
 suppressMessages(library(tidyverse))
 library(coloc)
 suppressMessages(library(Rfast))
 
 args     = commandArgs(trailingOnly = TRUE)
-cred_set = args[1]
-gene     = args[2]
+tissue   = args[1]
+cred_set = args[2]
+gene     = args[3]
 
-cred_set %>% 
-  as_tibble %>% 
-  separate(value, c("credible", "anc"), sep="_") %>% 
-  unite("credible", credible:anc) %>% 
-  pull -> credible_set
+tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen/"
 
-cred_set %>% 
-  as_tibble %>% 
-  separate(value, c("credible", "anc", "chr", "pos", "a1", "a2"), sep="_") %>% 
-  unite("signal", chr:a2) %>% 
+cred_set %>%
+  as_tibble %>%
+  separate(value, c("pheno", "chr", "pos", "a1", "a2"), sep="_") %>%
+  select(pheno) %>%
+  pull -> pheno
+
+cred_set %>%
+  as_tibble %>%
+  separate(value, c("pheno", "chr", "pos", "a1", "a2"), sep="_") %>%
+  unite("signal", chr:a2) %>%
   pull -> signal
 
 ############################
-## Read neuropathic pain and eQTL GWAS, and LD matrix 
+## Read asthma GWAS sumstat, eQTL GWAS, and LD matrix
 ############################
-npGWAS = read_delim(paste0("/data/gen1/np_gwas/np_GWAS_3/analysis/fine_mapping/", cred_set, ".txt")) %>% 
-  select(-snp) %>%
+GWAS = read_delim(paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/", cred_set, "_GWASpairs.txt.gz")) %>%
+  rename(chr = b37chr, pos = bp, beta = LOG_ODDS, SE = se) %>%
+  select(-snpid) %>%
   arrange(chr, pos) %>%
   drop_na(beta) %>%
-  mutate(varbeta        = SE^2, 
-         MAF            = if_else(AF.alt <0.5, AF.alt, 1-AF.alt), 
-         new_variant_id = paste0(chr, "_", pos, "_", pmin(ref, alt), "_", pmax(ref, alt))) %>%
-  rename(snp=new_variant_id, position=pos, N=num) %>%
+  mutate(varbeta = SE^2) %>%
+  rename(position=pos)
+GWAS$allele1.gwas <- GWAS$a1
+GWAS <- GWAS %>% mutate(snp = paste0(chr, "_", position, "_", pmin(a1, a2), "_", pmax(a1, a2))) %>%
+  select(c(snp,beta,SE,eaf,pval,MAF,varbeta,allele1.gwas)) %>%
   distinct(snp, .keep_all=TRUE)
 
-eqtlGWAS = read_delim(paste0("/scratch/gen1/atw20/pain/results/coloc/eqtlgen/", cred_set, "_pairs.txt.gz")) %>% 
+GWAS$N <- as.numeric(38405)
+
+eqtlGWAS = read_delim(paste0(tmp_path, cred_set, "_eqtlGenWB_pairs.txt.gz")) %>%
   mutate(ID      = gsub(x=ID, pattern=":", replacement="_"), 
          varbeta = se^2, 
          MAF     = if_else(AssessedAllele_freq <0.5, AssessedAllele_freq, 1-AssessedAllele_freq)) %>% 
   arrange(chrom, pos)  %>%
   drop_na(beta) %>%
   filter(GeneSymbol==gene, 
-         ID %in% npGWAS$snp) %>%
+         ID %in% GWAS$snp) %>%
   rename(snp=ID, position=pos, N=NrSamples)
 
-npGWAS %>% filter(snp %in% eqtlGWAS$snp) -> npGWAS
+GWAS %>% filter(snp %in% eqtlGWAS$snp) -> GWAS
+
+
+############################
+#Do colocalisation ONLY IF GWAS and eqtlGWAS (eQTL tissue-gene) contains pvalue <= 5x10-6.
+############################
+GWAS_sign <- GWAS %>% filter(pval <= 0.000005)
+eqtlGWAS_sign <- eqtlGWAS %>% filter(pval <= 0.000005)
+if (dim(eqtlGWAS_sign)[1] < 1){
+    stop(paste0(signal," ",tissue, " ", gene, ": No colocalisation is possible because eQTL data has pvalue >= 5x10-6."))
+}
+if (dim(GWAS_sign)[1] < 1){
+    stop(paste0(signal," ",tissue, " ", gene, ": No colocalisation is possible because GWAS data has pvalue >= 5x10-6."))
+} else {
+    paste0(signal," ",tissue, " ", gene, ": Starting colocalisation because both GWAS and eQTL data has pvalue <= 5x10-6.")
+}
 
 ############################
 # * if also want coloc results
 ############################
-coloc_all = coloc.abf(dataset1=list(beta=npGWAS$beta, varbeta=npGWAS$varbeta, 
-                                    N=npGWAS$N, type="cc", MAF=npGWAS$MAF, snp=npGWAS$snp), 
+coloc_all = coloc.abf(dataset1=list(beta=GWAS$beta, varbeta=GWAS$varbeta, 
+                                    N=GWAS$N, type="cc", MAF=GWAS$MAF, snp=GWAS$snp), 
                       dataset2=list(beta=eqtlGWAS$beta, varbeta=eqtlGWAS$varbeta, 
                                     N=eqtlGWAS$N, type="quant", MAF=eqtlGWAS$MAF, snp=eqtlGWAS$snp))
 
-saveRDS(coloc_all, paste0("/scratch/gen1/atw20/pain/results/coloc/eqtlgen/coloc_results/", cred_set, "_", gene, "_all_coloc.rds"))
+saveRDS(coloc_all, paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/results/eqtlgen/", cred_set, "_eqtlGenWB_", gene, "_all_coloc.rds"))
 
 ############################
 # 1) Format LD matrix
 ############################
 ld = data.table::fread(
-  paste0("/scratch/gen1/atw20/pain/results/coloc/eqtlgen/", signal, "_", credible_set, "_whole_blood.raw")
+  paste0(tmp_path, signal, "_", pheno, "_", tissue, ".raw")
 ) %>% 
   select(!c(FID:PHENOTYPE))
 
@@ -65,7 +91,8 @@ ld %>%
   names %>% 
   as_tibble %>% 
   separate(value,c("c", "p", "a1", "a2")) %>% 
-  unite("snp", c:a2, sep="_") %>% 
+  mutate(snp = paste0(c, "_", p, "_", pmin(a1, a2), "_", pmax(a1, a2))) %>%
+  select(snp) %>%
   pull -> snps
 
 ld = t(ld) %>%
@@ -73,45 +100,62 @@ ld = t(ld) %>%
   mutate(var=apply(., 1, var, na.rm=TRUE),
          snp=snps) %>%
   filter(var!=0) %>%
-  filter(snp %in% npGWAS$snp) %>%
+  filter(snp %in% GWAS$snp) %>%
   filter(snp %in% eqtlGWAS$snp)
 
-N = ncol(ld)-2 
-X = t(as.matrix(ld[, 1:N]))
-colnames(X) = ld %>% 
-  select(snp) %>% 
-  pull # Sdd names to facilitate filtering NAs (still some NAs even with pairwise.complete.obs)
+N = ncol(ld)-2
+X = t(as.matrix(ld[,1:N]))
+colnames(X) = ld %>%
+  select(snp) %>%
+  pull # Sdd names to facilitate filtering Nas (still some NAs even with pairwise.complete.obs)
 LDmatrix = cor(X, use="pairwise.complete.obs") # Pearson's correlation, takes some time...
-LDmatrix[is.na(LDmatrix)] <- 0 
+LDmatrix[is.na(LDmatrix)] <- 0
 
 ############################
-# 2) Format neuropathic GWAS
+# 2) Format asthma GWAS
 ############################
 bim = read_tsv(
-  paste0("/scratch/gen1/atw20/pain/results/coloc/eqtlgen/", signal, "_", credible_set, "_whole_blood.bim"), 
-  col_names=c("chr", "snp", "morgans", "position", "allele1", "allele2")
-) %>% 
+    paste0(tmp_path, signal, "_", pheno, "_", tissue, ".bim"),
+    col_names=c("chr", "snp", "morgans", "position", "allele1", "allele2")
+  ) %>%
   select(!morgans) # Read bim file to check same set of SNPs and allele alignment
 
-npGWAS %>%  
+GWAS_df <- GWAS %>%
   filter(snp %in% colnames(LDmatrix)) %>% # Must be the same set of SNPs
   inner_join(bim) %>%
-  mutate(beta=ifelse(allele1!=ref, -(beta), beta)) %>% # Check allele alignment
-  as.list -> npGWAS
+  mutate(beta=ifelse(allele1!=allele1.gwas, -(beta), beta)) # Check allele alignment
 
-npGWAS$type = "cc"
-npGWAS$LD = LDmatrix
-N = as.integer(mean(npGWAS$N))
-npGWAS$N = N
+#Check GWAS has at least one variant with pval <= 0.000005:
+GWAS_sign <- GWAS_df %>% filter(pval <= 0.000005)
+if (dim(GWAS_sign)[1] < 1){
+    stop(paste0(signal," ",tissue, " ", gene, " GTExv8: No coloc.susie is possible because GWAS data has pvalue >= 5x10-6."))
+}
+
+GWAS_df %>%
+  as.list -> GWAS
+
+GWAS$type = "cc"
+N = as.integer(mean(GWAS$N))
+GWAS$N = N
+GWAS$LD = LDmatrix
 
 ############################
 # 3) Format eQTL GWAS  
 ############################
-eqtlGWAS  %>% 
-  filter(snp %in% colnames(LDmatrix)) %>% # Must be the same set of SNPs 
+eqtlGWAS_df <- eqtlGWAS  %>%
+  filter(snp %in% colnames(LDmatrix)) %>% # Must be the same set of SNPs
   inner_join(bim) %>%
-  mutate(beta=ifelse(allele1!=AssessedAllele, -(beta), beta)) %>% # Check allele alignment
-  as.list -> eqtlGWAS
+  mutate(beta=ifelse(allele1!=AssessedAllele, -(beta), beta)) # Check allele alignment
+
+#Check eqtlGWAS has at least one variant with pval <= 0.000005:
+eqtlGWAS_sign <- eqtlGWAS_df %>% filter(pval <= 0.000005)
+if (dim(eqtlGWAS_sign)[1] < 1){
+    stop(paste0(signal," ",tissue, " ", gene, " GTExv8: No coloc.susie is possible because eQTL-GWAS data has pvalue >= 5x10-6."))
+} else {
+    paste0(signal," ",tissue, " ", gene, " GTExv8: Starting coloc.susie because both GWAS and eQTL data has pvalue <= 5x10-6.")
+}
+
+eqtlGWAS <- eqtlGWAS_df %>% as.list
 
 eqtlGWAS$type = "quant"
 eqtlGWAS$LD = LDmatrix
@@ -122,24 +166,23 @@ eqtlGWAS$N = N
 # Check datasets are ok
 ############################
 check_dataset(eqtlGWAS, req="LD") -> eqtlGWAS_check
-check_dataset(npGWAS, req="LD") -> npGWAS_check
+check_dataset(GWAS, req="LD") -> GWAS_check
 
-if (is.null(npGWAS_check) & is.null(eqtlGWAS_check)){
+if (is.null(GWAS_check) & is.null(eqtlGWAS_check)){
   cat(paste0(cred_set, "_", tissue, "_", gene, ": ok", "\n"), 
-      file="/scratch/gen1/atw20/pain/results/coloc/eqtlgen/coloc_results/GWAS_coloc_susie_check.txt", append=TRUE)
+      file=paste0(tmp_path,"GWAS_coloc_susie_check.txt"), append=TRUE)
 } else {
   cat(paste0(cred_set, "_", tissue, "_", gene, ": warning", "\n"), 
-      file="/scratch/gen1/atw20/pain/results/coloc/eqtlgen/coloc_results/GWAS_coloc_susie_check.txt", append=TRUE)
+      file=paste0(tmp_path,"GWAS_coloc_susie_check.txt"), append=TRUE)
 }
 
 ############################
 ## Run SuSie
 ############################
-susie_npGWAS = runsusie(npGWAS, r2.prune=0.2, check_R=FALSE)
-susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE)
-susie_all = coloc.susie(susie_npGWAS, susie_eQTLGWAS)
+susie_GWAS = runsusie(GWAS, r2.prune=0.2, check_R=FALSE)
+susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE, verbose=TRUE)
+susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
 
-write_tsv(susie_all$summary, paste0("/scratch/gen1/atw20/pain/results/coloc/eqtlgen/coloc_results/", cred_set, "_", gene, "_susie_summary.tsv"))
-saveRDS(susie_all, paste0("/scratch/gen1/atw20/pain/results/coloc/eqtlgen/coloc_results/", cred_set, "_", gene, "_all_susie.rds"))
-write_tsv(susie_all$summary %>% as_tibble, 
-          paste0("/scratch/gen1/atw20/pain/results/coloc/eqtlgen/coloc_results/", cred_set, "_", gene, "_susie_summary.tsv"))
+saveRDS(susie_all, paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/results/eqtlgen/", cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
+write_tsv(susie_all$summary %>% as_tibble,
+          paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/results/eqtlgen/", cred_set, "_", tissue, "_", gene, "_susie_summary.tsv"))

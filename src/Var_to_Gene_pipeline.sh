@@ -7,8 +7,6 @@ module load R
 tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 
 
-
-
 #Rationale: pipeline for Variant to Gene mapping analysis. Output from each analysis: list of genes
 
 ################
@@ -21,7 +19,7 @@ Rscript src/Variant_annotation_FAVOR.R
 #2.QUANTITATIVE TRAIT LOCI
 ################
 ##Exclude chromosome 6 - no eQTL colocalisation for this locus.
-##Genomic boundaries: PIP-max causal variant +/- 1000Mb
+##Genomic boundaries: PIP-max causal variant +/- 1Mb
 
 ###GTExv8 eQTL###
 
@@ -79,6 +77,7 @@ done
 for t in ${!tissue[*]}; do Rscript ./src/coloc/002_prepare_LDinput.R "${tissue[t]}"; done
 
 ##Get LD:
+#with parameters for GTExV8
 sbatch ./src/coloc/002_get_LD.sh
 
 ##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-81713.out
@@ -114,7 +113,7 @@ done
 
 ######QUALITY CHECKS:
 #to find number of genes:
-#wc -l SA_*_${tissue}.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
+#wc -l SA_*_${tissue}_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
 #'Stomach' 575
 #'Small_Intestine_Terminal_Ileum' 635
 #'Lung' 633
@@ -135,12 +134,59 @@ grep ${tissue} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $
 ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
 ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
 
-#Find statistically significant colocalisation results and add results into var2gene_raw.xlsx:
-Rscript ./src/coloc/004_concat_coloc_results.R
-
 ###eqtlGen eQTL###
 mkdir ${tmp_path}/results/eqtlgen
 mkdir ${tmp_path}/eqtlgen
 dos2unix src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
 chmod +x src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
 sbatch src/coloc/000_submit_edit_eQTLGen.sh
+
+#Create files for eQTLGen colocalisation:
+dos2unix src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
+chmod +x src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
+
+for c in ${!cs[@]}; do
+
+    sbatch --export=CREDSET="${cs[c]}" ./src/coloc/001_submit_eqtl_lookup_eQTLGen.sh
+
+done
+
+##Get the LD matrix:
+##Create the file with gtex-locus pairs:
+dos2unix src/coloc/002_prepare_LDinput_eqtlgen.R
+chmod +x src/coloc/002_prepare_LDinput_eqtlgen.R
+Rscript src/coloc/002_prepare_LDinput_eqtlgen.R "eqtlGenWB"
+
+##Get LD:
+#with parameters for eqtlGen
+sbatch src/coloc/002_get_LD.sh
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-170767.out
+
+##Run the colocalisation for GTExV8:
+#.sh will run .R script:
+mkdir ${tmp_path}/results/eqtlgen
+dos2unix src/coloc/003_submit_coloc_susie_eQTLGen.sh
+chmod +x src/coloc/003_run_coloc_susie_eQTLGen.R
+for c in ${!cs[*]}; do
+
+  N=`cat ${tmp_path}eqtlgen/${cs[c]}_eqtlGenWB_genes.txt | wc -l`
+
+  sbatch --array=1-${N}%20 --export=CREDSET="${cs[c]}" ./src/coloc/003_submit_coloc_susie_eQTLGen.sh
+
+ sleep 5
+
+done
+
+######QUALITY CHECKS:
+#to find number of genes:
+wc -l ${tmp_path}/eqtlgen/SA_*_eqtlGenWB_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
+##Check that all genes for each tissue have been analysed:
+grep "eqtlGenWB" ${tmp_path}/logerror/coloc_susie_eqtlgen*.out | awk -F ":" '{print $1}' | sort -u | wc -l
+
+##Check how many genes per tissue have been analysed for colocalisation:
+ls -lthr  ${tmp_path}/results/eqtlgen/*all_coloc.rds | grep "eqtlGenWB" | wc -l
+ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep "eqtlGenWB" | wc -l
+
+
+#Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
+Rscript ./src/coloc/004_concat_coloc_results.R

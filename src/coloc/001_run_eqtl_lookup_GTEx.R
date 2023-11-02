@@ -19,6 +19,18 @@ tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 ##allele are place in alphabetical order ! (no dependency on effect allele, reference/alternative)
 
 #eqtl:
+#'Colon_Transverse' 'Colon_Sigmoid' 'Skin_Sun_Exposed_Lower_leg' 'Skin_Not_Sun_Exposed_Suprapubic' files are in my scratch;
+#make an exeption for these files:
+my_tissues <- c("Colon_Transverse", "Colon_Sigmoid", "Skin_Sun_Exposed_Lower_leg", "Skin_Not_Sun_Exposed_Suprapubic")
+if (tissue %in% my_tissues ){
+    eqtl = fread(paste0(tmp_path,"liftover_gtexv8/", tissue, ".v8.EUR.allpairs.chr", chr, ".hg19.txt.gz"),
+             select=c("phenotype_id", "CHROM", "POS", "REF", "ALT", "maf", "ma_samples", "slope", "slope_se", "pval_nominal"),
+             col.names=c("gene_id", "chrom", "pos", "ref", "alt", "maf", "N", "beta", "se", "pval"),
+             showProgress=FALSE) %>%
+        mutate(ID = paste0(chrom, ":", pos, "_", pmin(ref, alt), "_", pmax(ref, alt))) %>%
+        relocate(ID, .before="gene_id") %>%
+        filter(between(pos, location-5e5, location+5e5), chrom==chr)
+    } else {
 eqtl = fread(paste0("/data/gen1/ACEI/colocalisation_datasets/eQTL/GTeX/", tissue, ".v8.EUR.allpairs.chr", chr, ".hg19.txt.gz"), 
              select=c("phenotype_id", "CHROM", "POS", "REF", "ALT", "maf", "ma_samples", "slope", "slope_se", "pval_nominal"), 
              col.names=c("gene_id", "chrom", "pos", "ref", "alt", "maf", "N", "beta", "se", "pval"), 
@@ -26,6 +38,7 @@ eqtl = fread(paste0("/data/gen1/ACEI/colocalisation_datasets/eQTL/GTeX/", tissue
   mutate(ID = paste0(chrom, ":", pos, "_", pmin(ref, alt), "_", pmax(ref, alt))) %>%
   relocate(ID, .before="gene_id") %>%
   filter(between(pos, location-5e5, location+5e5), chrom==chr)
+}
 
 genes = eqtl %>% distinct(gene_id)
 

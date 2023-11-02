@@ -1575,7 +1575,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Variant to Gene mapping analysis in the
 severe asthma UK Biobank GWAS</h1>
 <h4 class="author">Noemi Nicole Piga</h4>
-<h4 class="date">31 October, 2023</h4>
+<h4 class="date">02 November, 2023</h4>
 
 </div>
 
@@ -1598,18 +1598,21 @@ module load R
 tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;
 
 
-
-
 #Rationale: pipeline for Variant to Gene mapping analysis. Output from each analysis: list of genes
 
-
-#1.Variant annotation
+################
+#1.VARIANT ANNOTATION
 Rscript src/Variant_annotation_FAVOR.R
+################
 
 
-#2.Quantitative trait loci:
+################
+#2.QUANTITATIVE TRAIT LOCI
+################
 ##Exclude chromosome 6 - no eQTL colocalisation for this locus.
-##Genomic boundaries: PIP-max causal variant +/- 1000Mb
+##Genomic boundaries: PIP-max causal variant +/- 1Mb
+
+###GTExv8 eQTL###
 
 ##Create eQTl files in hg19 for Colon Transverse, Colon Sigmoid, Skin_Not_Sun_Exposed_Suprapubic, Skin_Sun_Exposed_Lower_leg
 #From GTExV8 .parquet files and in hg38.
@@ -1625,11 +1628,11 @@ sbatch --array=1-22 src/coloc/000A_submit_eqtl_gtex_extraction.sh
 
 sbatch src/coloc/000B_eqtl_gtex_liftover.sh
 
-sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_conversion.sh
+sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_extraction.sh
 
 
 ##variables needed:
-tissue=(&#39;Stomach&#39; &#39;Small_Intestine_Terminal_Ileum&#39; &#39;Lung&#39; &#39;Esophagus_Muscularis&#39; &#39;Esophagus_Gastroesophageal_Junction&#39; &#39;Colon_Transverse&#39; &#39;Colon_Sigmoid&#39; &#39;Artery_Tibial&#39; &#39;Artery_Coronary&#39; &#39;Artery_Aorta&#39;)
+tissue=(&#39;Stomach&#39; &#39;Small_Intestine_Terminal_Ileum&#39; &#39;Lung&#39; &#39;Esophagus_Muscularis&#39; &#39;Esophagus_Gastroesophageal_Junction&#39; &#39;Artery_Tibial&#39; &#39;Artery_Coronary&#39; &#39;Artery_Aorta&#39; &#39;Colon_Transverse&#39; &#39;Colon_Sigmoid&#39; &#39;Skin_Sun_Exposed_Lower_leg&#39; &#39;Skin_Not_Sun_Exposed_Suprapubic&#39;)
 cs=(&#39;SA_8_81292599_C_A&#39; &#39;SA_6_90963614_AT_A&#39; &#39;SA_5_110401872_C_T&#39; &#39;SA_2_242692858_T_C&#39; &#39;SA_15_67442596_T_C&#39; &#39;SA_12_56435504_C_G&#39; &#39;SA_11_76296671_G_A&#39; &#39;SA_9_6209697_G_A&#39; &#39;SA_5_131885240_C_G&#39; &#39;SA_3_33042712_C_T&#39; &#39;SA_2_102913642_AAAAC_A&#39; &#39;SA_17_38168828_G_A&#39; &#39;SA_16_27359021_C_A&#39;  &#39;SA_15_61068954_C_T&#39; &#39;SA_12_48202941_T_C&#39; &#39;SA_10_9064716_C_T&#39;)
 cs_all=&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt&quot;
 
@@ -1665,10 +1668,11 @@ done
 for t in ${!tissue[*]}; do Rscript ./src/coloc/002_prepare_LDinput.R &quot;${tissue[t]}&quot;; done
 
 ##Get LD:
+#with parameters for GTExV8
 sbatch ./src/coloc/002_get_LD.sh
 
 ##to see if errors in the job: grep &quot;Error&quot; /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-81713.out
-
+##after adding Colon and Skin tissues, to see if errors in the job: grep &quot;Error&quot; /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-153659.out
 
 ##Run the colocalisation for GTExV8:
 #.sh will run .R script:
@@ -1685,6 +1689,8 @@ tissue=&#39;Artery_Coronary&#39;
 tissue=&#39;Artery_Aorta&#39;
 tissue=&#39;Colon_Transverse&#39;
 tissue=&#39;Colon_Sigmoid&#39;
+tissue=&#39;Skin_Sun_Exposed_Lower_leg&#39;
+tissue=&#39;Skin_Not_Sun_Exposed_Suprapubic&#39;
 
 for c in ${!cs[*]}; do
 
@@ -1697,6 +1703,8 @@ for c in ${!cs[*]}; do
 done
 
 ######QUALITY CHECKS:
+#to find number of genes:
+#wc -l SA_*_${tissue}_genes.txt | sed &#39;s/_/ /g&#39; | sort -k 3,4 -g | awk &#39;{print $1}&#39;
 #&#39;Stomach&#39; 575
 #&#39;Small_Intestine_Terminal_Ileum&#39; 635
 #&#39;Lung&#39; 633
@@ -1705,8 +1713,10 @@ done
 #tissue=&#39;Artery_Tibial&#39; 573
 #tissue=&#39;Artery_Coronary&#39; 603
 #tissue=&#39;Artery_Aorta&#39; 586
-#tissue=&#39;Colon_Transverse&#39;
-#tissue=&#39;Colon_Sigmoid&#39;
+#tissue=&#39;Colon_Transverse&#39; 610
+#tissue=&#39;Colon_Sigmoid&#39; 585
+#tissue=&#39;Skin_Sun_Exposed_Lower_leg&#39; 673
+#tissue=&#39;Skin_Not_Sun_Exposed_Suprapubic&#39; 670
 
 ##Check that all genes for each tissue have been analysed:
 grep ${tissue} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F &quot;:&quot; &#39;{print $1}&#39; | sort -u | wc -l
@@ -1715,7 +1725,61 @@ grep ${tissue} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F &quot;:&quot;
 ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
 ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
 
-#Find statistically significant colocalisation results:
+###eqtlGen eQTL###
+mkdir ${tmp_path}/results/eqtlgen
+mkdir ${tmp_path}/eqtlgen
+dos2unix src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
+chmod +x src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
+sbatch src/coloc/000_submit_edit_eQTLGen.sh
+
+#Create files for eQTLGen colocalisation:
+dos2unix src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
+chmod +x src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
+
+for c in ${!cs[@]}; do
+
+    sbatch --export=CREDSET=&quot;${cs[c]}&quot; ./src/coloc/001_submit_eqtl_lookup_eQTLGen.sh
+
+done
+
+##Get the LD matrix:
+##Create the file with gtex-locus pairs:
+dos2unix src/coloc/002_prepare_LDinput_eqtlgen.R
+chmod +x src/coloc/002_prepare_LDinput_eqtlgen.R
+Rscript src/coloc/002_prepare_LDinput_eqtlgen.R &quot;eqtlGenWB&quot;
+
+##Get LD:
+#with parameters for eqtlGen
+sbatch src/coloc/002_get_LD.sh
+##to see if errors in the job: grep &quot;Error&quot; /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-170767.out
+
+##Run the colocalisation for GTExV8:
+#.sh will run .R script:
+mkdir ${tmp_path}/results/eqtlgen
+dos2unix src/coloc/003_submit_coloc_susie_eQTLGen.sh
+chmod +x src/coloc/003_run_coloc_susie_eQTLGen.R
+for c in ${!cs[*]}; do
+
+  N=`cat ${tmp_path}eqtlgen/${cs[c]}_eqtlGenWB_genes.txt | wc -l`
+
+  sbatch --array=1-${N}%20 --export=CREDSET=&quot;${cs[c]}&quot; ./src/coloc/003_submit_coloc_susie_eQTLGen.sh
+
+ sleep 5
+
+done
+
+######QUALITY CHECKS:
+#to find number of genes:
+wc -l ${tmp_path}/eqtlgen/SA_*_eqtlGenWB_genes.txt | sed &#39;s/_/ /g&#39; | sort -k 3,4 -g | awk &#39;{print $1}&#39;
+##Check that all genes for each tissue have been analysed:
+grep &quot;eqtlGenWB&quot; ${tmp_path}/logerror/coloc_susie_eqtlgen*.out | awk -F &quot;:&quot; &#39;{print $1}&#39; | sort -u | wc -l
+
+##Check how many genes per tissue have been analysed for colocalisation:
+ls -lthr  ${tmp_path}/results/eqtlgen/*all_coloc.rds | grep &quot;eqtlGenWB&quot; | wc -l
+ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep &quot;eqtlGenWB&quot; | wc -l
+
+
+#Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
 Rscript ./src/coloc/004_concat_coloc_results.R</code></pre>
 <p>Prioritise genes using variant-to-gene mapping tools with credible
 sets variants from fine-mapping results of GWAS on severe asthma in UK
@@ -2198,78 +2262,6 @@ gwas &lt;- fread(&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/ma
   filter(b37chr==chr, between(bp, location-5e5, location+5e5))
 
 write_delim(x=gwas, file=paste0(tmp_path, cred_set, &quot;_GWASpairs.txt.gz&quot;))</code></pre>
-<p>src/coloc/001_submit_eqtl_lookup_GTEx.sh</p>
-<pre class="r"><code>#!/bin/bash
-
-#SBATCH --job-name=SA_eqtl_lookup
-#SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
-#SBATCH --time=0:30:0
-#SBATCH --mem=16gb
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-user=nnp5@le.ac.uk
-#SBATCH --account=gen1
-#SBATCH --export=NONE
-
-#intermediate files in:
-tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;
-
-module load R
-Rscript ./src/coloc/001_run_eqtl_lookup_GTEx.R $TISSUE $CREDSET</code></pre>
-<p>src/coloc/001_run_eqtl_lookup_GTEx.R</p>
-<pre class="r"><code>#!/usr/bin/env Rscript
-
-#Rationale: Create GTExv8 eQTL files to use for colocalisation, filter genes for each eQTL files, find GWAS sumstat lookup
-#in GTEXv8 for regions that I cannot do colocalisation, e.i. HLA regions.
-
-library(data.table)
-library(tidyverse)
-
-args     = commandArgs(trailingOnly = TRUE)
-tissue   = args[1]
-cred_set = args[2]
-
-tmp      = unlist(strsplit(cred_set, split=&quot;_&quot;))
-chr      = as.numeric(tmp[2])
-location = as.numeric(tmp[3])
-
-tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;
-
-##allele are place in alphabetical order ! (no dependency on effect allele, reference/alternative)
-
-#eqtl:
-eqtl = fread(paste0(&quot;/data/gen1/ACEI/colocalisation_datasets/eQTL/GTeX/&quot;, tissue, &quot;.v8.EUR.allpairs.chr&quot;, chr, &quot;.hg19.txt.gz&quot;), 
-             select=c(&quot;phenotype_id&quot;, &quot;CHROM&quot;, &quot;POS&quot;, &quot;REF&quot;, &quot;ALT&quot;, &quot;maf&quot;, &quot;ma_samples&quot;, &quot;slope&quot;, &quot;slope_se&quot;, &quot;pval_nominal&quot;), 
-             col.names=c(&quot;gene_id&quot;, &quot;chrom&quot;, &quot;pos&quot;, &quot;ref&quot;, &quot;alt&quot;, &quot;maf&quot;, &quot;N&quot;, &quot;beta&quot;, &quot;se&quot;, &quot;pval&quot;), 
-             showProgress=FALSE) %&gt;%
-  mutate(ID = paste0(chrom, &quot;:&quot;, pos, &quot;_&quot;, pmin(ref, alt), &quot;_&quot;, pmax(ref, alt))) %&gt;%
-  relocate(ID, .before=&quot;gene_id&quot;) %&gt;%
-  filter(between(pos, location-5e5, location+5e5), chrom==chr)
-
-genes = eqtl %&gt;% distinct(gene_id)
-
-write_delim(x=eqtl, file=paste0(tmp_path, cred_set, &quot;_&quot;, tissue, &quot;_pairs.txt.gz&quot;))
-write_delim(x=genes, file=paste0(tmp_path, cred_set, &quot;_&quot;, tissue, &quot;_genes.txt&quot;), col_names=FALSE)
-
-#import gwas sumstat:
-gwas_sumstat &lt;- fread(&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/maf001_broad_pheno_1_5_ratio_betase_input_mungestat&quot;)
-gwas_sumstat &lt;- gwas_sumstat %&gt;% setnames(c(&quot;b37chr&quot;,&quot;bp&quot;,&quot;a1&quot;,&quot;a2&quot;),c(&quot;chrom&quot;,&quot;position&quot;,&quot;allele1&quot;,&quot;allele2&quot;))
-
-#credible set:
-cs &lt;- fread(paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;, cred_set))
-cs &lt;- cs %&gt;% setnames(&quot;chromosome&quot;,&quot;chrom&quot;)
-
-#merge credible set with gwas sumstat:
-cs_gwas_sumstat &lt;- inner_join(cs,gwas_sumstat, by=c(&quot;chrom&quot;,&quot;position&quot;,&quot;allele1&quot;,&quot;allele2&quot;,&quot;snpid&quot;))
-
-#merge credible set-gwas sumstat with eqtl:
-cs_gwas_sumstat_eqtl &lt;- cs_gwas_sumstat %&gt;% setnames(c(&quot;position&quot;,&quot;LOG_ODDS&quot;),c(&quot;pos&quot;,&quot;beta&quot;)) %&gt;%
-  mutate(ID = paste0(chrom, &quot;:&quot;, pos, &quot;_&quot;, pmin(allele1, allele2), &quot;_&quot;, pmax(allele1, allele2))) %&gt;%
-  relocate(ID, .before=&quot;chrom&quot;) %&gt;%
-  distinct() %&gt;%
-  left_join(eqtl, by=&quot;ID&quot;, suffix=c(&quot;.gwas&quot;, &quot;.eqtl&quot;)) %&gt;%
-  mutate(beta.eqtl = if_else(alt == allele1, beta.eqtl, -beta.eqtl))
-
-write_delim(x=cs_gwas_sumstat_eqtl, file=paste0(tmp_path, cred_set, &quot;_&quot;, tissue, &quot;_lookup.txt.gz&quot;))</code></pre>
 <p>src/coloc/002_prepare_LDinput.R</p>
 <pre class="r"><code>#!/usr/bin/env Rscript
 
@@ -2320,8 +2312,12 @@ module load plink/1.9-beta6.27-vhw5dr2
 module load R
 
 #For GTExv8:
-pairs_lookup_file=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/gtex_Pairs_lookup.txt&quot;
-DIR=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp&quot;
+#pairs_lookup_file=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/gtex_Pairs_lookup.txt&quot;
+#DIR=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp&quot;
+
+#For eqtlGen:
+pairs_lookup_file=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen/eqtlGenWB_Pairs_lookup.txt&quot;
+DIR=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen&quot;
 
 cd ${DIR}
 
@@ -2426,7 +2422,7 @@ Rscript ./src/coloc/003_run_coloc_susie_GTEx.R $TISSUE $CREDSET $GENE
 <p>src/coloc/003_run_coloc_susie_GTEx.R</p>
 <pre class="r"><code>#!/usr/bin/env Rscript
 
-#Rationale: Run coloc and coloc.susie
+#Rationale: Run coloc and coloc.susie in GTExV8 tissues
 
 suppressMessages(library(tidyverse))
 library(coloc)
@@ -2622,6 +2618,370 @@ susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
 saveRDS(susie_all, paste0(tmp_path,&quot;results/gtex/&quot;, cred_set, &quot;_&quot;, tissue, &quot;_&quot;, gene, &quot;_all_susie.rds&quot;))
 write_tsv(susie_all$summary %&gt;% as_tibble,
           paste0(tmp_path, &quot;results/gtex/&quot;, cred_set, &quot;_&quot;, tissue, &quot;_&quot;, gene, &quot;_susie_summary.tsv&quot;))</code></pre>
+<p>src/coloc/000_submit_edit_eQTLGen.sh</p>
+<pre class="r"><code>#!/bin/bash
+
+#SBATCH --job-name=edit_eQTLGen
+#SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
+#SBATCH --time=8:0:0
+#SBATCH --mem=80gb
+#SBATCH --account=gen1
+#SBATCH --export=NONE
+
+module load R
+
+Rscript src/coloc/000_run_edit_eQTLGen.R</code></pre>
+<p>src/coloc/000_run_edit_eQTLGen.R</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+#==================================================================
+# File:        000_run_edit_eQTL.R
+# Project:     SevereAsthma
+# Author:      NNP - edited from AW
+# Date:        1 November 2023
+# Rationale:   Load eqtlGen data to add allele frequency
+#==================================================================
+
+library(tidyverse)
+
+tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen&quot;
+
+freq = read_tsv(&quot;/data/gen1/LF_HRC_transethnic/eQTL/eQTLgen/2018-07-18_SNP_AF_for_AlleleB_combined_allele_counts_and_MAF_pos_added.txt.gz&quot;, 
+                col_select=c(&quot;hg19_chr&quot;, &quot;hg19_pos&quot;, &quot;AlleleA&quot;, &quot;AlleleB&quot;, &quot;AlleleB_all&quot;)) %&gt;%
+  mutate(ID = paste0(hg19_chr, &quot;:&quot;, hg19_pos, &quot;_&quot;, pmin(AlleleA, AlleleB), &quot;_&quot;, pmax(AlleleA, AlleleB))) %&gt;%
+  select(ID, AssessedAllele_freq = AlleleB_all)
+
+eqtl = read_tsv(&quot;/data/gen1/reference/eqtlgen/2019-12-11-cis-eQTLsFDR-ProbeLevel-CohortInfoRemoved-BonferroniAdded.txt.gz&quot;) %&gt;%
+  mutate(ID = paste0(SNPChr, &quot;:&quot;, SNPPos, &quot;_&quot;, pmin(AssessedAllele, OtherAllele), &quot;_&quot;, pmax(AssessedAllele, OtherAllele))) %&gt;%
+  relocate(ID, .before=&quot;SNP&quot;) %&gt;%
+  left_join(freq) %&gt;%
+  mutate(beta = Zscore / sqrt(2 * AssessedAllele_freq * (1 - AssessedAllele_freq) * (NrSamples + Zscore^2)), 
+         se   = 1 / sqrt(2 * AssessedAllele_freq * (1 - AssessedAllele_freq) * (NrSamples + Zscore^2)))
+
+write_tsv(x=eqtl, file=paste0(tmp_path,&quot;/whole_blood_cis_eqtls_withAF.txt.gz&quot;))</code></pre>
+<p>src/coloc/001_submit_eqtl_lookup_GTEx.sh</p>
+<pre class="r"><code>#!/bin/bash
+
+#SBATCH --job-name=SA_eqtl_lookup
+#SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
+#SBATCH --time=0:30:0
+#SBATCH --mem=16gb
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=nnp5@le.ac.uk
+#SBATCH --account=gen1
+#SBATCH --export=NONE
+
+#intermediate files in:
+tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;
+
+module load R
+Rscript ./src/coloc/001_run_eqtl_lookup_GTEx.R $TISSUE $CREDSET</code></pre>
+<p>src/coloc/001_run_eqtl_lookup_GTEx.R</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+#Rationale: Create GTExv8 eQTL files to use for colocalisation, filter genes for each eQTL files, find GWAS sumstat lookup
+#in GTEXv8 for regions that I cannot do colocalisation, e.i. HLA regions.
+
+library(data.table)
+library(tidyverse)
+
+args     = commandArgs(trailingOnly = TRUE)
+tissue   = args[1]
+cred_set = args[2]
+
+tmp      = unlist(strsplit(cred_set, split=&quot;_&quot;))
+chr      = as.numeric(tmp[2])
+location = as.numeric(tmp[3])
+
+tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;
+
+##allele are place in alphabetical order ! (no dependency on effect allele, reference/alternative)
+
+#eqtl:
+#&#39;Colon_Transverse&#39; &#39;Colon_Sigmoid&#39; &#39;Skin_Sun_Exposed_Lower_leg&#39; &#39;Skin_Not_Sun_Exposed_Suprapubic&#39; files are in my scratch;
+#make an exeption for these files:
+my_tissues &lt;- c(&quot;Colon_Transverse&quot;, &quot;Colon_Sigmoid&quot;, &quot;Skin_Sun_Exposed_Lower_leg&quot;, &quot;Skin_Not_Sun_Exposed_Suprapubic&quot;)
+if (tissue %in% my_tissues ){
+    eqtl = fread(paste0(tmp_path,&quot;liftover_gtexv8/&quot;, tissue, &quot;.v8.EUR.allpairs.chr&quot;, chr, &quot;.hg19.txt.gz&quot;),
+             select=c(&quot;phenotype_id&quot;, &quot;CHROM&quot;, &quot;POS&quot;, &quot;REF&quot;, &quot;ALT&quot;, &quot;maf&quot;, &quot;ma_samples&quot;, &quot;slope&quot;, &quot;slope_se&quot;, &quot;pval_nominal&quot;),
+             col.names=c(&quot;gene_id&quot;, &quot;chrom&quot;, &quot;pos&quot;, &quot;ref&quot;, &quot;alt&quot;, &quot;maf&quot;, &quot;N&quot;, &quot;beta&quot;, &quot;se&quot;, &quot;pval&quot;),
+             showProgress=FALSE) %&gt;%
+        mutate(ID = paste0(chrom, &quot;:&quot;, pos, &quot;_&quot;, pmin(ref, alt), &quot;_&quot;, pmax(ref, alt))) %&gt;%
+        relocate(ID, .before=&quot;gene_id&quot;) %&gt;%
+        filter(between(pos, location-5e5, location+5e5), chrom==chr)
+    } else {
+eqtl = fread(paste0(&quot;/data/gen1/ACEI/colocalisation_datasets/eQTL/GTeX/&quot;, tissue, &quot;.v8.EUR.allpairs.chr&quot;, chr, &quot;.hg19.txt.gz&quot;), 
+             select=c(&quot;phenotype_id&quot;, &quot;CHROM&quot;, &quot;POS&quot;, &quot;REF&quot;, &quot;ALT&quot;, &quot;maf&quot;, &quot;ma_samples&quot;, &quot;slope&quot;, &quot;slope_se&quot;, &quot;pval_nominal&quot;), 
+             col.names=c(&quot;gene_id&quot;, &quot;chrom&quot;, &quot;pos&quot;, &quot;ref&quot;, &quot;alt&quot;, &quot;maf&quot;, &quot;N&quot;, &quot;beta&quot;, &quot;se&quot;, &quot;pval&quot;), 
+             showProgress=FALSE) %&gt;%
+  mutate(ID = paste0(chrom, &quot;:&quot;, pos, &quot;_&quot;, pmin(ref, alt), &quot;_&quot;, pmax(ref, alt))) %&gt;%
+  relocate(ID, .before=&quot;gene_id&quot;) %&gt;%
+  filter(between(pos, location-5e5, location+5e5), chrom==chr)
+}
+
+genes = eqtl %&gt;% distinct(gene_id)
+
+write_delim(x=eqtl, file=paste0(tmp_path, cred_set, &quot;_&quot;, tissue, &quot;_pairs.txt.gz&quot;))
+write_delim(x=genes, file=paste0(tmp_path, cred_set, &quot;_&quot;, tissue, &quot;_genes.txt&quot;), col_names=FALSE)
+
+#import gwas sumstat:
+gwas_sumstat &lt;- fread(&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/maf001_broad_pheno_1_5_ratio_betase_input_mungestat&quot;)
+gwas_sumstat &lt;- gwas_sumstat %&gt;% setnames(c(&quot;b37chr&quot;,&quot;bp&quot;,&quot;a1&quot;,&quot;a2&quot;),c(&quot;chrom&quot;,&quot;position&quot;,&quot;allele1&quot;,&quot;allele2&quot;))
+
+#credible set:
+cs &lt;- fread(paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;, cred_set))
+cs &lt;- cs %&gt;% setnames(&quot;chromosome&quot;,&quot;chrom&quot;)
+
+#merge credible set with gwas sumstat:
+cs_gwas_sumstat &lt;- inner_join(cs,gwas_sumstat, by=c(&quot;chrom&quot;,&quot;position&quot;,&quot;allele1&quot;,&quot;allele2&quot;,&quot;snpid&quot;))
+
+#merge credible set-gwas sumstat with eqtl:
+cs_gwas_sumstat_eqtl &lt;- cs_gwas_sumstat %&gt;% setnames(c(&quot;position&quot;,&quot;LOG_ODDS&quot;),c(&quot;pos&quot;,&quot;beta&quot;)) %&gt;%
+  mutate(ID = paste0(chrom, &quot;:&quot;, pos, &quot;_&quot;, pmin(allele1, allele2), &quot;_&quot;, pmax(allele1, allele2))) %&gt;%
+  relocate(ID, .before=&quot;chrom&quot;) %&gt;%
+  distinct() %&gt;%
+  left_join(eqtl, by=&quot;ID&quot;, suffix=c(&quot;.gwas&quot;, &quot;.eqtl&quot;)) %&gt;%
+  mutate(beta.eqtl = if_else(alt == allele1, beta.eqtl, -beta.eqtl))
+
+write_delim(x=cs_gwas_sumstat_eqtl, file=paste0(tmp_path, cred_set, &quot;_&quot;, tissue, &quot;_lookup.txt.gz&quot;))</code></pre>
+<p>src/coloc/002_prepare_LDinput_eqtlgen.R</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+#Rationale: combine names in a document to create LD .raw file for eQTLGen
+
+library(tidyverse)
+
+args     = commandArgs(trailingOnly = TRUE)
+tissue = args[1]
+
+#intermediate files in:
+tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen/&quot;
+
+df &lt;- data.frame(cred_set = c(&quot;SA_8_81292599_C_A&quot;,&quot;SA_6_90963614_AT_A&quot;,&quot;SA_5_110401872_C_T&quot;,
+    &quot;SA_2_242692858_T_C&quot;,&quot;SA_15_67442596_T_C&quot;,&quot;SA_12_56435504_C_G&quot;,&quot;SA_11_76296671_G_A&quot;,
+    &quot;SA_9_6209697_G_A&quot;,&quot;SA_5_131885240_C_G&quot;,&quot;SA_3_33042712_C_T&quot;,
+    &quot;SA_2_102913642_AAAAC_A&quot;,&quot;SA_17_38168828_G_A&quot;,&quot;SA_16_27359021_C_A&quot;,&quot;SA_15_61068954_C_T&quot;,
+    &quot;SA_12_48202941_T_C&quot;,&quot;SA_10_9064716_C_T&quot;)) %&gt;%
+  as_tibble %&gt;%
+  separate(cred_set, c(&quot;pheno&quot;, &quot;chr&quot;, &quot;pos&quot;, &quot;a1&quot;, &quot;a2&quot;), sep=&quot;_&quot;)
+
+df$ancestry &lt;- &quot;EUR&quot;
+
+df &lt;- df %&gt;%
+  unite(&quot;snp&quot;, chr:a2, remove=FALSE) %&gt;%
+  mutate(eQTL  = tissue,
+         start = as.numeric(pos) - 5e5,
+         end   = as.numeric(pos) + 5e5) %&gt;%
+  select(pheno, ancestry, snp, chr, pos, eQTL, start, end)
+
+write_tsv(x=df, file=paste0(tmp_path,tissue,&quot;_Pairs_lookup.txt&quot;),col_names=F, append=T)</code></pre>
+<p>src/coloc/003_submit_coloc_susie_eQTLGen.sh</p>
+<pre class="r"><code>#!/bin/bash
+
+#SBATCH --job-name=coloc_susie_eqtlgen
+#SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
+#SBATCH --time=0:30:0
+#SBATCH --mem=32gb
+#SBATCH --account=gen1
+#SBATCH --export=NONE
+
+tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen/&quot;
+
+i=$SLURM_ARRAY_TASK_ID
+read GENE &lt; &lt;(awk -F&#39;\t&#39; &#39;NR == &#39;$((i))&#39; { print $1 }&#39; ${tmp_path}${CREDSET}_eqtlGenWB_genes.txt)
+
+module load R
+
+Rscript src/coloc/003_run_coloc_susie_eQTLGen.R &quot;eqtlGenWB&quot; $CREDSET $GENE</code></pre>
+<p>src/coloc/003_run_coloc_susie_eQTLGen.R</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+#Rationale: Run coloc and coloc.susie in eQTLGen wholeblood tissue
+
+suppressMessages(library(tidyverse))
+library(coloc)
+suppressMessages(library(Rfast))
+
+args     = commandArgs(trailingOnly = TRUE)
+tissue   = args[1]
+cred_set = args[2]
+gene     = args[3]
+
+tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen/&quot;
+
+cred_set %&gt;%
+  as_tibble %&gt;%
+  separate(value, c(&quot;pheno&quot;, &quot;chr&quot;, &quot;pos&quot;, &quot;a1&quot;, &quot;a2&quot;), sep=&quot;_&quot;) %&gt;%
+  select(pheno) %&gt;%
+  pull -&gt; pheno
+
+cred_set %&gt;%
+  as_tibble %&gt;%
+  separate(value, c(&quot;pheno&quot;, &quot;chr&quot;, &quot;pos&quot;, &quot;a1&quot;, &quot;a2&quot;), sep=&quot;_&quot;) %&gt;%
+  unite(&quot;signal&quot;, chr:a2) %&gt;%
+  pull -&gt; signal
+
+############################
+## Read asthma GWAS sumstat, eQTL GWAS, and LD matrix
+############################
+GWAS = read_delim(paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;, cred_set, &quot;_GWASpairs.txt.gz&quot;)) %&gt;%
+  rename(chr = b37chr, pos = bp, beta = LOG_ODDS, SE = se) %&gt;%
+  select(-snpid) %&gt;%
+  arrange(chr, pos) %&gt;%
+  drop_na(beta) %&gt;%
+  mutate(varbeta = SE^2) %&gt;%
+  rename(position=pos)
+GWAS$allele1.gwas &lt;- GWAS$a1
+GWAS &lt;- GWAS %&gt;% mutate(snp = paste0(chr, &quot;_&quot;, position, &quot;_&quot;, pmin(a1, a2), &quot;_&quot;, pmax(a1, a2))) %&gt;%
+  select(c(snp,beta,SE,eaf,pval,MAF,varbeta,allele1.gwas)) %&gt;%
+  distinct(snp, .keep_all=TRUE)
+
+GWAS$N &lt;- as.numeric(38405)
+
+eqtlGWAS = read_delim(paste0(tmp_path, cred_set, &quot;_eqtlGenWB_pairs.txt.gz&quot;)) %&gt;%
+  mutate(ID      = gsub(x=ID, pattern=&quot;:&quot;, replacement=&quot;_&quot;), 
+         varbeta = se^2, 
+         MAF     = if_else(AssessedAllele_freq &lt;0.5, AssessedAllele_freq, 1-AssessedAllele_freq)) %&gt;% 
+  arrange(chrom, pos)  %&gt;%
+  drop_na(beta) %&gt;%
+  filter(GeneSymbol==gene, 
+         ID %in% GWAS$snp) %&gt;%
+  rename(snp=ID, position=pos, N=NrSamples)
+
+GWAS %&gt;% filter(snp %in% eqtlGWAS$snp) -&gt; GWAS
+
+
+############################
+#Do colocalisation ONLY IF GWAS and eqtlGWAS (eQTL tissue-gene) contains pvalue &lt;= 5x10-6.
+############################
+GWAS_sign &lt;- GWAS %&gt;% filter(pval &lt;= 0.000005)
+eqtlGWAS_sign &lt;- eqtlGWAS %&gt;% filter(pval &lt;= 0.000005)
+if (dim(eqtlGWAS_sign)[1] &lt; 1){
+    stop(paste0(signal,&quot; &quot;,tissue, &quot; &quot;, gene, &quot;: No colocalisation is possible because eQTL data has pvalue &gt;= 5x10-6.&quot;))
+}
+if (dim(GWAS_sign)[1] &lt; 1){
+    stop(paste0(signal,&quot; &quot;,tissue, &quot; &quot;, gene, &quot;: No colocalisation is possible because GWAS data has pvalue &gt;= 5x10-6.&quot;))
+} else {
+    paste0(signal,&quot; &quot;,tissue, &quot; &quot;, gene, &quot;: Starting colocalisation because both GWAS and eQTL data has pvalue &lt;= 5x10-6.&quot;)
+}
+
+############################
+# * if also want coloc results
+############################
+coloc_all = coloc.abf(dataset1=list(beta=GWAS$beta, varbeta=GWAS$varbeta, 
+                                    N=GWAS$N, type=&quot;cc&quot;, MAF=GWAS$MAF, snp=GWAS$snp), 
+                      dataset2=list(beta=eqtlGWAS$beta, varbeta=eqtlGWAS$varbeta, 
+                                    N=eqtlGWAS$N, type=&quot;quant&quot;, MAF=eqtlGWAS$MAF, snp=eqtlGWAS$snp))
+
+saveRDS(coloc_all, paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/results/eqtlgen/&quot;, cred_set, &quot;_eqtlGenWB_&quot;, gene, &quot;_all_coloc.rds&quot;))
+
+############################
+# 1) Format LD matrix
+############################
+ld = data.table::fread(
+  paste0(tmp_path, signal, &quot;_&quot;, pheno, &quot;_&quot;, tissue, &quot;.raw&quot;)
+) %&gt;% 
+  select(!c(FID:PHENOTYPE))
+
+ld %&gt;% 
+  names %&gt;% 
+  as_tibble %&gt;% 
+  separate(value,c(&quot;c&quot;, &quot;p&quot;, &quot;a1&quot;, &quot;a2&quot;)) %&gt;% 
+  mutate(snp = paste0(c, &quot;_&quot;, p, &quot;_&quot;, pmin(a1, a2), &quot;_&quot;, pmax(a1, a2))) %&gt;%
+  select(snp) %&gt;%
+  pull -&gt; snps
+
+ld = t(ld) %&gt;%
+  as_tibble %&gt;%
+  mutate(var=apply(., 1, var, na.rm=TRUE),
+         snp=snps) %&gt;%
+  filter(var!=0) %&gt;%
+  filter(snp %in% GWAS$snp) %&gt;%
+  filter(snp %in% eqtlGWAS$snp)
+
+N = ncol(ld)-2
+X = t(as.matrix(ld[,1:N]))
+colnames(X) = ld %&gt;%
+  select(snp) %&gt;%
+  pull # Sdd names to facilitate filtering Nas (still some NAs even with pairwise.complete.obs)
+LDmatrix = cor(X, use=&quot;pairwise.complete.obs&quot;) # Pearson&#39;s correlation, takes some time...
+LDmatrix[is.na(LDmatrix)] &lt;- 0
+
+############################
+# 2) Format asthma GWAS
+############################
+bim = read_tsv(
+    paste0(tmp_path, signal, &quot;_&quot;, pheno, &quot;_&quot;, tissue, &quot;.bim&quot;),
+    col_names=c(&quot;chr&quot;, &quot;snp&quot;, &quot;morgans&quot;, &quot;position&quot;, &quot;allele1&quot;, &quot;allele2&quot;)
+  ) %&gt;%
+  select(!morgans) # Read bim file to check same set of SNPs and allele alignment
+
+GWAS_df &lt;- GWAS %&gt;%
+  filter(snp %in% colnames(LDmatrix)) %&gt;% # Must be the same set of SNPs
+  inner_join(bim) %&gt;%
+  mutate(beta=ifelse(allele1!=allele1.gwas, -(beta), beta)) # Check allele alignment
+
+#Check GWAS has at least one variant with pval &lt;= 0.000005:
+GWAS_sign &lt;- GWAS_df %&gt;% filter(pval &lt;= 0.000005)
+if (dim(GWAS_sign)[1] &lt; 1){
+    stop(paste0(signal,&quot; &quot;,tissue, &quot; &quot;, gene, &quot; GTExv8: No coloc.susie is possible because GWAS data has pvalue &gt;= 5x10-6.&quot;))
+}
+
+GWAS_df %&gt;%
+  as.list -&gt; GWAS
+
+GWAS$type = &quot;cc&quot;
+N = as.integer(mean(GWAS$N))
+GWAS$N = N
+GWAS$LD = LDmatrix
+
+############################
+# 3) Format eQTL GWAS  
+############################
+eqtlGWAS_df &lt;- eqtlGWAS  %&gt;%
+  filter(snp %in% colnames(LDmatrix)) %&gt;% # Must be the same set of SNPs
+  inner_join(bim) %&gt;%
+  mutate(beta=ifelse(allele1!=AssessedAllele, -(beta), beta)) # Check allele alignment
+
+#Check eqtlGWAS has at least one variant with pval &lt;= 0.000005:
+eqtlGWAS_sign &lt;- eqtlGWAS_df %&gt;% filter(pval &lt;= 0.000005)
+if (dim(eqtlGWAS_sign)[1] &lt; 1){
+    stop(paste0(signal,&quot; &quot;,tissue, &quot; &quot;, gene, &quot; GTExv8: No coloc.susie is possible because eQTL-GWAS data has pvalue &gt;= 5x10-6.&quot;))
+} else {
+    paste0(signal,&quot; &quot;,tissue, &quot; &quot;, gene, &quot; GTExv8: Starting coloc.susie because both GWAS and eQTL data has pvalue &lt;= 5x10-6.&quot;)
+}
+
+eqtlGWAS &lt;- eqtlGWAS_df %&gt;% as.list
+
+eqtlGWAS$type = &quot;quant&quot;
+eqtlGWAS$LD = LDmatrix
+N = as.integer(mean(eqtlGWAS$N))
+eqtlGWAS$N = N
+
+############################
+# Check datasets are ok
+############################
+check_dataset(eqtlGWAS, req=&quot;LD&quot;) -&gt; eqtlGWAS_check
+check_dataset(GWAS, req=&quot;LD&quot;) -&gt; GWAS_check
+
+if (is.null(GWAS_check) &amp; is.null(eqtlGWAS_check)){
+  cat(paste0(cred_set, &quot;_&quot;, tissue, &quot;_&quot;, gene, &quot;: ok&quot;, &quot;\n&quot;), 
+      file=paste0(tmp_path,&quot;GWAS_coloc_susie_check.txt&quot;), append=TRUE)
+} else {
+  cat(paste0(cred_set, &quot;_&quot;, tissue, &quot;_&quot;, gene, &quot;: warning&quot;, &quot;\n&quot;), 
+      file=paste0(tmp_path,&quot;GWAS_coloc_susie_check.txt&quot;), append=TRUE)
+}
+
+############################
+## Run SuSie
+############################
+susie_GWAS = runsusie(GWAS, r2.prune=0.2, check_R=FALSE)
+susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE, verbose=TRUE)
+susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
+
+saveRDS(susie_all, paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/results/eqtlgen/&quot;, cred_set, &quot;_&quot;, tissue, &quot;_&quot;, gene, &quot;_all_susie.rds&quot;))
+write_tsv(susie_all$summary %&gt;% as_tibble,
+          paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/results/eqtlgen/&quot;, cred_set, &quot;_&quot;, tissue, &quot;_&quot;, gene, &quot;_susie_summary.tsv&quot;))</code></pre>
 <p>src/coloc/004_concat_coloc_results.R</p>
 <pre class="r"><code>#!/usr/bin/env Rscript
 
@@ -2629,10 +2989,13 @@ write_tsv(susie_all$summary %&gt;% as_tibble,
 
 library(plyr)
 library(tidyverse)
+library(purrr)
+suppressMessages(library(xlsx))
 
 ###############
 ### GTEx v8 ###
 ###############
+print(&quot;GTExV8 eQTL coloc results&quot;)
 # .rds files containing standard coloc results with eQTLs
 setwd(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/results/gtex/&quot;)
 file_paths_gtex = list.files(pattern=&quot;_all_coloc.rds&quot;)
@@ -2675,7 +3038,7 @@ data_summary = ldply(lapply(data_list, summary_fct)) %&gt;%
   as_tibble %&gt;%
   bind_cols(file_split) %&gt;%
   select(-file) %&gt;%
-  mutate(coloc = if_else(PP.H4.abf &gt; 0.8, TRUE, FALSE)) %&gt;%
+  mutate(coloc = if_else(PP.H4.abf &gt;= 0.9, TRUE, FALSE)) %&gt;%
   arrange(desc(PP.H4.abf))
 
 # Check if there are any colocalisations
@@ -2683,11 +3046,82 @@ data_summary %&gt;% filter(coloc) %&gt;% select(snp, pheno, gene)
 
 
 # Save all results to file
+print(&quot;GTExV8 eQTL coloc.susie results&quot;)
 write_tsv(x=data_summary, file=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/coloc_asthma_GTEx.tsv&quot;)
+
+# .rds files containing coloc.susie results with eQTLs
+setwd(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/results/gtex/&quot;)
+file_paths_gtex = list.files(pattern=&quot;_all_susie.rds&quot;)
+
+# Manipulate file names to get various bits of info
+file_paths_gtex %&gt;%
+  as_tibble %&gt;%
+  mutate(file = gsub(x=value, pattern=&quot;_all_susie.rds&quot;, replacement=&quot;&quot;)) %&gt;%
+  separate(col=file,
+           into=c(&quot;pheno&quot;, &quot;chr&quot;, &quot;pos&quot;, &quot;a1&quot;, &quot;a2&quot;, &quot;t1&quot;, &quot;t2&quot;, &quot;t3&quot;, &quot;t4&quot;, &quot;t5&quot;, &quot;t6&quot;),
+           sep=&quot;_&quot;,
+           remove=FALSE) -&gt; file_split
+
+# Clunky way to get out gene and tissue names from file names
+tmp = strsplit(file_split$file, &quot;_&quot;)
+gene = sapply(tmp, tail, 1)
+tissue_fct = function(df) {
+  x = paste0(df[7:(length(df)-1)], sep=&quot;_&quot;, collapse=&quot;&quot;)
+  x = tolower(substr(x, 1, nchar(x)-1))
+}
+tissue = sapply(tmp, tissue_fct)
+
+# Add gene and tissue to above dataframe
+file_split %&gt;%
+  mutate(gene   = gene,
+         tissue = tissue) %&gt;%
+  unite(&quot;snp&quot;, chr:a2) %&gt;%
+  select(file=value, pheno, snp, gene, tissue) -&gt; file_split
+
+# Read all .rds files
+data_list = lapply(file_paths_gtex, readRDS)
+
+# Function to extract coloc.susie information from results
+summary_fct = function(df) {
+  return(df$summary)
+}
+
+# Collapse list of coloc results into single dataframe and add a few new columns
+##Additional commands to work around summary with NULL data:
+tmp_1 &lt;- lapply(data_list, summary_fct)
+nonnull &lt;- sapply(tmp_1, typeof)!=&quot;NULL&quot;  # find all NULLs to omit
+ID &lt;- file_split$snp
+index_row &lt;- 1:937
+tmp_2 &lt;- map2(tmp_1, ID, ~cbind(.x, snp = .y))
+tmp_3 &lt;- map2(tmp_2, index_row, ~cbind(.x, n_index = .y))
+tmp_4 &lt;- tmp_3[nonnull]
+
+file_split$n_index &lt;- index_row
+
+data_summary_colocsusie = ldply(tmp_4) %&gt;%
+  as_tibble %&gt;%
+  left_join(file_split,by=c(&quot;snp&quot;,&quot;n_index&quot;)) %&gt;%
+  select(-file) %&gt;%
+  mutate(coloc_susie = if_else(PP.H4.abf &gt;= 0.9, TRUE, FALSE)) %&gt;%
+  arrange(desc(PP.H4.abf))
+
+# Check if there are any colocalisations
+data_summary_colocsusie %&gt;% filter(coloc_susie) %&gt;% select(snp, pheno, gene)
+
+
+# Save all results to file
+write_tsv(x=data_summary_colocsusie, file=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/colocsusie_asthma_GTEx.tsv&quot;)
+
+#SAVE COLOC AND COLOC.SUSIE GENES INTO XLSX FILE:
+gene_coloc &lt;- as.data.frame(data_summary %&gt;% filter(coloc) %&gt;% select(gene))
+gene_colocsusie &lt;- as.data.frame(data_summary_colocsusie %&gt;% filter(coloc_susie) %&gt;% select(gene))
+gene_gtex &lt;- rbind(gene_coloc,gene_colocsusie) %&gt;% unique()
+write.xlsx(gene_gtex,&quot;/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx&quot;, sheetName = &quot;GTExV8_eQTL_genes&quot;, row.names=FALSE, col.names=FALSE, append=TRUE)
 
 ###############
 ### eqtlGen ###
 ###############
+#print(&quot;eqtlGen eQTL coloc results&quot;)
 # .rds files containing standard coloc results with eQTLs
 #setwd(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/results/eqtlgen/&quot;)
 #file_paths_eqtlgen = list.files(pattern=&quot;_all_coloc.rds&quot;)
@@ -2760,26 +3194,31 @@ want to investigate the role of the variant on the splicing of the mRNA,
 we call it ’s’QTL; they can be both cis or trans- sQTL. <br> If we are
 looking at protein level, we call it ’p’QTL; if looking at methylation
 quantitative measure, we call it ’m’QTL. <br> For my asthma project, I
-run the following cis-QTL types with the listed dataset: 1. eQTL:
-GTExV8, eQTLGen blood, UBC lung eQTL, and U-BIOPRED;</p>
-<ol start="2" style="list-style-type: decimal">
+run the following cis-QTL types with the listed dataset:</p>
+<ol style="list-style-type: decimal">
+<li><p>cis-eQTL: GTExV8, eQTLGen blood, UBC lung eQTL, and
+U-BIOPRED;</p></li>
 <li><p>sQTL: GTExV8;</p></li>
-<li><p>pQTL: pQTL UKBiobank, SCALLOP pQTL, INTERVAL pQTL; deCODE plasma
-<br> GTExV8 is a collection of eQTL data for significant variant-gene
-association in 49 tissues with at least 70 samples (<a href="https://www.gtexportal.org/home/methods" class="uri">https://www.gtexportal.org/home/methods</a>). <br> eQTLGen
-blood is <br> UBC lung eQTL is <br> U-BIORPED is <br> deCODE is <br>
-SCALLOP is <br> INTERVAL is <br> In GTExv8, I run co-localisation for
-the following tissues: ‘Artery_Aorta’, ‘Artery_Coronary’,
-‘Artery_Tibial’, ‘Colon_Sigmoid’, ‘Colon_Transverse’,
+<li><p>pQTL: pQTL UKBiobank, SCALLOP pQTL, INTERVAL pQTL; deCODE
+plasma</p></li>
+</ol>
+<p><br> GTExV8 is a collection of eQTL data for significant variant-gene
+association in 49 tissues with at least 70 samples (<a href="https://www.gtexportal.org/home/methods" class="uri">https://www.gtexportal.org/home/methods</a>). I run
+co-localisation for the following tissues: ‘Artery_Aorta’,
+‘Artery_Coronary’, ‘Artery_Tibial’, ‘Colon_Sigmoid’, ‘Colon_Transverse’,
 ‘Esophagus_Gastroesophageal_Junction’, ‘Esophagus_Muscularis’, ‘Lung’,
 ‘Small_Intestine_Terminal_Ileum’, ‘Stomach’. <br> I used filtered GTExv8
 data including variant-gene pairs for each tissue with both either GWAS
 or eQTL pvalues &lt;= 5x10-6. Kayesha Coley, my colleague, created the
 filtered files and split into chromosomes. She also added information on
-allele frequency for European ancestry individuals. <br> For the
-fine-mapped loci, I created separate files for each locus’ credible set
-(17 locus –&gt; 17 files).</p></li>
-</ol>
+allele frequency for European ancestry individuals. <br> eQTLGen blood
+is a source for 16,989 eQTL genes from 37 dataset and a total of 31,684
+individuals: 11M SNPs with MAF &gt;=1% and within 1Mb from the analysed
+genes. (<a href="https://www.eqtlgen.org/phase1.html" class="uri">https://www.eqtlgen.org/phase1.html</a>) <br> UBC lung eQTL
+is <br> U-BIORPED is <br> deCODE is <br> SCALLOP is <br> INTERVAL is
+<br></p>
+<p><br> For the fine-mapped loci, I created separate files for each
+locus’ credible set (17 locus –&gt; 17 files).</p>
 </div>
 <div id="polygenic-priority-score-pops" class="section level2">
 <h2>Polygenic Priority Score (PoPS)</h2>
