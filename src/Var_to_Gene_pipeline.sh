@@ -178,7 +178,7 @@ for c in ${!cs[*]}; do
 done
 
 ######QUALITY CHECKS:
-#to find number of genes:
+#to find number of genes: 468
 wc -l ${tmp_path}/eqtlgen/SA_*_eqtlGenWB_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
 ##Check that all genes for each tissue have been analysed:
 grep "eqtlGenWB" ${tmp_path}/logerror/coloc_susie_eqtlgen*.out | awk -F ":" '{print $1}' | sort -u | wc -l
