@@ -166,9 +166,9 @@ UBC lung eQTL is
 <br>
 U-BIORPED is
 <br>
-deCODE is
-<br>
-SCALLOP is
+deCODE is a free collection of protein plasma pQTL data for 4,907 proteins and 27.2 million tested variants. They used Bonferroni corrected p-value for multiple testing; thus,
+0.05/27,200,000=1.8x10−9. They included variants with a MAF > 0.01% and imputation score > 0.9. If the associated variant was within 1Mb from the transcription start site of the gene, the
+pQTL was defined as cis, if outside this threshold as trans.
 <br>
 INTERVAL is
 <br>
