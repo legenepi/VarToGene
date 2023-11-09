@@ -190,3 +190,17 @@ ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep "eqtlGenWB" | wc -l
 
 #Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
 Rscript ./src/coloc/004_concat_coloc_results.R
+
+
+###UBCLung eQTL###
+mkdir ${tmp_path}/results/ubclung
+mkdir ${tmp_path}/ubclung
+dos2unix src/coloc_UBClung/*
+chmod +x src/coloc_UBClung/*
+for c in ${!cs[*]}; do
+
+  sbatch --export=CREDSET="${cs[c]}" ./src/coloc_UBClung/000_submit_lookup_lung_eQTL.sh
+
+done
+
+#Found association for all loci expect SA_10_9064716_C_T.
