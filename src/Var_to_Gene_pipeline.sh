@@ -21,6 +21,9 @@ Rscript src/Variant_annotation_FAVOR.R
 ##Exclude chromosome 6 - no eQTL colocalisation for this locus.
 ##Genomic boundaries: PIP-max causal variant +/- 1Mb
 
+cs=('SA_8_81292599_C_A' 'SA_6_90963614_AT_A' 'SA_5_110401872_C_T' 'SA_2_242692858_T_C' 'SA_15_67442596_T_C' 'SA_12_56435504_C_G' 'SA_11_76296671_G_A' 'SA_9_6209697_G_A' 'SA_5_131885240_C_G' 'SA_3_33042712_C_T' 'SA_2_102913642_AAAAC_A' 'SA_17_38168828_G_A' 'SA_16_27359021_C_A'  'SA_15_61068954_C_T' 'SA_12_48202941_T_C' 'SA_10_9064716_C_T')
+cs_all="/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt"
+
 ###GTExv8 eQTL###
 
 ##Create eQTl files in hg19 for Colon Transverse, Colon Sigmoid, Skin_Not_Sun_Exposed_Suprapubic, Skin_Sun_Exposed_Lower_leg
@@ -42,9 +45,6 @@ sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_extraction.sh
 
 ##variables needed:
 tissue=('Stomach' 'Small_Intestine_Terminal_Ileum' 'Lung' 'Esophagus_Muscularis' 'Esophagus_Gastroesophageal_Junction' 'Artery_Tibial' 'Artery_Coronary' 'Artery_Aorta' 'Colon_Transverse' 'Colon_Sigmoid' 'Skin_Sun_Exposed_Lower_leg' 'Skin_Not_Sun_Exposed_Suprapubic')
-cs=('SA_8_81292599_C_A' 'SA_6_90963614_AT_A' 'SA_5_110401872_C_T' 'SA_2_242692858_T_C' 'SA_15_67442596_T_C' 'SA_12_56435504_C_G' 'SA_11_76296671_G_A' 'SA_9_6209697_G_A' 'SA_5_131885240_C_G' 'SA_3_33042712_C_T' 'SA_2_102913642_AAAAC_A' 'SA_17_38168828_G_A' 'SA_16_27359021_C_A'  'SA_15_61068954_C_T' 'SA_12_48202941_T_C' 'SA_10_9064716_C_T')
-cs_all="/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt"
-
 
 ##Divide the credible sets into separate files:
 Rscript ./src/coloc/000_preprocess_cs.R $cs_all $tmp_path
@@ -203,4 +203,47 @@ for c in ${!cs[*]}; do
 
 done
 
-#Found association for all loci expect SA_10_9064716_C_T.
+
+##Get the LD matrix:
+##Create the file with gtex-locus pairs:
+dos2unix src/coloc_UBClung/002_prepare_LDinput_ubclung.R
+  src/coloc_UBClung/002_prepare_LDinput_ubclung.R
+Rscript src/coloc_UBClung/002_prepare_LDinput_ubclung.R "UBCLung"
+
+##Get LD:
+#with parameters for UBCLung
+sbatch src/coloc/002_get_LD.sh
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-266324.out
+
+##Create UBCLung eQTL regional data from eQTL summary stats:
+#mkdir ${tmp_data}/ubclung/eQTL_region_stat/
+module load tabix
+
+for c in ${!cs[@]}
+    do
+      CREDSET="${cs[c]}"
+      read chr < <(echo $CREDSET | awk -F "_" '{print $2}')
+      read pos < <(echo $CREDSET | awk -F "_" '{print $3}')
+      pos1=`expr $pos - 500000`
+      pos2=`expr $pos + 500000`
+      if (( pos1 < 0 )); then
+          pos1=0
+      fi
+      tabix -h ${lung_eQTL}/METAANALYSIS_Laval_UBC_Groningen_chr${chr}_formatted.txt.gz ${chr}:${pos1}-${pos2} > ${tmp_data}/ubclung/eQTL_region_stat/${CREDSET}_eQTL_region.txt
+done
+
+##Run colocalisation:
+dos2unix src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh
+dos2unix src/coloc_UBClung/003_run_coloc_susie_lung_eQTL.r
+chmod +x src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh
+chmod +x src/coloc_UBClung/003_run_coloc_susie_lung_eQTL.r
+
+for c in ${!cs[*]}; do
+
+  N=`cat ${tmp_path}ubclung/${cs[c]}_UBCLung_probesets.txt | wc -l`
+
+  sbatch --array=1-${N}%20 --export=CREDSET="${cs[c]}" ./src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh
+
+ sleep 5
+
+done
