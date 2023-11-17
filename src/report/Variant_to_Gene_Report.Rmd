@@ -125,6 +125,24 @@ src/coloc/003_run_coloc_susie_eQTLGen.R
 src/coloc/004_concat_coloc_results.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/004_concat_coloc_results.R'), eval=FALSE, hide=TRUE}
 ```
+src/coloc_UBClung/000_submit_lookup_lung_eQTL.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc_UBClung/000_submit_lookup_lung_eQTL.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc_UBClung/000_run_lookup_lung_eQTL.r
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc_UBClung/000_run_lookup_lung_eQTL.r'), eval=FALSE, hide=TRUE}
+```
+src/coloc_UBClung/002_prepare_LDinput_ubclung.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc_UBClung/002_prepare_LDinput_ubclung.R'), eval=FALSE, hide=TRUE}
+```
+src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc_UBClung/003_run_ coloc_susie_lung_eQTL.r
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc_UBClung/003_run_coloc_susie_lung_eQTL.r'), eval=FALSE, hide=TRUE}
+```
+src/coloc_UBClung/004_concat_coloc_susie_ubclung.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc_UBClung/004_concat_coloc_results_ubclung.R'), eval=FALSE, hide=TRUE}
+```
 Quantitative trait loci (QTL) allows us to measure a trait, such as RNA expression of genes or protein levels, in a specific tissue
 and test for association of genes within the interested tissue with genetic variant. In other words, the expression trait is
 used as a quantitative trait for a genome-wide analysis.
@@ -150,7 +168,7 @@ For my asthma project, I run the following cis-QTL types with the listed dataset
 
  2. sQTL: GTExV8;
 
- 3. pQTL: pQTL UKBiobank, SCALLOP pQTL, INTERVAL pQTL; deCODE plasma
+ 3. pQTL: pQTL UKBiobank, SCALLOP pQTL, deCODE plasma
 
 <br>
 GTExV8 is a collection of eQTL data for significant variant-gene association in 49 tissues with at least 70 samples (https://www.gtexportal.org/home/methods).
@@ -164,14 +182,25 @@ eQTLGen blood is a source for 16,989 eQTL genes from 37 dataset and a total of 3
 <br>
 UBC lung eQTL is
 <br>
+TO BE EDITED:
+Additional step of p-value correction: since eQTL are less power due ot small sample size,
+genome-wide pvalue is not applicable; plus, a lost of genes so there is a larger number of test campared to GWAS, so if using bonferroni the correction would be very small. Instead, we can us eigenMT to corrects for LD strcuture pvalue,
+and then usign benjamin hockjerb correction(FDR) to calculate fdr corrected-egineMTadjusted p-value
+fdr correction is for accounting multiple testing.
+EigenMT and FDR p-value correction were performed by Jing Chen as for the multi-ancestry lung function paper.
+Detailed information on the analysis can be found in the main manuscript and related supplementary information (add ref paper).
+Jing provided me with the list of significant gene-variant associations for UBC Lung eQTL after p-value correction.
+She also provided me backbone scripts to run colocalisation with this eQTL.
+<br>
 U-BIORPED is
 <br>
 deCODE is a free collection of protein plasma pQTL data for 4,907 proteins and 27.2 million tested variants. They used Bonferroni corrected p-value for multiple testing; thus,
 0.05/27,200,000=1.8x10−9. They included variants with a MAF > 0.01% and imputation score > 0.9. If the associated variant was within 1Mb from the transcription start site of the gene, the
 pQTL was defined as cis, if outside this threshold as trans.
 <br>
-INTERVAL is
+SCALLOP
 <br>
+UK Biobank pQTL data
 
 <br>
 For the fine-mapped loci, I created separate files for each locus' credible set (17 locus --> 17 files).
@@ -194,7 +223,7 @@ For the fine-mapped loci, I created separate files for each locus' credible set 
 Looking at the integrative score, I was able to appreciate a positive correlation between aPC.Epigenetics.Active and aPC.Transcription.Factor (0.69);
 aPC.Mutation.Density and aPC.Local.Nucleotide.Diversity (0.63); CADD.phred and aPCs.Conservation (0.91). There is also, although weaker, negative correlation
 between aPC.Epigenetics.Transcription and aPC.Epigenetics.Repressed (-0.45).
-```{r echo=FALSE, out.width = "30%", fig.align = "center"}
+```{r echo=FALSE, out.width = "50%", fig.align = "center"}
 knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/corrplot_integrative_score_15.png")
 ```
 <br>

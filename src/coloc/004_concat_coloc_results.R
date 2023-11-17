@@ -188,10 +188,10 @@ data_summary %>% filter(coloc) %>% select(snp, pheno, gene)
 write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_eqtlgen.tsv")
 
 # .rds files containing coloc.susie results with eQTLs
-file_paths_gtex = list.files(pattern="_all_susie.rds")
+file_paths_eqtlgen= list.files(pattern="_all_susie.rds")
 
 # Manipulate file names to get various bits of info
-file_paths_gtex %>%
+file_paths_eqtlgen %>%
   as_tibble %>%
   mutate(file = gsub(x=value, pattern="_all_susie.rds", replacement="")) %>%
   separate(col=file,
@@ -215,7 +215,7 @@ file_split %>%
   select(file=value, pheno, snp, gene, tissue) -> file_split
 
 # Read all .rds files
-data_list = lapply(file_paths_gtex, readRDS)
+data_list = lapply(file_paths_eqtlgen, readRDS)
 
 # Function to extract coloc.susie information from results
 summary_fct = function(df) {

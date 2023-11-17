@@ -218,6 +218,7 @@ sbatch src/coloc/002_get_LD.sh
 ##Create UBCLung eQTL regional data from eQTL summary stats:
 #mkdir ${tmp_data}/ubclung/eQTL_region_stat/
 module load tabix
+lung_eQTL="/data/gen1/reference/lung_eQTL"
 
 for c in ${!cs[@]}
     do
@@ -247,3 +248,24 @@ for c in ${!cs[*]}; do
  sleep 5
 
 done
+
+######QUALITY CHECKS:
+#to find number of genes: 468
+wc -l ${tmp_path}/ubclung/SA_*_UBCLung_probesets.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
+##Check that all genes for each tissue have been analysed:
+grep "UBClung" ${tmp_path}/logerror/coloc_susie_UBCLung*.out | awk -F ":" '{print $1}' | sort -u | wc -l
+
+##Check how many genes per tissue have been analysed for colocalisation:
+ls -lthr  ${tmp_path}/results/ubclung/*all_coloc.rds | grep "ubclung" | wc -l
+ls -lthr ${tmp_path}/results/ubclung/*all_susie*.rds | grep "UBCLung" | wc -l
+
+
+#Find statistically significant colocalisation results for UBCLung, and add results into var2gene_raw.xlsx:
+#R gave error for xlsx and Java, so created an environment:
+mkdir /home/n/nnp5/software/conda_env
+cd /home/n/nnp5/software/conda_env
+conda create -n phd_env  python=3
+conda activate phd_env
+
+#Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
+Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
