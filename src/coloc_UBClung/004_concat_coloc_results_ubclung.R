@@ -6,7 +6,6 @@ library(plyr)
 library(tidyverse)
 library(purrr)
 library(data.table)
-#library(xlsx)
 
 
 #find probset that colocalised and map to gene using /data/gen1/reference/lung_eQTL/tabMerged_anno.txt
@@ -145,6 +144,8 @@ write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/res
 #coloc.susie does not have any significant colocalisation:
 gene_coloc <- as.data.frame(data_summary %>% filter(coloc) %>% select(gene_id))
 gene_coloc_susie <- as.data.frame(data_summary_colocsusie %>% filter(coloc_susie) %>% select(gene_id))
-gene <- unique(cbind(gene_coloc,gene_coloc_susie))
-print(gene)
-#write.xlsx(gene,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx", sheetName = "UBClung_eQTL_genes", row.names=FALSE, col.names=FALSE, append=TRUE)
+print(gene_coloc)
+#NO gene coloc_susie
+write.table(gene_coloc,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/UBCLungeqtl_var2genes_raw.txt", row.names=FALSE, col.names=FALSE, quote=F)
+
+#then add the genes in the /Var_to_Gene/input/var2genes_raw.xlsx file

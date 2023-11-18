@@ -16,7 +16,8 @@ Rscript src/Variant_annotation_FAVOR.R
 
 
 ################
-#2.QUANTITATIVE TRAIT LOCI
+#2.1 COLOCALISATION - eQTL
+#GTExV8, eQTLGen, UBCLung
 ################
 ##Exclude chromosome 6 - no eQTL colocalisation for this locus.
 ##Genomic boundaries: PIP-max causal variant +/- 1Mb
@@ -207,16 +208,16 @@ done
 ##Get the LD matrix:
 ##Create the file with gtex-locus pairs:
 dos2unix src/coloc_UBClung/002_prepare_LDinput_ubclung.R
-  src/coloc_UBClung/002_prepare_LDinput_ubclung.R
+chmod +x src/coloc_UBClung/002_prepare_LDinput_ubclung.R
 Rscript src/coloc_UBClung/002_prepare_LDinput_ubclung.R "UBCLung"
 
 ##Get LD:
 #with parameters for UBCLung
 sbatch src/coloc/002_get_LD.sh
-##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-266324.out
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-295744.out
 
 ##Create UBCLung eQTL regional data from eQTL summary stats:
-#mkdir ${tmp_data}/ubclung/eQTL_region_stat/
+#mkdir ${tmp_path}/ubclung/eQTL_region_stat/
 module load tabix
 lung_eQTL="/data/gen1/reference/lung_eQTL"
 
@@ -225,12 +226,12 @@ for c in ${!cs[@]}
       CREDSET="${cs[c]}"
       read chr < <(echo $CREDSET | awk -F "_" '{print $2}')
       read pos < <(echo $CREDSET | awk -F "_" '{print $3}')
-      pos1=`expr $pos - 500000`
-      pos2=`expr $pos + 500000`
+      pos1=`expr $pos - 1000000`
+      pos2=`expr $pos + 1000000`
       if (( pos1 < 0 )); then
           pos1=0
       fi
-      tabix -h ${lung_eQTL}/METAANALYSIS_Laval_UBC_Groningen_chr${chr}_formatted.txt.gz ${chr}:${pos1}-${pos2} > ${tmp_data}/ubclung/eQTL_region_stat/${CREDSET}_eQTL_region.txt
+      tabix -h ${lung_eQTL}/METAANALYSIS_Laval_UBC_Groningen_chr${chr}_formatted.txt.gz ${chr}:${pos1}-${pos2} > ${tmp_path}/ubclung/eQTL_region_stat/${CREDSET}_eQTL_region.txt
 done
 
 ##Run colocalisation:
@@ -261,11 +262,45 @@ ls -lthr ${tmp_path}/results/ubclung/*all_susie*.rds | grep "UBCLung" | wc -l
 
 
 #Find statistically significant colocalisation results for UBCLung, and add results into var2gene_raw.xlsx:
-#R gave error for xlsx and Java, so created an environment:
-mkdir /home/n/nnp5/software/conda_env
-cd /home/n/nnp5/software/conda_env
-conda create -n phd_env  python=3
-conda activate phd_env
-
-#Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
+#R gave error for xlsx and Java, so I find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
 Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
+
+#Added genes into Var_to_Gene/input/var2genes_raw.xlsx file.
+
+
+################
+#2.2 COLOCALISATION - pQTL
+#UKB, SCALLOP, deCODE
+################
+##Exclude chromosome 6 - no eQTL colocalisation for this locus.
+##Genomic boundaries: PIP-max causal variant +/- 1Mb
+
+###UKBIOBANK pQTL###
+#Do UKB pQTL look-ups:
+#Nick generate the pQTL dataset, as for /data/gen1/UKBiobank/olink/pQTL/README.txt:
+# OLINK pQTL analysis
+#* 48,195 European samples (as defined in Shrine et al. 2023)
+#* 1463 proteins (proteins.txt)
+#* Phenotype: untransformed log2 fold protein levels (olink_pheno.txt)
+#* Covariates: olink batch, age, sex, genotyping array, PC1-10 (olink_covar.txt)
+#* 44.8 million MAC >= 5 variants from HRC+UK10K imputation (/data/ukb/imputed_v3)
+#* Additive model with regenie (run_step1.sh & run_step2.sh)
+#* Full results for each protein tabixed in results directory
+#* Script pqtl_lookup.sh for look ups, run with no arguments for usage info
+
+# Nick created a look up script for UKB pQTL:
+#/data/gen1/UKBiobank/olink/pQTL/pqtl_lookup.sh -s <RSID> -r <CHR:START-END> [ -f <PROTEINS FILE> ] [ -p <P THRESHOLD> ] [-h]
+#UKB pQTL is in GRCh38, need to find sentinel variants position in GRCh38:
+mkdir ${tmp_path}/ukb_pqtl
+#Created file nano ${tmp_path}/ukb_pqtl/cs_sentinel_vars.txt so that I can do the input for online liftOver:
+awk -F '_' '{print "chr"$2, $3, $3+1}' ${tmp_path}/ukb_pqtl/cs_sentinel_vars.txt \
+    > ${tmp_path}/ukb_pqtl/cs_sentinel_vars_liftover_input.txt
+
+#pvalue theshold based on bonferroni correction by the number of measured proteins:
+dos2unix src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+chmod +x src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+sbatch src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+
+###deCODE pQTL###
+
+###SCALLOP pQTL###

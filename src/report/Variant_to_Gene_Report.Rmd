@@ -143,6 +143,9 @@ src/coloc_UBClung/003_run_ coloc_susie_lung_eQTL.r
 src/coloc_UBClung/004_concat_coloc_susie_ubclung.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc_UBClung/004_concat_coloc_results_ubclung.R'), eval=FALSE, hide=TRUE}
 ```
+src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh'), eval=FALSE, hide=TRUE}
+```
 Quantitative trait loci (QTL) allows us to measure a trait, such as RNA expression of genes or protein levels, in a specific tissue
 and test for association of genes within the interested tissue with genetic variant. In other words, the expression trait is
 used as a quantitative trait for a genome-wide analysis.

@@ -1575,7 +1575,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Variant to Gene mapping analysis in the
 severe asthma UK Biobank GWAS</h1>
 <h4 class="author">Noemi Nicole Piga</h4>
-<h4 class="date">17 November, 2023</h4>
+<h4 class="date">18 November, 2023</h4>
 
 </div>
 
@@ -1607,7 +1607,8 @@ Rscript src/Variant_annotation_FAVOR.R
 
 
 ################
-#2.QUANTITATIVE TRAIT LOCI
+#2.1 COLOCALISATION - eQTL
+#GTExV8, eQTLGen, UBCLung
 ################
 ##Exclude chromosome 6 - no eQTL colocalisation for this locus.
 ##Genomic boundaries: PIP-max causal variant +/- 1Mb
@@ -1798,16 +1799,16 @@ done
 ##Get the LD matrix:
 ##Create the file with gtex-locus pairs:
 dos2unix src/coloc_UBClung/002_prepare_LDinput_ubclung.R
-  src/coloc_UBClung/002_prepare_LDinput_ubclung.R
+chmod +x src/coloc_UBClung/002_prepare_LDinput_ubclung.R
 Rscript src/coloc_UBClung/002_prepare_LDinput_ubclung.R &quot;UBCLung&quot;
 
 ##Get LD:
 #with parameters for UBCLung
 sbatch src/coloc/002_get_LD.sh
-##to see if errors in the job: grep &quot;Error&quot; /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-266324.out
+##to see if errors in the job: grep &quot;Error&quot; /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-295744.out
 
 ##Create UBCLung eQTL regional data from eQTL summary stats:
-#mkdir ${tmp_data}/ubclung/eQTL_region_stat/
+#mkdir ${tmp_path}/ubclung/eQTL_region_stat/
 module load tabix
 lung_eQTL=&quot;/data/gen1/reference/lung_eQTL&quot;
 
@@ -1816,12 +1817,12 @@ for c in ${!cs[@]}
       CREDSET=&quot;${cs[c]}&quot;
       read chr &lt; &lt;(echo $CREDSET | awk -F &quot;_&quot; &#39;{print $2}&#39;)
       read pos &lt; &lt;(echo $CREDSET | awk -F &quot;_&quot; &#39;{print $3}&#39;)
-      pos1=`expr $pos - 500000`
-      pos2=`expr $pos + 500000`
+      pos1=`expr $pos - 1000000`
+      pos2=`expr $pos + 1000000`
       if (( pos1 &lt; 0 )); then
           pos1=0
       fi
-      tabix -h ${lung_eQTL}/METAANALYSIS_Laval_UBC_Groningen_chr${chr}_formatted.txt.gz ${chr}:${pos1}-${pos2} &gt; ${tmp_data}/ubclung/eQTL_region_stat/${CREDSET}_eQTL_region.txt
+      tabix -h ${lung_eQTL}/METAANALYSIS_Laval_UBC_Groningen_chr${chr}_formatted.txt.gz ${chr}:${pos1}-${pos2} &gt; ${tmp_path}/ubclung/eQTL_region_stat/${CREDSET}_eQTL_region.txt
 done
 
 ##Run colocalisation:
@@ -1852,14 +1853,48 @@ ls -lthr ${tmp_path}/results/ubclung/*all_susie*.rds | grep &quot;UBCLung&quot; 
 
 
 #Find statistically significant colocalisation results for UBCLung, and add results into var2gene_raw.xlsx:
-#R gave error for xlsx and Java, so created an environment:
-mkdir /home/n/nnp5/software/conda_env
-cd /home/n/nnp5/software/conda_env
-conda create -n phd_env  python=3
-conda activate phd_env
+#R gave error for xlsx and Java, so I find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
+Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
 
-#Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
-Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R</code></pre>
+#Added genes into Var_to_Gene/input/var2genes_raw.xlsx file.
+
+
+################
+#2.2 COLOCALISATION - pQTL
+#UKB, SCALLOP, deCODE
+################
+##Exclude chromosome 6 - no eQTL colocalisation for this locus.
+##Genomic boundaries: PIP-max causal variant +/- 1Mb
+
+###UKBIOBANK pQTL###
+#Do UKB pQTL look-ups:
+#Nick generate the pQTL dataset, as for /data/gen1/UKBiobank/olink/pQTL/README.txt:
+# OLINK pQTL analysis
+#* 48,195 European samples (as defined in Shrine et al. 2023)
+#* 1463 proteins (proteins.txt)
+#* Phenotype: untransformed log2 fold protein levels (olink_pheno.txt)
+#* Covariates: olink batch, age, sex, genotyping array, PC1-10 (olink_covar.txt)
+#* 44.8 million MAC &gt;= 5 variants from HRC+UK10K imputation (/data/ukb/imputed_v3)
+#* Additive model with regenie (run_step1.sh &amp; run_step2.sh)
+#* Full results for each protein tabixed in results directory
+#* Script pqtl_lookup.sh for look ups, run with no arguments for usage info
+
+# Nick created a look up script for UKB pQTL:
+#/data/gen1/UKBiobank/olink/pQTL/pqtl_lookup.sh -s &lt;RSID&gt; -r &lt;CHR:START-END&gt; [ -f &lt;PROTEINS FILE&gt; ] [ -p &lt;P THRESHOLD&gt; ] [-h]
+#UKB pQTL is in GRCh38, need to find sentinel variants position in GRCh38:
+mkdir ${tmp_path}/ukb_pqtl
+#Created file nano ${tmp_path}/ukb_pqtl/cs_sentinel_vars.txt so that I can do the input for online liftOver:
+awk -F &#39;_&#39; &#39;{print &quot;chr&quot;$2, $3, $3+1}&#39; ${tmp_path}/ukb_pqtl/cs_sentinel_vars.txt \
+    &gt; ${tmp_path}/ukb_pqtl/cs_sentinel_vars_liftover_input.txt
+
+#pvalue theshold based on bonferroni correction by the number of measured proteins:
+dos2unix src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+chmod +x src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+sbatch src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+
+###deCODE pQTL###
+
+###SCALLOP pQTL###</code></pre>
 <p>Prioritise genes using variant-to-gene mapping tools with credible
 sets variants from fine-mapping results of GWAS on severe asthma in UK
 Biobank European individuals. <br> I used several methods, following the
@@ -3370,8 +3405,8 @@ eGene$bp &lt;- gsub(&quot;^[0-9]*_&quot;,&quot;&quot;,eGene$SNP)
 eGene$bp &lt;- gsub(&quot;_[A-Z]*_[A-Z]*&quot;,&quot;&quot;,eGene$bp)
 
 eGENE_lookup &lt;- eGene %&gt;% filter(chr == chr_sentinel,
-                                  bp &gt;= location_sentinel-500000,
-                                  bp &lt;= location_sentinel+500000)
+                                  bp &gt;= location_sentinel-1000000,
+                                  bp &lt;= location_sentinel+1000000)
 eGENE_lookup &lt;-  eGENE_lookup %&gt;% mutate(sentinel=cred_set)
 probeset &lt;- eGENE_lookup %&gt;% distinct(ProbeSet)
 
@@ -3629,7 +3664,6 @@ library(plyr)
 library(tidyverse)
 library(purrr)
 library(data.table)
-#library(xlsx)
 
 
 #find probset that colocalised and map to gene using /data/gen1/reference/lung_eQTL/tabMerged_anno.txt
@@ -3768,9 +3802,40 @@ write_tsv(x=data_summary_colocsusie, file=&quot;/scratch/gen1/nnp5/Var_to_Gen_tm
 #coloc.susie does not have any significant colocalisation:
 gene_coloc &lt;- as.data.frame(data_summary %&gt;% filter(coloc) %&gt;% select(gene_id))
 gene_coloc_susie &lt;- as.data.frame(data_summary_colocsusie %&gt;% filter(coloc_susie) %&gt;% select(gene_id))
-gene &lt;- unique(cbind(gene_coloc,gene_coloc_susie))
-print(gene)
-#write.xlsx(gene,&quot;/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx&quot;, sheetName = &quot;UBClung_eQTL_genes&quot;, row.names=FALSE, col.names=FALSE, append=TRUE)</code></pre>
+print(gene_coloc)
+#NO gene coloc_susie
+write.table(gene_coloc,&quot;/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/UBCLungeqtl_var2genes_raw.txt&quot;, row.names=FALSE, col.names=FALSE, quote=F)
+
+#then add the genes in the /Var_to_Gene/input/var2genes_raw.xlsx file</code></pre>
+<p>src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh</p>
+<pre class="r"><code>#!/bin/bash
+
+#SBATCH --job-name=ukbpqtol_lookup
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=4
+#SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
+#SBATCH --time=1:0:0
+#SBATCH --mem=24gb
+#SBATCH --account=gen1
+#SBATCH --export=NONE
+
+#intermediate files in:
+tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;
+THRESH=`bc &lt;&lt;&lt; &quot;scale=10; 0.05/1463&quot;`
+
+while IFS=&#39;&#39; read -r LINE || [ -n &quot;${LINE}&quot; ]
+do
+
+chr=`echo ${LINE} | awk -F &#39;chr| &#39; &#39;{print $2}&#39;`
+pos=`echo ${LINE} | awk &#39;{print $3}&#39;`
+start=`echo ${LINE} | awk &#39;{print $3-1000000}&#39;`
+end=`echo ${LINE} | awk &#39;{print $3+1000000}&#39;`
+
+echo $chr:$start-$end
+
+/data/gen1/UKBiobank/olink/pQTL/pqtl_lookup.sh -r ${chr}:${start}-${end} -p ${THRESH} \
+    &gt;  ${tmp_path}/ukb_pqtl/SA_${chr}_${pos}_ukb_protein_lookup.txt
+done &lt; ${tmp_path}/ukb_pqtl/cs_sentinel_vars_liftover_input.txt</code></pre>
 <p>Quantitative trait loci (QTL) allows us to measure a trait, such as
 RNA expression of genes or protein levels, in a specific tissue and test
 for association of genes within the interested tissue with genetic
