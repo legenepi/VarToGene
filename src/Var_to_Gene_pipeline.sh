@@ -269,14 +269,13 @@ Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
 
 
 ################
-#2.2 COLOCALISATION - pQTL
+#2.2 APPROXIMATE COLOCALISATION - pQTL (LOOK-UP FOR ALL CREDIBLE SET VARIANTS)
 #UKB, SCALLOP, deCODE
 ################
 ##Exclude chromosome 6 - no eQTL colocalisation for this locus.
 ##Genomic boundaries: PIP-max causal variant +/- 1Mb
 
-###UKBIOBANK pQTL###
-#Do UKB pQTL look-ups:
+###UKBIOBANK pQTL LOOK-UP###
 #Nick generate the pQTL dataset, as for /data/gen1/UKBiobank/olink/pQTL/README.txt:
 # OLINK pQTL analysis
 #* 48,195 European samples (as defined in Shrine et al. 2023)
@@ -292,15 +291,42 @@ Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
 #/data/gen1/UKBiobank/olink/pQTL/pqtl_lookup.sh -s <RSID> -r <CHR:START-END> [ -f <PROTEINS FILE> ] [ -p <P THRESHOLD> ] [-h]
 #UKB pQTL is in GRCh38, need to find sentinel variants position in GRCh38:
 mkdir ${tmp_path}/ukb_pqtl
-#Created file nano ${tmp_path}/ukb_pqtl/cs_sentinel_vars.txt so that I can do the input for online liftOver:
-awk -F '_' '{print "chr"$2, $3, $3+1}' ${tmp_path}/ukb_pqtl/cs_sentinel_vars.txt \
-    > ${tmp_path}/ukb_pqtl/cs_sentinel_vars_liftover_input.txt
+#Created file nano ${tmp_path}/ukb_pqtl/cs_sentinel_vars.txt so that I can do the input for liftOver:
+awk -F ' ' 'NR > 1 {print "chr"$3, $4, $4+1}' $cs_all \
+    > ${tmp_path}/ukb_pqtl/cs_vars_liftover_input.txt
+## download the chain file b37 to b38
+wget -P /home/n/nnp5/software/liftover https://hgdownload.soe.ucsc.edu/gbdb/hg19/liftOver/hg19ToHg38.over.chain.gz
+
+/home/n/nnp5/software/liftover/liftOver \
+    ${tmp_path}/ukb_pqtl/cs_vars_liftover_input.txt \
+    /home/n/nnp5/software/liftover/hg19ToHg38.over.chain.gz \
+    ${tmp_path}/ukb_pqtl/cs_vars_liftover_output.bed \
+    ${tmp_path}/ukb_pqtl/cs_vars_liftover_unlifted.bed
+
+##divide cs vars into the respective credset with b38 location:
+dos2unix src/pQTL_coloc/000_preprocess_cs_b38.R
+chmod +x src/pQTL_coloc/000_preprocess_cs_b38.R
+Rscript src/pQTL_coloc/000_preprocess_cs_b38.R \
+     $cs_all \
+     $tmp_path/ukb_pqtl/ \
+     ${tmp_path}/ukb_pqtl/cs_vars_liftover_output.bed
 
 #pvalue theshold based on bonferroni correction by the number of measured proteins:
 dos2unix src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
 chmod +x src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
-sbatch src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+sbatch --array 0-16 src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
 
-###deCODE pQTL###
+#check that all credible sets variants have been analysed:
+find ${tmp_path}/ukb_pqtl/*rs*/ -type f | wc -l
 
-###SCALLOP pQTL###
+#combine look-up ukb-pqtl files with Nick's script (from /data/gen1/UKBiobank/olink/pQTL/orion_pain):
+cd ${tmp_path}/ukb_pqtl/
+/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/001_combine_pqtl.awk *rs*/* \
+    > ${tmp_path}/ukb_pqtl/lookup_varsprotein.txt
+cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene/ #of wherever the folder 'Var_to_Gene' is located
+
+
+###deCODE pQTL LOOK-UP###
+
+
+###SCALLOP pQTL LOOK-UP###

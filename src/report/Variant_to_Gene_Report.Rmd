@@ -60,7 +60,7 @@ FAVOR aggregates different sources and categories of annotation. I decided to fo
 
  3.Clinical annotation: annotation from ClinVar about effect on a disease
 
-## Colocalisation with Quantitative trait loci (QTL) expression analysis
+## Colocalisation with expression quantitative trait loci (QTL) analysis
 Code
 <br>
 NB: There are different scripts for this pipeline. Please, refer to 'Var_to_Gene_pipeline.sh' script to have a look at the pipeline workflow.
@@ -143,9 +143,6 @@ src/coloc_UBClung/003_run_ coloc_susie_lung_eQTL.r
 src/coloc_UBClung/004_concat_coloc_susie_ubclung.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc_UBClung/004_concat_coloc_results_ubclung.R'), eval=FALSE, hide=TRUE}
 ```
-src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
-```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh'), eval=FALSE, hide=TRUE}
-```
 Quantitative trait loci (QTL) allows us to measure a trait, such as RNA expression of genes or protein levels, in a specific tissue
 and test for association of genes within the interested tissue with genetic variant. In other words, the expression trait is
 used as a quantitative trait for a genome-wide analysis.
@@ -168,8 +165,6 @@ If we are looking at protein level, we call it 'p'QTL; if looking at methylation
 For my asthma project, I run the following cis-QTL types with the listed dataset:
 
  1. cis-eQTL: GTExV8, eQTLGen blood, UBC lung eQTL, and U-BIOPRED;
-
- 2. sQTL: GTExV8;
 
  3. pQTL: pQTL UKBiobank, SCALLOP pQTL, deCODE plasma
 
@@ -195,8 +190,20 @@ Detailed information on the analysis can be found in the main manuscript and rel
 Jing provided me with the list of significant gene-variant associations for UBC Lung eQTL after p-value correction.
 She also provided me backbone scripts to run colocalisation with this eQTL.
 <br>
-U-BIORPED is
+U-BIORPED is (not yet done)
+
+## Colocalisation with protein quantitative trait loci (QTL) analysis
+Code
 <br>
+src/pQTL_coloc/000_preprocess_cs_b38.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh'), eval=FALSE, hide=TRUE}
+```
+src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_preprocess_cs_b38.R'), eval=FALSE, hide=TRUE}
+```
+src/pQTL_coloc/001_combine_pqtl.awk
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/001_combine_pqtl.awk'), eval=FALSE, hide=TRUE}
+```
 deCODE is a free collection of protein plasma pQTL data for 4,907 proteins and 27.2 million tested variants. They used Bonferroni corrected p-value for multiple testing; thus,
 0.05/27,200,000=1.8x10−9. They included variants with a MAF > 0.01% and imputation score > 0.9. If the associated variant was within 1Mb from the transcription start site of the gene, the
 pQTL was defined as cis, if outside this threshold as trans.
