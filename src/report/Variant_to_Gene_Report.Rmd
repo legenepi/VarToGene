@@ -216,7 +216,23 @@ UK Biobank pQTL data
 For the fine-mapped loci, I created separate files for each locus' credible set (17 locus --> 17 files).
 
 ## Polygenic Priority Score (PoPS)
+Code
+src/PoPS/PoPS.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/PoPS/PoPS.sh'), eval=FALSE, hide=TRUE}
+```
+src/PoPS/submit_pops.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/PoPS/submit_pops.sh'), eval=FALSE, hide=TRUE}
+```
+PoPS is a gene prioritisation analysis that uses genome-wide signal from GWAS summary statistics and identified prioritised genes
+looking into public bulk and single-cell expression datasets, curated biological pathways, and predicted protein-protein interactions (https://github.com/FinucaneLab/pops; https://www.nature.com/articles/s41588-023-01443-6)
+<br>
+PoPS is run in three steps, plus a preliminary four step:
 
+ -Step 0: Generate MAGMA scores: run MAGMA to obtain gene association statistics (z-scores) using severe asthma GWAS sumstats and 1000G European individuals;
+
+ -Step 1: Select features: looking at the MAGMA scores, certain features are selected since they are enriched, and stored in the .feature output files;
+
+ -Step 2: Run PoPS: calculate the POP score for each gene using a joint model with a leave-one chromosome out method for the enrichment of all selected features
 
 ## Rare Variant Analysis
 

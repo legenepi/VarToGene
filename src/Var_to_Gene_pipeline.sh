@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-#slurms settings
+#Rationale: pipeline for Variant to Gene mapping analysis. Output from each analysis: list of genes
+
+
 
 module load R
 #intermediate files in:
 tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 
-
-#Rationale: pipeline for Variant to Gene mapping analysis. Output from each analysis: list of genes
 
 ################
 #1.VARIANT ANNOTATION
@@ -322,11 +322,32 @@ find ${tmp_path}/ukb_pqtl/*rs*/ -type f | wc -l
 #combine look-up ukb-pqtl files with Nick's script (from /data/gen1/UKBiobank/olink/pQTL/orion_pain):
 cd ${tmp_path}/ukb_pqtl/
 /home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/001_combine_pqtl.awk *rs*/* \
-    > ${tmp_path}/ukb_pqtl/lookup_varsprotein.txt
+    > ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt
 cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene/ #of wherever the folder 'Var_to_Gene' is located
 
+#extract gene showing look-up results:
+awk 'NR > 1 {print $2}' ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt | sort -u \
+    > input/ukbpqtl_var2genes_raw
 
 ###deCODE pQTL LOOK-UP###
 
+#Found this script of Nick for decode lookup (from /data/gen1/TSH/coloc_susie/lookup_decode.awk):
+#create credible_set.snps:
+#locus85	10_101220474_A_G
+#locus85	10_101221275_C_T
+mkdir ${tmp_path}/decode_pqtl
+NOT SURE THIS IS THE RIGHT WAY TO RUN IT: ASK NICK !
+awk 'NR >1 {print $1, $3"_"$4"_"$5"_"$6}' $cs_all > ${tmp_path}/decode_pqtl/credible_set.snps
+src/pQTL_coloc/000_lookup_decode.awk \
+    ${tmp_path}/decode_pqtl/credible_set.snps \
+    /data/gen1/pQTL/Ferkingstad_2021_b37/8479_4_MMP10_MMP_10.b37.txt.gz
 
 ###SCALLOP pQTL LOOK-UP###
+
+
+################
+#3 POLYGENIC PRIORITY SCORE (PoPS)
+################
+#https://github.com/FinucaneLab/pops
+#Preliminary step (Step '-1'): create gene.out and gene.raw file from MAGMA:
+mkdir ${tmp_path}/pops
