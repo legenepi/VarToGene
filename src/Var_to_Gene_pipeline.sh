@@ -350,7 +350,28 @@ src/pQTL_coloc/000_lookup_decode.awk \
 ################
 #https://github.com/FinucaneLab/pops
 #Looking at the github repo and to Jing's code, I compiled PoPS in PoPS.sh and submit_pops.sh:
+
 #PoPS.sh internally calls submit_pops.sh to be submitted as a job - it requires lots of time.
 mkdir ${tmp_path}/pops
 mkdir ${tmp_path}/pops/results
 bash PoPS.sh
+
+#Look at the results and find top score genes within a +/-250Kb from highest-PIP variant for each locus -
+#if no top genes in +/- 250Kb, enlarge the window to +/-500Kb:
+Rscript src/PoPS/PoPS_summary.R
+
+#Added /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/pops_var2genes_raw.txt to the var2genes_raw.xlsx.
+
+################
+#3 MOUSE KO
+################
+#From Jing's code as well as my own input:
+#Download genotype-phenotype data from IMPC (International Mouse Phenotyping consortium)
+#https://www.mousephenotype.org/data/release
+
+mkdir ${tmp_path}/mouse_ko
+
+#latest release 2023-07-06:
+wget -P ${tmp_path}/mouse_ko/ https://ftp.ebi.ac.uk/pub/databases/impc/all-data-releases/latest/results/genotype-phenotype-assertions-ALL.csv.gz
+#latest release 2023-11-22:
+wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/human_mouse_hcop_fifteen_column.txt.gz

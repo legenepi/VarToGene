@@ -1,3 +1,7 @@
+#!/usr/bin/env Rscript
+
+#Rationale: Find nearby human ortholog of mouse knockout genes that are within +/- 500Kb from SA GWAS sentinels.
+
 library(GenomicRanges)
 library(rtracklayer)
 library(tidyverse)
@@ -6,7 +10,7 @@ library(scales)
 library(readxl)
 library(data.table)
 
-setwd("/scratch/gen1/jc824/TSH/mouse_ko/")
+setwd("/scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/")
 
 DISTANCE <- 5e5
 #MP_TERM <- "respiratory system phenotype"  
@@ -15,7 +19,26 @@ getN <- function(x, y) x %>% pull({{y}}) %>% n_distinct
 
 orthologs <- read_tsv("human_mouse_hcop_fifteen_column.txt.gz")
 all_geno_pheno <- read_csv("genotype-phenotype-assertions-ALL.csv.gz")
-MP_TERM <- unique(all_geno_pheno$mp_term_name[grepl("thyro",all_geno_pheno$mp_term_name)])
+MP_TERM_lung <- unique(all_geno_pheno  %>% filter(grepl("lung",mp_term_name)) %>% select(mp_term_name))
+MP_TERM_lung$MP_TERM <- "lung"
+MP_TERM_airway <- unique(all_geno_pheno  %>% filter(grepl("airway",mp_term_name)) %>% select(mp_term_name))
+MP_TERM_airway$MP_TERM <- "airway"
+MP_TERM_muscle <- unique(all_geno_pheno  %>% filter(grepl("muscle",mp_term_name)) %>% select(mp_term_name))
+MP_TERM_muscle$MP_TERM <- "muscle"
+MP_TERM_imm <- unique(all_geno_pheno  %>% filter(grepl("imm",mp_term_name)) %>% select(mp_term_name))
+MP_TERM_imm$MP_TERM <- "imm"
+MP_TERM_epith <-  unique(all_geno_pheno  %>% filter(grepl("epith",mp_term_name)) %>% select(mp_term_name))
+MP_TERM_epith$MP_TERM <- "epith"
+MP_TERM_bronchoconstri <-  unique(all_geno_pheno  %>% filter(grepl("bronchoconstri",mp_term_name)) %>% select(mp_term_name))
+MP_TERM_bronchoconstri$MP_TERM <- "bronchoconstri"
+MP_TERM_pulm <-  unique(all_geno_pheno  %>% filter(grepl("pulm",mp_term_name)) %>% select(mp_term_name))
+MP_TERM_pulm$MP_TERM <- "pulm"
+
+#put all data frames into list
+df_list <- list(MP_TERM_airway,MP_TERM_epith,MP_TERM_muscle,MP_TERM_bronchoconstri,MP_TERM_imm,MP_TERM_lung,MP_TERM_pulm)
+#merge all data frames in list
+MP_TERM <- df_list %>% reduce(full_join, by = join_by(mp_term_name, MP_TERM))
+fwrite(MP_TERM,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/MP_TERM_approx_asthma.txt",quote=F, sep="\t")
 
 sentinels <- read_tsv("/scratch/gen1/jc824/TSH/novel_signals/TSH_signal_list.txt")
 setnames(sentinels,"MarkerName","sentinel")

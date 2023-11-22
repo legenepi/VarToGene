@@ -237,6 +237,7 @@ PoPS is run in three steps, plus a preliminary four step:
 
  -Step 2: Run PoPS: calculate the POP score for each gene using a joint model with a leave-one chromosome out method for the enrichment of all selected features
 
+
 ## Rare Variant Analysis
 
 
