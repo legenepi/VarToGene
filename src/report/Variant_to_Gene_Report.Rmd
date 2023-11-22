@@ -223,6 +223,9 @@ src/PoPS/PoPS.sh
 src/PoPS/submit_pops.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/PoPS/submit_pops.sh'), eval=FALSE, hide=TRUE}
 ```
+src/PoPS/PoPS_summary.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/PoPS/PoPS_summary.R'), eval=FALSE, hide=TRUE}
+```
 PoPS is a gene prioritisation analysis that uses genome-wide signal from GWAS summary statistics and identified prioritised genes
 looking into public bulk and single-cell expression datasets, curated biological pathways, and predicted protein-protein interactions (https://github.com/FinucaneLab/pops; https://www.nature.com/articles/s41588-023-01443-6)
 <br>

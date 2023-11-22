@@ -39,14 +39,4 @@ awk '{print $1, $9, $3=46086}' \
 #the features are in: /data/gen1/LF_HRC_transethnic/PoPS/data/PoPS.features.txt.gz
 sbatch src/PoPS/submit_pops.sh
 
-#Step 2: Run PoPS - calculate the score for each gene
-python /data/gen1/LF_HRC_transethnic/PoPS/pops/pops.predict_scores.py\
-	  --gene_loc /data/gen1/LF_HRC_transethnic/PoPS/data/gene_loc.txt\
-	  --gene_results ${tmp_path}/pops/SA  \
-	  --features /data/gen1/LF_HRC_transethnic/PoPS/data/PoPS.features.txt.gz \
-	  --selected_features ${tmp_path}/pops/SA.features \
-	  --control_features /data/gen1/LF_HRC_transethnic/PoPS/data/control.features \
-	  --chromosome 1 \
-	  --out ${tmp_path}/pops/SA
-
 

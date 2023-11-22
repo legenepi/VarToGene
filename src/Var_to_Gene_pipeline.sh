@@ -291,7 +291,7 @@ Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
 #/data/gen1/UKBiobank/olink/pQTL/pqtl_lookup.sh -s <RSID> -r <CHR:START-END> [ -f <PROTEINS FILE> ] [ -p <P THRESHOLD> ] [-h]
 #UKB pQTL is in GRCh38, need to find sentinel variants position in GRCh38:
 mkdir ${tmp_path}/ukb_pqtl
-#Created file nano ${tmp_path}/ukb_pqtl/cs_sentinel_vars.txt so that I can do the input for liftOver:
+#input for liftOver:
 awk -F ' ' 'NR > 1 {print "chr"$3, $4, $4+1}' $cs_all \
     > ${tmp_path}/ukb_pqtl/cs_vars_liftover_input.txt
 ## download the chain file b37 to b38
@@ -349,5 +349,8 @@ src/pQTL_coloc/000_lookup_decode.awk \
 #3 POLYGENIC PRIORITY SCORE (PoPS)
 ################
 #https://github.com/FinucaneLab/pops
-#Preliminary step (Step '-1'): create gene.out and gene.raw file from MAGMA:
+#Looking at the github repo and to Jing's code, I compiled PoPS in PoPS.sh and submit_pops.sh:
+#PoPS.sh internally calls submit_pops.sh to be submitted as a job - it requires lots of time.
 mkdir ${tmp_path}/pops
+mkdir ${tmp_path}/pops/results
+bash PoPS.sh
