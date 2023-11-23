@@ -13,37 +13,30 @@ library(data.table)
 setwd("/scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/")
 
 DISTANCE <- 5e5
-#MP_TERM <- "respiratory system phenotype"  
 
 getN <- function(x, y) x %>% pull({{y}}) %>% n_distinct
 
-orthologs <- read_tsv("human_mouse_hcop_fifteen_column.txt.gz")
-all_geno_pheno <- read_csv("genotype-phenotype-assertions-ALL.csv.gz")
-MP_TERM_lung <- unique(all_geno_pheno  %>% filter(grepl("lung",mp_term_name)) %>% select(mp_term_name))
-MP_TERM_lung$MP_TERM <- "lung"
-MP_TERM_airway <- unique(all_geno_pheno  %>% filter(grepl("airway",mp_term_name)) %>% select(mp_term_name))
-MP_TERM_airway$MP_TERM <- "airway"
-MP_TERM_muscle <- unique(all_geno_pheno  %>% filter(grepl("muscle",mp_term_name)) %>% select(mp_term_name))
-MP_TERM_muscle$MP_TERM <- "muscle"
-MP_TERM_imm <- unique(all_geno_pheno  %>% filter(grepl("imm",mp_term_name)) %>% select(mp_term_name))
-MP_TERM_imm$MP_TERM <- "imm"
-MP_TERM_epith <-  unique(all_geno_pheno  %>% filter(grepl("epith",mp_term_name)) %>% select(mp_term_name))
-MP_TERM_epith$MP_TERM <- "epith"
-MP_TERM_bronchoconstri <-  unique(all_geno_pheno  %>% filter(grepl("bronchoconstri",mp_term_name)) %>% select(mp_term_name))
-MP_TERM_bronchoconstri$MP_TERM <- "bronchoconstri"
-MP_TERM_pulm <-  unique(all_geno_pheno  %>% filter(grepl("pulm",mp_term_name)) %>% select(mp_term_name))
-MP_TERM_pulm$MP_TERM <- "pulm"
 
-#put all data frames into list
-df_list <- list(MP_TERM_airway,MP_TERM_epith,MP_TERM_muscle,MP_TERM_bronchoconstri,MP_TERM_imm,MP_TERM_lung,MP_TERM_pulm)
-#merge all data frames in list
-MP_TERM <- df_list %>% reduce(full_join, by = join_by(mp_term_name, MP_TERM))
-fwrite(MP_TERM,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/MP_TERM_approx_asthma.txt",quote=F, sep="\t")
+##Retrieve Sentinel SNPs - highest PIP in the fine-mapped loci:
+sig_list_tmp <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt")
+setnames(sig_list_tmp,"chromosome","chr")
+setnames(sig_list_tmp,"position","pos")
+sig_list_tmp$sentinel <- paste0(sig_list_tmp$chr,"_",sig_list_tmp$pos,"_",sig_list_tmp$allele1,"_",sig_list_tmp$allele2)
+locus <- unique(sig_list_tmp$locus)
 
-sentinels <- read_tsv("/scratch/gen1/jc824/TSH/novel_signals/TSH_signal_list.txt")
-setnames(sentinels,"MarkerName","sentinel")
-setnames(sentinels,"Chromosome","chr")
-setnames(sentinels,"Position","pos")
+sentinels <- data.frame(matrix(ncol = 4,nrow = 0))
+colnames(sentinels) <- c("locus","sentinel","chr","pos")
+for(i in locus){
+    locus_sig_list <- sig_list_tmp %>% filter(locus == as.character(i))
+    locus_sig_list <- locus_sig_list %>% filter(PIP_average == max(locus_sig_list$PIP_average)) %>% select(locus,sentinel,chr,pos)
+    sentinels <- rbind(sentinels,locus_sig_list)
+    }
+
+## retrieve genomic reference for genes
+#resolved problem:
+#if (!require("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+#BiocManager::install(version = "3.18")
 
 ucsc <- browserSession("UCSC")
 genome(ucsc) <- "hg19"
@@ -53,28 +46,39 @@ refseq <- ucsc %>%
   as_tibble
 
 ## Mouse genotype-phenotype data
+## Store in /scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/ and downloaded from:
+#latest release 2023-07-06:
+#wget -P ${tmp_path}/mouse_ko/ https://ftp.ebi.ac.uk/pub/databases/impc/all-data-releases/latest/results/genotype-phenotype-assertions-ALL.csv.gz
+#latest release 2023-11-22:
+#wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/human_mouse_hcop_fifteen_column.txt.gz
+
+orthologs <- read_tsv("human_mouse_hcop_fifteen_column.txt.gz")
+all_geno_pheno <- read_csv("genotype-phenotype-assertions-ALL.csv.gz")
+
 geno_pheno <- all_geno_pheno %>%
   separate(top_level_mp_term_name, c("top_level_mp_term", "top_level_mp_subtype"), ",")
 
-geno_pheno %>% 
+#display all the possible top level mp term and related number of genes:
+geno_pheno %>%
   group_by(top_level_mp_term) %>%
   summarise(nlines=n(), ngenes=n_distinct(marker_symbol)) %>%
   drop_na %>%
   pander(big.mark=",")
 
-## Overlap of TSH signals with NCBI Refseq genes
+
+## Overlap of severe asthma - SA signals with NCBI Refseq genes
 refseq.GRanges <- refseq %>%
   select(Symbol=name2, chrom, start=txStart, end=txEnd) %>%
   makeGRangesFromDataFrame(keep.extra.columns = TRUE)
 
-TSH.GRanges <- sentinels %>%
+SA.GRanges <- sentinels %>%
   mutate(Chrom=paste0("chr", chr)) %>%
   select(Chrom, start=pos, end=pos, sentinel) %>%
   makeGRangesFromDataFrame(keep.extra.columns = TRUE)
 
-nearby_genes <- mergeByOverlaps(TSH.GRanges, refseq.GRanges, maxgap=DISTANCE) %>%
+nearby_genes <- mergeByOverlaps(SA.GRanges, refseq.GRanges, maxgap=DISTANCE) %>%
   as_tibble %>%
-  select(sentinel, Position=TSH.GRanges.start, Symbol,
+  select(sentinel, Position=SA.GRanges.start, Symbol,
          txStart=refseq.GRanges.start, txEnd=refseq.GRanges.end,
          width=refseq.GRanges.width) %>%
   mutate(distance=ifelse(txStart <= Position & txEnd >= Position, 0,
@@ -89,12 +93,25 @@ n_refseq <- refseq %>% getN(name2)
 n_nearby_genes_sentinel <- nearby_genes %>% getN(sentinel)
 n_nearby_genes_Symbol <- nearby_genes %>% getN(Symbol)
 
-## Orthologs of mouse KO genes with thyro relevant phenotype
-ko_mouse <- all_geno_pheno %>%
-  filter(mp_term_name %in% MP_TERM) %>%
-  select(marker_symbol,mp_term_name) %>%
+## Orthologs of mouse KO genes with asthma relevant phenotype - BROAD filter
+#BROAD filter for top_level_mp_term == "respiratory system phenotype" give immunity and/or muscle related term as well:
+ko_mouse_mp <- geno_pheno %>%
+  filter(top_level_mp_term == "respiratory system phenotype" |
+         top_level_mp_term == "immune system phenotype" |
+         top_level_mp_term == "muscle phenotype") %>%
+  select(top_level_mp_term, mp_term_name) %>%
+  distinct %>% arrange(top_level_mp_term,mp_term_name)
+#save the top level and suptypes level that I use:
+fwrite(ko_mouse_mp,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/MP_TERM_approx_asthma_respimmmuscle.txt",quote=F, sep="\t")
+
+#Actual filter for relevant top level and subtypes
+ko_mouse <- geno_pheno %>%
+  filter(top_level_mp_term == "respiratory system phenotype" |
+         top_level_mp_term == "immune system phenotype" |
+         top_level_mp_term == "muscle phenotype") %>%
+  select(marker_symbol, mp_term_name) %>%
   distinct
-  
+
 ko_human <- orthologs %>%
   filter(support != "OrthoMCL") %>%
   select(mouse_symbol, human_symbol) %>%
@@ -120,12 +137,12 @@ p_resp_en <- phyper(q=hitInSample - 1,
 table3a.m <- matrix(c(hitInSample, hitInPop - hitInSample,
                       sampleSize - hitInSample, failInPop - sampleSize + hitInSample), 2, 2)
 rownames(table3a.m) <- c("yes", "no")
-colnames(table3a.m) <- c("thyro", "others")
+colnames(table3a.m) <- c("asthma", "others")
 table3a <- table3a.m %>%
-  as_tibble(rownames = "Near TSH sentinel") %>%
-  mutate(pc_thyro=(thyro/(thyro + others)) %>% percent)
+  as_tibble(rownames = "Near severe asthma sentinel") %>%
+  mutate(pc_asthma=(asthma/(asthma + others)) %>% percent)
 
-pander(table3a, big.mark=",", caption=paste("Table 3: For mouse knockout-causing genes, the proportion that are thyro related within $\\pm$", DISTANCE/1000, "kb of a lung function sentinel."))
+pander(table3a, big.mark=",", caption=paste0("Table 3: For mouse knockout-causing genes, the proportion that are asthma related within ", DISTANCE/1000, "kb of an asthma function sentinel."))
 
 ### By-gene and by-SNP results
 concat <- function(x) x[!is.na(x)] %>% unique %>% paste(collapse="; ")
@@ -173,11 +190,12 @@ results_by_gene <- results %>%
 results_by_snp_phyper %>% filter(!is.na(hyperG_p)) %>% count(hyperG_p < 0.05) %>%
   pander(caption="By SNP hypergeometric results")
 
-out_base <- paste0("results_", DISTANCE/1000, "kb")
+out_base <- paste0("/scratch/gen1/nnp5/results_", DISTANCE/1000, "kb")
 write_csv(results, paste0(out_base, ".csv"), na = "")
 write_csv(results_mko, paste0(out_base, "_mko.csv"), na = "")
 write_csv(results_by_snp_phyper, paste0(out_base, "_by_snp.csv"), na = "")
 write_csv(results_by_gene, paste0(out_base, "_by_gene.csv"), na = "")
+MP_TERM <- unique(ko_mouse_mp$mp_term_name)
 inner_join(results_mko %>%
              select(-MKO, -txStart, -txEnd, -width, -overlap),
            results_by_snp_phyper %>% select(sentinel, hyperG_p)) %>%
@@ -189,4 +207,6 @@ inner_join(results_mko %>%
   arrange(p_value) %>%
   slice(1) %>%
   write_csv("mouse_ko.csv")
-  
+
+#save genes only:
+fwrite(as.data.frame(results_by_gene$Symbol), "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/mouse_ko_genes_raw.txt", na = "",col.names=F,quote=F)
