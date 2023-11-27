@@ -190,7 +190,7 @@ results_by_gene <- results %>%
 results_by_snp_phyper %>% filter(!is.na(hyperG_p)) %>% count(hyperG_p < 0.05) %>%
   pander(caption="By SNP hypergeometric results")
 
-out_base <- paste0("/scratch/gen1/nnp5/results_", DISTANCE/1000, "kb")
+out_base <- paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/results_", DISTANCE/1000, "kb")
 write_csv(results, paste0(out_base, ".csv"), na = "")
 write_csv(results_mko, paste0(out_base, "_mko.csv"), na = "")
 write_csv(results_by_snp_phyper, paste0(out_base, "_by_snp.csv"), na = "")

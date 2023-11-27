@@ -375,3 +375,5 @@ mkdir ${tmp_path}/mouse_ko
 wget -P ${tmp_path}/mouse_ko/ https://ftp.ebi.ac.uk/pub/databases/impc/all-data-releases/latest/results/genotype-phenotype-assertions-ALL.csv.gz
 #latest release 2023-11-22:
 wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/human_mouse_hcop_fifteen_column.txt.gz
+
+Rscript src/mouse_ko/mouse_ko.r

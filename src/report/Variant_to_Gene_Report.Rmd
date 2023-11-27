@@ -238,14 +238,18 @@ PoPS is run in three steps, plus a preliminary four step:
  -Step 2: Run PoPS: calculate the POP score for each gene using a joint model with a leave-one chromosome out method for the enrichment of all selected features
 
 
-## Rare Variant Analysis
-
-
 ## Nearby Mendelian rare disease-genes
 
 
 ## Nearby Mouse knockout orthologs
+src/mouse_ko/mouse_ko.r
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/mouse_ko/mouse_ko.r'), eval=FALSE, hide=TRUE}
+```
+Using the XXX I analysed if any human ortholog gene has been studied in mouse model in the context of respiratory, immune or muscle phenotypes
+(top MP terms: respiratory system phenotype", "immune system phenotype", "muscle phenotype"). I selected relevant genes within 500Kb from the top causal variant for
+each fine mapped locus.
 
+## Rare Variant Analysis
 
 # Results
 
