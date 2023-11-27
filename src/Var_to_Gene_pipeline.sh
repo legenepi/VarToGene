@@ -330,8 +330,8 @@ awk 'NR > 1 {print $2}' ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt | sort -u \
     > input/ukbpqtl_var2genes_raw
 
 ###deCODE pQTL LOOK-UP###
-
 #Found this script of Nick for decode lookup (from /data/gen1/TSH/coloc_susie/lookup_decode.awk):
+TO DO !
 #create credible_set.snps: create credible_set.snps in alphabetical order
 #($5 < $6 ? $5 : $6)"_"($6 > $5 ? $6 : $5)
 #locus85	10_101220474_A_G
@@ -344,7 +344,13 @@ src/pQTL_coloc/000_lookup_decode.awk \
     /data/gen1/pQTL/Ferkingstad_2021_b37/8479_4_MMP10_MMP_10.b37.txt.gz
 
 ###SCALLOP pQTL LOOK-UP###
-
+#From Chiara's script R:\TobinGroup\GWAtraits\Chiara\pQTL_SCALLOP and Nick's script scallop_lookup.awk
+mkidr ${tmp_path}/scallop_pqtl
+#From Chiara's and Nick script:
+sbatch src/pQTL_coloc/000_submit_lookup_scallop.sh
+#filter out gene name with significant pQTL:
+awk 'NR > 1 && $5 > 0 {print $1}' ${tmp_path}/scallop_pqtl/log_pQTL_SCALLOP_analysis | sed 's/.txt//g' \
+    > input/scallop_pqtl_var2genes_raw
 
 ################
 #3 POLYGENIC PRIORITY SCORE (PoPS)

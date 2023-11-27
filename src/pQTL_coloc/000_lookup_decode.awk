@@ -44,3 +44,8 @@ END {
             print gene_id, snp[i], i, result[i]
     }
 }
+
+
+#Run as:
+#loop in sentinels and loop in files with pQTL
+#./lookup_decode.awk -v INFILE=protein.txt.gz snps.txt <(zcat protein.txt.gz) > results_
