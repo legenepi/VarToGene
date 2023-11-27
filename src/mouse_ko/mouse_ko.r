@@ -132,7 +132,7 @@ p_resp_en <- phyper(q=hitInSample - 1,
                  m=hitInPop,
                  n=failInPop,
                  k=sampleSize,
-                 lower.tail = FALSE)  #0.6866119
+                 lower.tail = FALSE)
 
 table3a.m <- matrix(c(hitInSample, hitInPop - hitInSample,
                       sampleSize - hitInSample, failInPop - sampleSize + hitInSample), 2, 2)
@@ -194,7 +194,7 @@ out_base <- paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/results_", DISTAN
 write_csv(results, paste0(out_base, ".csv"), na = "")
 write_csv(results_mko, paste0(out_base, "_mko.csv"), na = "")
 write_csv(results_by_snp_phyper, paste0(out_base, "_by_snp.csv"), na = "")
-write_csv(results_by_gene, paste0(out_base, "_by_gene.csv"), na = "")
+write_csv(results_by_gene, paste0(out_base, "_by_gene.csv"), na = "") # gives me the gene list
 MP_TERM <- unique(ko_mouse_mp$mp_term_name)
 inner_join(results_mko %>%
              select(-MKO, -txStart, -txEnd, -width, -overlap),

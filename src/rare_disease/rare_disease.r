@@ -121,13 +121,15 @@ yellow <- hpo_f_levels[3]
 green <- hpo_f_levels[4:5]
 
 #HPOId term for asthma: HP:0002099
+key_terms <- c("asthma","eosin","immunodef","cili","autoimm","leukopenia","neutropenia")
 orphanet <- orphanet %>%
-  mutate(asthma_HPO=grepl("asthma", HPOTerm, ignore.case = TRUE) &
+  mutate(asthma_HPO=grepl(paste(key_terms, collapse='|'), HPOTerm, ignore.case = TRUE) &
                    HPOFrequency != "Excluded (0%)",
-         asthma=asthma_HPO,
+         asthma_disease=grepl(paste(key_terms, collapse='|'), Disease, ignore.case = TRUE),
+         asthma=(asthma_HPO | asthma_disease),
          overlap=Symbol %in% nearby_genes$Symbol,
          evidence=ifelse(!asthma, "Not asthma related",
-                         ifelse(HPOFrequency %in% red,
+                         ifelse(asthma_disease | HPOFrequency %in% red,
                          "Disease name, obligate or very frequent",
                          ifelse(HPOFrequency %in% yellow, "Frequent",
                                 ifelse(HPOFrequency %in% green, "Occasional or rare", "Excluded")))) %>%
@@ -137,7 +139,7 @@ orphanet <- orphanet %>%
                              "Excluded",
                              "Not asthma related")))
 
-#n_asthma_genes_disease <- orphanet %>% filter(asthma_disease) %>% getN(Symbol) #not available for asthma
+n_asthma_genes_disease <- orphanet %>% filter(asthma_disease) %>% getN(Symbol)
 n_asthma_genes_hpo <- orphanet %>% filter(asthma_HPO) %>% getN(Symbol)
 
 orphanet_asthma <- orphanet %>%
@@ -189,7 +191,7 @@ p_asthma_en <- phyper(q=hitInSample - 1,
                  m=hitInPop,
                  n=failInPop,
                  k=sampleSize,
-                 lower.tail = FALSE)  # P value for hypergeometric test: 0.001188
+                 lower.tail = FALSE)  # P value for hypergeometric test: 0.2486454
 
 table3a.m <- matrix(c(hitInSample, hitInPop - hitInSample,
                       sampleSize - hitInSample, failInPop - sampleSize + hitInSample), 2, 2)

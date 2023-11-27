@@ -332,7 +332,8 @@ awk 'NR > 1 {print $2}' ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt | sort -u \
 ###deCODE pQTL LOOK-UP###
 
 #Found this script of Nick for decode lookup (from /data/gen1/TSH/coloc_susie/lookup_decode.awk):
-#create credible_set.snps:
+#create credible_set.snps: create credible_set.snps in alphabetical order
+#($5 < $6 ? $5 : $6)"_"($6 > $5 ? $6 : $5)
 #locus85	10_101220474_A_G
 #locus85	10_101221275_C_T
 mkdir ${tmp_path}/decode_pqtl

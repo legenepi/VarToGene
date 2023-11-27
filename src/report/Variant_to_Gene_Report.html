@@ -1575,7 +1575,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Variant to Gene mapping analysis in the
 severe asthma UK Biobank GWAS</h1>
 <h4 class="author">Noemi Nicole Piga</h4>
-<h4 class="date">20 November, 2023</h4>
+<h4 class="date">27 November, 2023</h4>
 
 </div>
 
@@ -1591,14 +1591,14 @@ severe asthma UK Biobank GWAS</h1>
 <p>Master Code <br> src/Var_to_Gene_pipeline.sh</p>
 <pre class="r"><code>#!/usr/bin/env bash
 
-#slurms settings
+#Rationale: pipeline for Variant to Gene mapping analysis. Output from each analysis: list of genes
+
+
 
 module load R
 #intermediate files in:
 tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;
 
-
-#Rationale: pipeline for Variant to Gene mapping analysis. Output from each analysis: list of genes
 
 ################
 #1.VARIANT ANNOTATION
@@ -1882,7 +1882,7 @@ Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
 #/data/gen1/UKBiobank/olink/pQTL/pqtl_lookup.sh -s &lt;RSID&gt; -r &lt;CHR:START-END&gt; [ -f &lt;PROTEINS FILE&gt; ] [ -p &lt;P THRESHOLD&gt; ] [-h]
 #UKB pQTL is in GRCh38, need to find sentinel variants position in GRCh38:
 mkdir ${tmp_path}/ukb_pqtl
-#Created file nano ${tmp_path}/ukb_pqtl/cs_sentinel_vars.txt so that I can do the input for liftOver:
+#input for liftOver:
 awk -F &#39; &#39; &#39;NR &gt; 1 {print &quot;chr&quot;$3, $4, $4+1}&#39; $cs_all \
     &gt; ${tmp_path}/ukb_pqtl/cs_vars_liftover_input.txt
 ## download the chain file b37 to b38
@@ -1913,14 +1913,80 @@ find ${tmp_path}/ukb_pqtl/*rs*/ -type f | wc -l
 #combine look-up ukb-pqtl files with Nick&#39;s script (from /data/gen1/UKBiobank/olink/pQTL/orion_pain):
 cd ${tmp_path}/ukb_pqtl/
 /home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/001_combine_pqtl.awk *rs*/* \
-    &gt; ${tmp_path}/ukb_pqtl/lookup_varsprotein.txt
+    &gt; ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt
 cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene/ #of wherever the folder &#39;Var_to_Gene&#39; is located
 
+#extract gene showing look-up results:
+awk &#39;NR &gt; 1 {print $2}&#39; ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt | sort -u \
+    &gt; input/ukbpqtl_var2genes_raw
 
 ###deCODE pQTL LOOK-UP###
 
+#Found this script of Nick for decode lookup (from /data/gen1/TSH/coloc_susie/lookup_decode.awk):
+#create credible_set.snps: create credible_set.snps in alphabetical order
+#($5 &lt; $6 ? $5 : $6)&quot;_&quot;($6 &gt; $5 ? $6 : $5)
+#locus85    10_101220474_A_G
+#locus85    10_101221275_C_T
+mkdir ${tmp_path}/decode_pqtl
+NOT SURE THIS IS THE RIGHT WAY TO RUN IT: ASK NICK !
+awk &#39;NR &gt;1 {print $1, $3&quot;_&quot;$4&quot;_&quot;$5&quot;_&quot;$6}&#39; $cs_all &gt; ${tmp_path}/decode_pqtl/credible_set.snps
+src/pQTL_coloc/000_lookup_decode.awk \
+    ${tmp_path}/decode_pqtl/credible_set.snps \
+    /data/gen1/pQTL/Ferkingstad_2021_b37/8479_4_MMP10_MMP_10.b37.txt.gz
 
-###SCALLOP pQTL LOOK-UP###</code></pre>
+###SCALLOP pQTL LOOK-UP###
+
+
+################
+#3 POLYGENIC PRIORITY SCORE (PoPS)
+################
+#https://github.com/FinucaneLab/pops
+#Looking at the github repo and to Jing&#39;s code, I compiled PoPS in PoPS.sh and submit_pops.sh:
+
+#PoPS.sh internally calls submit_pops.sh to be submitted as a job - it requires lots of time.
+mkdir ${tmp_path}/pops
+mkdir ${tmp_path}/pops/results
+bash PoPS.sh
+
+#Look at the results and find top score genes within a +/-250Kb from highest-PIP variant for each locus -
+#if no top genes in +/- 250Kb, enlarge the window to +/-500Kb:
+Rscript src/PoPS/PoPS_summary.R
+
+#Added /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/pops_var2genes_raw.txt to the var2genes_raw.xlsx.
+
+################
+#3 NEARBY HUMAN ORTHOLOG MOUSE KO GENE
+################
+#From Jing&#39;s code as well as my own input:
+#Download genotype-phenotype data from IMPC (International Mouse Phenotyping consortium)
+#https://www.mousephenotype.org/data/release
+mkdir ${tmp_path}/mouse_ko
+#latest release 2023-07-06:
+wget -P ${tmp_path}/mouse_ko/ https://ftp.ebi.ac.uk/pub/databases/impc/all-data-releases/latest/results/genotype-phenotype-assertions-ALL.csv.gz
+#latest release 2023-11-22:
+wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/human_mouse_hcop_fifteen_column.txt.gz
+#run the analysis:
+Rscript src/mouse_ko/mouse_ko.r &gt; ${tmp_path}/mouse_ko/output_mouse_ko
+#Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/mouse_ko_genes_raw.txt genes into var2genes_raw.xlsx.
+
+################
+#4 NEARBY RARE MENDELIAN DISEASE GENE
+################
+#From Jing&#39;s code as well as my own input:
+#Download genotype-phenotype data from https://www.orphadata.com/genes/:
+mkdir ${tmp_path}/rare_disease/
+#latest release 2023-06-22:
+wget -P ${tmp_path}/rare_disease/ https://www.orphadata.com/data/xml/en_product6.xml
+#downloaded locally and converted in xlsx in Excel - uploaded in /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product6.xlsx
+#dowload description of the file:
+wget -P src/report/ https://www.orphadata.com/docs/OrphadataFreeAccessProductsDescription.pdf
+#Downloaded hpo: human phenotype ontology provides a standardized vocabulary of phenotypic abnormalities encounterd in human disease
+#latest release June 2023:
+#Downloaded locally and converted in xlsx in Excel - uploaded in /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product4.xlsx
+#https://github.com/Orphanet/Orphadata_aggregated/blob/master/Rare%20diseases%20with%20associated%20phenotypes/en_product4.xml
+#run the analysis:
+Rscript src/rare_disease/rare_disease.r &gt; ${tmp_path}/rare_disease/output_rare_disease
+#Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt genes into var2genes_raw.xlsx.</code></pre>
 <p>Prioritise genes using variant-to-gene mapping tools with credible
 sets variants from fine-mapping results of GWAS on severe asthma in UK
 Biobank European individuals. <br> I used several methods, following the
@@ -3983,15 +4049,810 @@ locus’ credible set (17 locus –&gt; 17 files).</p>
 </div>
 <div id="polygenic-priority-score-pops" class="section level2">
 <h2>Polygenic Priority Score (PoPS)</h2>
-</div>
-<div id="rare-variant-analysis" class="section level2">
-<h2>Rare Variant Analysis</h2>
+<p>Code src/PoPS/PoPS.sh</p>
+<pre class="r"><code>#!/usr/bin/env bash
+
+#Rationale: run PoPS with severe asthma summary statistics
+#Based on scripts and log files found in: /data/gen1/TSH/PoPS
+#PoPS v0.1: https://github.com/FinucaneLab/pops/tree/add-license-1
+#software stored in /data/gen1/LF_HRC_transethnic/PoPS/pops
+
+module load R
+#intermediate files in:
+tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/&quot;
+
+#Download MAGMA and PoPS:
+cd /home/n/nnp5/software
+wget https://ctg.cncr.nl/software/MAGMA/prog/magma_v1.10.zip
+unzip https://ctg.cncr.nl/software/MAGMA/prog/magma_v1.10.zip
+cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene
+
+#Step 0: Generate gene-level association statistics as by MAGMA to have genes.out and genes.raw files:
+##bfile and gene-annot: already downloaded with respect to TSH/lung function analysis - use the same.
+## pval: sumstats file from severe asthma GWAS as this:
+#SNP    p   N
+#rs147324274    0.9139  124358
+#rs369318156    0.4323  124358
+
+#Create the .sumstats file:
+awk &#39;{print $1, $9, $3=46086}&#39; \
+    /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/maf001_broad_pheno_1_5_ratio_betase_input_mungestat | \
+    sed &#39;s/snpid pval 46086/SNP p N/g&#39; &gt; ${tmp_path}/pops/SA.sumstat
+
+/home/n/nnp5/software/magma \
+    --bfile /data/gen1/LF_HRC_transethnic/PoPS/data/1000G.EUR \
+      --gene-annot /data/gen1/LF_HRC_transethnic/PoPS/data/magma_0kb.genes.annot \
+      --pval ${tmp_path}/pops/SA.sumstat ncol=N \
+      --gene-model snp-wise=mean \
+      --out ${tmp_path}/pops/SA
+
+
+#Step 1: Select features
+#the features are in: /data/gen1/LF_HRC_transethnic/PoPS/data/PoPS.features.txt.gz
+sbatch src/PoPS/submit_pops.sh</code></pre>
+<p>src/PoPS/submit_pops.sh</p>
+<pre class="r"><code>#!/bin/bash
+
+#SBATCH --job-name=SA_POPS
+#SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
+#SBATCH --time=60:00:00
+#SBATCH --mem=50gb
+#SBATCH --account=gen1
+#SBATCH --export=NONE
+
+#Rationale: PoPS feature selection and score calculation
+
+tmp_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp&quot;
+popsdir=&quot;/data/gen1/LF_HRC_transethnic/PoPS&quot;
+
+module load python3
+
+python ${popsdir}/pops/pops.feature_selection.py \
+    --features ${popsdir}/data/PoPS.features.txt.gz \
+    --gene_results ${tmp_path}/pops/SA \
+      --out ${tmp_path}/pops/SA \
+
+for i in {1..22}
+do
+    python ${popsdir}/pops/pops.predict_scores.py \
+        --gene_loc ${popsdir}/data/gene_loc.txt \
+        --gene_results ${tmp_path}/pops/SA \
+        --features ${popsdir}/data/PoPS.features.txt.gz \
+        --selected_features  ${tmp_path}/pops/SA.features \
+        --control_features ${popsdir}/data/control.features \
+        --chromosome ${i} \
+        --out ${tmp_path}/pops/SA
+done</code></pre>
+<p>src/PoPS/PoPS_summary.R</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+#Rationale: Look at PoPS results and create a summary of them
+##‘We currently suggest taking the highest scoring gene in each GWAS locus.
+##You could further filter this set to only include genes in top 10% of PoP scores across all genes.
+##Negative scores generally mean low evidence -- this is the predicted MAGMA z-score!!’ (https://github.com/FinucaneLab/pops/issues/4)
+##From TSH paper: ‘prioritized genes for all autosomal TSH sentinel variants within a 500kb (±250kb) window of
+#the sentinel variant and reported the top prioritised genes in the region.
+#If there was no gene prioritized within a 500kb window of the sentinel,
+#we reported any top prioritized genes within a 1Mb window (Supplementary Data 19).’.
+
+
+library(data.table)
+library(tidyverse)
+
+sig_list &lt;- fread(&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt&quot;)
+setnames(sig_list,&quot;chromosome&quot;,&quot;chr&quot;)
+setnames(sig_list,&quot;position&quot;,&quot;pos&quot;)
+sig_list$sentinel &lt;- paste0(sig_list$chr,&quot;_&quot;,sig_list$pos,&quot;_&quot;,sig_list$allele1,&quot;_&quot;,sig_list$allele2)
+locus &lt;- unique(sig_list$locus)
+gene_loc &lt;- fread(&quot;/data/gen1/LF_HRC_transethnic/PoPS/data/gene_loc.txt&quot;)
+gene_features &lt;- fread(&quot;/data/gen1/LF_HRC_transethnic/PoPS/data/PoPS.features.txt.gz&quot;)
+
+##### sentinel 500 kb total window #####
+result &lt;- data.frame(matrix(ncol = 16,nrow = 0))
+for(i in locus){
+    locus_sig_list &lt;- sig_list %&gt;% filter(locus == as.character(i))
+    sentinel &lt;- locus_sig_list %&gt;% filter(PIP_average == max(locus_sig_list$PIP_average)) %&gt;% select(sentinel)
+    chr &lt;- locus_sig_list %&gt;% filter(PIP_average == max(locus_sig_list$PIP_average)) %&gt;% select(chr)
+    pos &lt;- locus_sig_list %&gt;% filter(PIP_average == max(locus_sig_list$PIP_average)) %&gt;% select(pos)
+    print(sentinel)
+    trait &lt;- &quot;SA&quot;
+    if(chr!=&quot;X&quot;){
+        chr &lt;- as.integer(chr)
+        pos &lt;- as.integer(pos)
+        pos1 &lt;- pos-250000 # window set
+        pos2 &lt;- pos+250000 # window set
+        if(pos1&lt;0){
+            pos1 &lt;- 0
+        }
+        genes &lt;- gene_loc[gene_loc$CHR==chr,]
+        genes &lt;- genes[(genes$START&gt;=pos1&amp;genes$START&lt;=pos2)|(genes$END&gt;=pos1&amp;genes$END&lt;=pos2),]
+        n_genes &lt;- nrow(genes)
+        if(n_genes!=0){ 
+            result1 &lt;- data.frame(matrix(ncol = 16,nrow = 0))          
+            for(j in 1:n_genes){
+                result2 &lt;- data.frame(matrix(ncol = 16,nrow = 0))
+                gene &lt;- genes$ENSGID[j]
+                result2[1,1] &lt;- gene
+                result2[1,2] &lt;- sentinel
+                PoPS &lt;- fread(paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/&quot;,trait,&quot;.&quot;,chr,&quot;.results&quot;))
+                score &lt;- PoPS[PoPS$ENSGID==gene,]$Score[1]
+                result2[1,3] &lt;- score
+                result2[1,4] &lt;- i
+                beta &lt;- fread(paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/&quot;,trait,&quot;.&quot;,chr,&quot;.coefs&quot;))
+                X_all &lt;- gene_features[ENSGID==gene,]
+                X &lt;- select(X_all,beta$Feature)
+                X &lt;- as.data.table(t(X))
+                beta$X &lt;- X$V1
+                beta &lt;- beta[,contribute:=X*beta_hat]
+                beta &lt;- beta[order(abs(contribute),decreasing=TRUE)]
+                result2[1,7] &lt;- beta$Feature[1]
+                result2[1,8] &lt;- beta$Feature[2]
+                result2[1,9] &lt;- beta$Feature[3]
+                result2[1,10] &lt;- beta$Feature[4]
+                result2[1,11] &lt;- beta$Feature[5]
+                result2[1,12] &lt;- beta$Feature[6]
+                result2[1,13] &lt;- beta$Feature[7]
+                result2[1,14] &lt;- beta$Feature[8]
+                result2[1,15] &lt;- beta$Feature[9]
+                result2[1,16] &lt;- beta$Feature[10]
+                result1 &lt;&lt;- rbind(result1,result2)      
+            }
+            result1 &lt;- as.data.table(result1)
+            result1 &lt;- result1[order(X3,decreasing=TRUE)]
+            result1$X6 &lt;- FALSE
+            result1$X6[1] &lt;- TRUE
+            for(j in 1:n_genes){
+                result1$X5[j] &lt;- j
+            }
+            result &lt;&lt;- rbind(result,result1)
+        }
+    }
+}
+names(result) &lt;- c(&quot;ENSGID&quot;,&quot;sentinel&quot;,&quot;PoPS_score&quot;,&quot;signal_id&quot;,&quot;gene_rank&quot;,&quot;prioritized&quot;,&quot;Feature1&quot;,&quot;Feature2&quot;,&quot;Feature3&quot;,&quot;Feature4&quot;,&quot;Feature5&quot;,&quot;Feature6&quot;,&quot;Feature7&quot;,&quot;Feature8&quot;,&quot;Feature9&quot;,&quot;Feature10&quot;)
+result &lt;- result[order(signal_id,gene_rank)]
+write.table(result,&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_250kb_window.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;)
+#save results for only prioritised genes:
+write.table(result[gene_rank==1,],&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/prioritized_genes_250kb_window.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;)
+#save prioritised genes only:
+genes_250 &lt;- unique(result %&gt;% filter(gene_rank == 1) %&gt;% select(ENSGID))
+write.table(genes_250,&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/pops_var2genes_raw_250kbwindow.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;, col.names=F)
+#two locus not present when looking at 500kb total window:
+#10_rs201499805_rs1444789_8542744_9564361 and 15_rs11071559_60569988_61569988
+
+##### sentinel 1 mb total window #####
+result &lt;- data.frame(matrix(ncol = 16,nrow = 0))
+for(i in locus){
+    locus_sig_list &lt;- sig_list %&gt;% filter(locus == as.character(i))
+    sentinel &lt;- locus_sig_list %&gt;% filter(PIP_average == max(locus_sig_list$PIP_average)) %&gt;% select(sentinel)
+    chr &lt;- locus_sig_list %&gt;% filter(PIP_average == max(locus_sig_list$PIP_average)) %&gt;% select(chr)
+    pos &lt;- locus_sig_list %&gt;% filter(PIP_average == max(locus_sig_list$PIP_average)) %&gt;% select(pos)
+    print(sentinel)
+    trait &lt;- &quot;SA&quot;
+    if(chr!=&quot;X&quot;){
+        chr &lt;- as.integer(chr)
+        pos &lt;- as.integer(pos)
+        pos1 &lt;- pos-500000 # window set
+        pos2 &lt;- pos+500000 # window set
+        if(pos1&lt;0){
+            pos1 &lt;- 0
+        }
+        genes &lt;- gene_loc[gene_loc$CHR==chr,]
+        genes &lt;- genes[(genes$START&gt;=pos1&amp;genes$START&lt;=pos2)|(genes$END&gt;=pos1&amp;genes$END&lt;=pos2),]
+        n_genes &lt;- nrow(genes)
+        if(n_genes!=0){ 
+            result1 &lt;- data.frame(matrix(ncol = 16,nrow = 0))          
+            for(j in 1:n_genes){
+                result2 &lt;- data.frame(matrix(ncol = 16,nrow = 0))
+                gene &lt;- genes$ENSGID[j]
+                result2[1,1] &lt;- gene
+                result2[1,2] &lt;- sentinel
+                PoPS &lt;- fread(paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/&quot;,trait,&quot;.&quot;,chr,&quot;.results&quot;))
+                score &lt;- PoPS[PoPS$ENSGID==gene,]$Score[1]
+                result2[1,3] &lt;- score
+                result2[1,4] &lt;- i
+                beta &lt;- fread(paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/&quot;,trait,&quot;.&quot;,chr,&quot;.coefs&quot;))
+                X_all &lt;- gene_features[ENSGID==gene,]
+                X &lt;- select(X_all,beta$Feature)
+                X &lt;- as.data.table(t(X))
+                beta$X &lt;- X$V1
+                beta &lt;- beta[,contribute:=X*beta_hat]
+                beta &lt;- beta[order(abs(contribute),decreasing=TRUE)]
+                result2[1,7] &lt;- beta$Feature[1]
+                result2[1,8] &lt;- beta$Feature[2]
+                result2[1,9] &lt;- beta$Feature[3]
+                result2[1,10] &lt;- beta$Feature[4]
+                result2[1,11] &lt;- beta$Feature[5]
+                result2[1,12] &lt;- beta$Feature[6]
+                result2[1,13] &lt;- beta$Feature[7]
+                result2[1,14] &lt;- beta$Feature[8]
+                result2[1,15] &lt;- beta$Feature[9]
+                result2[1,16] &lt;- beta$Feature[10]
+                result1 &lt;&lt;- rbind(result1,result2)      
+            }
+            result1 &lt;- as.data.table(result1)
+            result1 &lt;- result1[order(X3,decreasing=TRUE)]
+            result1$X6 &lt;- FALSE
+            result1$X6[1] &lt;- TRUE
+            for(j in 1:n_genes){
+                result1$X5[j] &lt;- j
+            }
+            result &lt;&lt;- rbind(result,result1)
+        }
+    }
+}
+names(result) &lt;- c(&quot;ENSGID&quot;,&quot;sentinel&quot;,&quot;PoPS_score&quot;,&quot;signal_id&quot;,&quot;gene_rank&quot;,&quot;prioritized&quot;,&quot;Feature1&quot;,&quot;Feature2&quot;,&quot;Feature3&quot;,&quot;Feature4&quot;,&quot;Feature5&quot;,&quot;Feature6&quot;,&quot;Feature7&quot;,&quot;Feature8&quot;,&quot;Feature9&quot;,&quot;Feature10&quot;)
+result &lt;- result[order(signal_id,gene_rank)]
+write.table(result,&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_500kb_window.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;)
+write.table(result[gene_rank==1,],&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/prioritized_genes_500kb_window.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;)
+#save prioritised genes only:
+genes_500 &lt;- unique(result %&gt;% filter(gene_rank == 1) %&gt;% select(ENSGID))
+write.table(genes_500,&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/pops_var2genes_raw_500kbwindow.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;, col.names=F)
+#locus 15_rs11071559_60569988_61569988 reveals a gene !
+
+################# mapping features ###############
+# Get gene information using biomaRt for all genes
+library(biomaRt)         # Requires R/4.1.0
+#250Kb window results
+pops &lt;- fread(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/prioritized_genes_250kb_window.txt&quot;)
+ensembl &lt;- useEnsembl(biomart = &quot;genes&quot;, dataset = &quot;hsapiens_gene_ensembl&quot;, version = &quot;GRCh37&quot;)
+genes &lt;- as_tibble(getBM(attributes=c(&#39;hgnc_symbol&#39;, &#39;ensembl_gene_id&#39;, &#39;strand&#39;),
+  filters=c(&#39;ensembl_gene_id&#39;),
+  values=list(sort(unique(pops$ENSGID))),
+  mart=ensembl)) %&gt;%
+  rename(gene_symbol = hgnc_symbol, gene_strand = strand)
+
+genes &lt;- as.data.table(genes)
+setnames(genes,&quot;ensembl_gene_id&quot;,&quot;ENSGID&quot;)
+merged &lt;- merge(pops,genes,by=&quot;ENSGID&quot;)
+write.table(merged,&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_250kb_window_gene_mapped.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;)
+
+#500Kb window results
+pops &lt;- fread(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/prioritized_genes_500kb_window.txt&quot;)
+ensembl &lt;- useEnsembl(biomart = &quot;genes&quot;, dataset = &quot;hsapiens_gene_ensembl&quot;, version = &quot;GRCh37&quot;)
+genes &lt;- as_tibble(getBM(attributes=c(&#39;hgnc_symbol&#39;, &#39;ensembl_gene_id&#39;, &#39;strand&#39;),
+  filters=c(&#39;ensembl_gene_id&#39;),
+  values=list(sort(unique(pops$ENSGID))),
+  mart=ensembl)) %&gt;%
+  rename(gene_symbol = hgnc_symbol, gene_strand = strand)
+
+genes &lt;- as.data.table(genes)
+setnames(genes,&quot;ensembl_gene_id&quot;,&quot;ENSGID&quot;)
+merged &lt;- merge(pops,genes,by=&quot;ENSGID&quot;)
+write.table(merged,&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_500kb_window_gene_mapped.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;)
+
+detach(&quot;package:biomaRt&quot;, unload=TRUE)
+
+##########################################################
+w250 &lt;- fread(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_250kb_window_gene_mapped.txt&quot;) %&gt;%
+        mutate(window=&quot;250kb&quot;)
+w500 &lt;- fread(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_500kb_window_gene_mapped.txt&quot;) %&gt;%
+        mutate(window=&quot;500kb&quot;)
+w500_use &lt;- w500[!sentinel%in%w250$sentinel,]
+merged &lt;- rbind(w250,w500_use)
+merged &lt;- merged[PoPS_score&gt;0,]
+
+write.table(merged,&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_results_merged_table.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;)
+
+#save final list of genes:
+genes &lt;- unique(merged %&gt;% select(gene_symbol))
+write.table(genes,&quot;/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/pops_var2genes_raw.txt&quot;, row.names=F, quote=F, sep=&quot;\t&quot;)</code></pre>
+<p>PoPS is a gene prioritisation analysis that uses genome-wide signal
+from GWAS summary statistics and identified prioritised genes looking
+into public bulk and single-cell expression datasets, curated biological
+pathways, and predicted protein-protein interactions (<a href="https://github.com/FinucaneLab/pops" class="uri">https://github.com/FinucaneLab/pops</a>; <a href="https://www.nature.com/articles/s41588-023-01443-6" class="uri">https://www.nature.com/articles/s41588-023-01443-6</a>) <br>
+PoPS is run in three steps, plus a preliminary four step:</p>
+<p>-Step 0: Generate MAGMA scores: run MAGMA to obtain gene association
+statistics (z-scores) using severe asthma GWAS sumstats and 1000G
+European individuals;</p>
+<p>-Step 1: Select features: looking at the MAGMA scores, certain
+features are selected since they are enriched, and stored in the
+.feature output files;</p>
+<p>-Step 2: Run PoPS: calculate the POP score for each gene using a
+joint model with a leave-one chromosome out method for the enrichment of
+all selected features</p>
 </div>
 <div id="nearby-mendelian-rare-disease-genes" class="section level2">
 <h2>Nearby Mendelian rare disease-genes</h2>
+<p>src/rare_disease/rare_disease.r</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+#Rationale: Find nearby rare mendelian genes that are within +/- 500Kb from SA GWAS sentinels.
+
+library(GenomicRanges)
+library(rtracklayer)
+library(tidyverse)
+library(pander)
+library(scales)
+library(readxl)
+library(data.table)
+
+# Define distance to look up nearby rare disease associated genes
+DISTANCE &lt;- 5e5
+# funtion to work out the number unique element of the yth column of data table x
+getN &lt;- function(x, y) x %&gt;% pull({{y}}) %&gt;% n_distinct
+
+## retrieve genomic reference for genes
+ucsc = browserSession(&quot;UCSC&quot;)  # methods for getting browser sessions
+genome(ucsc) &lt;- &quot;hg19&quot;  # setting the sequence information stored in ucsc
+# genomic reference for genes
+refseq &lt;- ucsc %&gt;%
+  ucscTableQuery(track=&quot;NCBI RefSeq&quot;, table=&quot;refGene&quot;) %&gt;%
+  getTable %&gt;%
+  as_tibble
+
+## genes and rare disease association from orphadata 
+#https://www.orphadata.com/data/xml/en_product6.xml
+orphanet_genes &lt;- read_xlsx(&quot;/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product6.xlsx&quot;) %&gt;%
+  select(Symbol, Gene=Name12, OrphaCode, Disease=Name, SourceOfValidation,
+         DisorderGeneAssociationType=Name24) %&gt;%
+  distinct
+
+# hpo: human phenotype ontology provides a standardized vocabulary of phenotypic abnormalities encountered in human disease
+#https://www.orphadata.org/data/xml/en_product4.xml
+#create the levels for HPOFrequency column:
+hpo_f_levels &lt;- c(&quot;Obligate (100%)&quot;,&quot;Very frequent (99-80%)&quot;,&quot;Frequent (79-30%)&quot;,&quot;Occasional (29-5%)&quot;,&quot;Very rare (&lt;4-1%)&quot;,&quot;Excluded (0%)&quot;)
+orphanet_hpo &lt;- read_xlsx(&quot;/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product4.xlsx&quot;) %&gt;%
+  select(OrphaCode, HPOId, HPOTerm, HPOFrequency=Name15) %&gt;%
+  distinct %&gt;%
+  mutate(HPOFrequency=factor(HPOFrequency, levels=hpo_f_levels))
+
+##Retrieve Sentinel SNPs - highest PIP in the fine-mapped loci:
+sig_list_tmp &lt;- fread(&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt&quot;)
+setnames(sig_list_tmp,&quot;chromosome&quot;,&quot;chr&quot;)
+setnames(sig_list_tmp,&quot;position&quot;,&quot;pos&quot;)
+sig_list_tmp$sentinel &lt;- paste0(sig_list_tmp$chr,&quot;_&quot;,sig_list_tmp$pos,&quot;_&quot;,sig_list_tmp$allele1,&quot;_&quot;,sig_list_tmp$allele2)
+locus &lt;- unique(sig_list_tmp$locus)
+
+sentinels &lt;- data.frame(matrix(ncol = 4,nrow = 0))
+colnames(sentinels) &lt;- c(&quot;locus&quot;,&quot;sentinel&quot;,&quot;chr&quot;,&quot;pos&quot;)
+for(i in locus){
+    locus_sig_list &lt;- sig_list_tmp %&gt;% filter(locus == as.character(i))
+    locus_sig_list &lt;- locus_sig_list %&gt;% filter(PIP_average == max(locus_sig_list$PIP_average)) %&gt;% select(locus,sentinel,chr,pos)
+    sentinels &lt;- rbind(sentinels,locus_sig_list)
+    }
+
+## Overlap of GWAS function signals with NCBI Refseq genes
+# Create a GRanges object for reference of genes
+refseq.GRanges &lt;- refseq %&gt;%
+  mutate(chrom=sub(&quot;^chr&quot;, &quot;&quot;, chrom)) %&gt;%
+  select(Symbol=name2, chrom, start=txStart, end=txEnd) %&gt;%
+  makeGRangesFromDataFrame(keep.extra.columns = TRUE) # takes a data-frame-like object as input and tries to automatically find the columns that describe genomic ranges. It returns them as a GRanges object 
+# Create a GRanges object for our signals
+sentinels.GRanges &lt;- sentinels %&gt;%
+  select(chr, start=pos, sentinel) %&gt;%
+  makeGRangesFromDataFrame(end.field = &quot;start&quot;, keep.extra.columns = TRUE)
+# overlap checking
+nearby_genes &lt;- mergeByOverlaps(sentinels.GRanges, refseq.GRanges, maxgap=DISTANCE) %&gt;%
+  as_tibble %&gt;%
+  select(sentinel, Position=sentinels.GRanges.start, Symbol,
+         txStart=refseq.GRanges.start, txEnd=refseq.GRanges.end,
+         width=refseq.GRanges.width) %&gt;%
+  mutate(distance=ifelse(txStart &lt;= Position &amp; txEnd &gt;= Position, 0,
+                         ifelse(Position &lt; txStart, txStart - Position, Position - txEnd))) %&gt;%
+  group_by(sentinel, Symbol) %&gt;%   # most data operation are done one groups defined by variables
+  filter(distance == min(distance)) %&gt;%
+  filter(width == max(width)) %&gt;%
+  slice(1) %&gt;%
+  ungroup
+
+n_refseq &lt;- refseq %&gt;% getN(name2)
+n_nearby_genes_Sentinel &lt;- nearby_genes %&gt;% getN(sentinel)
+n_nearby_genes_Symbol &lt;- nearby_genes %&gt;% getN(Symbol)
+n_genes &lt;- orphanet_genes %&gt;% getN(Symbol)
+n_disease &lt;- orphanet_genes %&gt;% getN(OrphaCode)
+n_disease_with_hpo &lt;- orphanet_hpo %&gt;% getN(OrphaCode)
+n_hpo &lt;- orphanet_hpo %&gt;% getN(HPOId)
+
+# Merge Orphanet genes with HPO terms and keep only Disease-causing germline genes
+orphanet &lt;- left_join(orphanet_genes, orphanet_hpo) %&gt;%
+  filter(grepl(&quot;Disease-causing germline&quot;, DisorderGeneAssociationType)) %&gt;%
+  mutate(HPOFrequency = fct_explicit_na(HPOFrequency, &quot;No HPO term&quot;))
+
+n_gene_disease_c &lt;- orphanet %&gt;% group_by(Symbol, Disease) %&gt;% n_groups 
+n_genes_c &lt;- orphanet %&gt;% getN(Symbol)
+n_disease_c &lt;- orphanet %&gt;% getN(Disease)
+n_disease_hpo_c &lt;- orphanet %&gt;% group_by(Disease, HPOId) %&gt;% n_groups 
+n_disease_with_hpo_c &lt;- orphanet %&gt;% filter(!is.na(HPOId)) %&gt;% getN(Disease)
+n_hpo_c &lt;- orphanet %&gt;% getN(HPOId)
+
+orphanet %&gt;%
+  count(HPOFrequency) %&gt;%
+  mutate(pc=(n/sum(n)) %&gt;% percent) %&gt;%
+  pander(big.mark=&quot;,&quot;, caption=paste(&quot;Table 1a: Distribution of HPO term frequencies across&quot;,
+  nrow(orphanet) %&gt;% comma, &quot;rows of gene-disease-hpo associations for Disease-causing germline genes&quot;))
+
+orphanet %&gt;%
+  group_by(Symbol) %&gt;%
+  arrange(HPOFrequency) %&gt;%
+  slice(1) %&gt;%
+  ungroup %&gt;%
+  count(HPOFrequency) %&gt;%
+  mutate(pc=(n/sum(n)) %&gt;% percent) %&gt;%
+  pander(big.mark=&quot;,&quot;, caption=paste(&quot;Table 1b: Distribution of highest HPO term frequency per gene across&quot;,
+                                     n_genes_c %&gt;% comma, &quot;Disease-causing germline genes&quot;))
+
+## Filtering for asthma terms
+red &lt;- hpo_f_levels[1:2]
+yellow &lt;- hpo_f_levels[3]
+green &lt;- hpo_f_levels[4:5]
+
+#HPOId term for asthma: HP:0002099
+key_terms &lt;- c(&quot;asthma&quot;,&quot;eosin&quot;,&quot;immunodef&quot;,&quot;cili&quot;,&quot;autoimm&quot;,&quot;leukopenia&quot;,&quot;neutropenia&quot;)
+orphanet &lt;- orphanet %&gt;%
+  mutate(asthma_HPO=grepl(paste(key_terms, collapse=&#39;|&#39;), HPOTerm, ignore.case = TRUE) &amp;
+                   HPOFrequency != &quot;Excluded (0%)&quot;,
+         asthma_disease=grepl(paste(key_terms, collapse=&#39;|&#39;), Disease, ignore.case = TRUE),
+         asthma=(asthma_HPO | asthma_disease),
+         overlap=Symbol %in% nearby_genes$Symbol,
+         evidence=ifelse(!asthma, &quot;Not asthma related&quot;,
+                         ifelse(asthma_disease | HPOFrequency %in% red,
+                         &quot;Disease name, obligate or very frequent&quot;,
+                         ifelse(HPOFrequency %in% yellow, &quot;Frequent&quot;,
+                                ifelse(HPOFrequency %in% green, &quot;Occasional or rare&quot;, &quot;Excluded&quot;)))) %&gt;%
+           factor(levels = c(&quot;Disease name, obligate or very frequent&quot;,
+                             &quot;Frequent&quot;,
+                             &quot;Occasional or rare&quot;,
+                             &quot;Excluded&quot;,
+                             &quot;Not asthma related&quot;)))
+
+n_asthma_genes_disease &lt;- orphanet %&gt;% filter(asthma_disease) %&gt;% getN(Symbol)
+n_asthma_genes_hpo &lt;- orphanet %&gt;% filter(asthma_HPO) %&gt;% getN(Symbol)
+
+orphanet_asthma &lt;- orphanet %&gt;%
+  filter(asthma)
+
+n_asthma_genes &lt;- orphanet_asthma %&gt;% getN(Symbol)
+
+orphanet_asthma_selected &lt;- orphanet_asthma %&gt;%
+  filter(overlap) %&gt;%
+  select(-overlap)
+
+n_asthma_genes_selected &lt;- orphanet_asthma_selected %&gt;% getN(Symbol)
+
+table2a &lt;- orphanet %&gt;%
+  group_by(Symbol) %&gt;%
+  summarise_at(vars(asthma, overlap), any) %&gt;%
+  ungroup %&gt;%
+  count(asthma, overlap) %&gt;%
+  pivot_wider(names_from = &quot;overlap&quot;, values_from = &quot;n&quot;, names_prefix = &quot;overlap_&quot;) %&gt;%
+  mutate_at(vars(starts_with(&quot;overlap&quot;)), list(pc=~(./sum(.)) %&gt;% percent))
+
+table2a_chisq &lt;- table2a %&gt;% select(2:3) %&gt;% chisq.test
+
+table2b &lt;- orphanet %&gt;%
+  group_by(Symbol) %&gt;%
+  arrange(evidence) %&gt;%
+  slice(1) %&gt;%
+  ungroup %&gt;%
+  count(evidence, overlap) %&gt;%
+  pivot_wider(names_from = &quot;overlap&quot;, values_from = &quot;n&quot;, names_prefix = &quot;overlap_&quot;,
+              values_fill = list(n=0)) %&gt;%
+  mutate_at(vars(starts_with(&quot;overlap&quot;)), list(pc=~(./sum(.)) %&gt;% percent))
+
+table2b_chisq &lt;- table2b %&gt;% select(2:3) %&gt;% chisq.test
+
+pander(table2a, big.mark=&quot;,&quot;,
+       caption=paste0(&quot;Table 2a: For&quot;, n_genes_c %&gt;% comma, &quot;rare Disease-causing, germline genes, the numbers of asthma and non-asthma related genes vs. numbers overlapping severe asthma signals &quot;, DISTANCE/1000, &quot;kb. chi^2 P =&quot;, table2a_chisq$p.value %&gt;% round(3)))
+
+pander(table2b, big.mark=&quot;,&quot;,
+       caption=paste0(&quot;Table 2b: For&quot;, n_genes_c %&gt;% comma, &quot;rare Disease-causing, germline genes, the numbers of genes in each asthma evidence category vs. numbers overlapping severe asthma signals &quot;, DISTANCE/1000, &quot;kb. chi^2 P =&quot;, table2b_chisq$p.value %&gt;% round(3)), split.table=Inf)
+
+## Hypergeometric test
+hitInSample &lt;- n_asthma_genes_selected
+hitInPop &lt;- n_asthma_genes
+failInPop &lt;- n_refseq - n_asthma_genes
+sampleSize &lt;- n_nearby_genes_Symbol
+
+p_asthma_en &lt;- phyper(q=hitInSample - 1,
+                 m=hitInPop,
+                 n=failInPop,
+                 k=sampleSize,
+                 lower.tail = FALSE)  # P value for hypergeometric test: 0.2486454
+
+table3a.m &lt;- matrix(c(hitInSample, hitInPop - hitInSample,
+                      sampleSize - hitInSample, failInPop - sampleSize + hitInSample), 2, 2)
+rownames(table3a.m) &lt;- c(&quot;yes&quot;, &quot;no&quot;)
+colnames(table3a.m) &lt;- c(&quot;asthma&quot;, &quot;others&quot;)
+table3a &lt;- table3a.m %&gt;%
+  as_tibble(rownames = &quot;Near severe asthma sentinel&quot;) %&gt;%
+  mutate(pc_asthma=(asthma/(asthma + others)) %&gt;% percent)
+pander(table3a, big.mark=&quot;,&quot;, caption=paste0(&quot;Table 3: For rare disease-causing genes, the proportion that are asthma related within &quot;, DISTANCE/1000, &quot;kb of a severe asthma sentinel.&quot;))
+
+## By-gene and by-SNP results
+concat &lt;- function(x) {
+  x &lt;- x[!is.na(x)]
+  if (length(x) &gt; 0 &amp; is.numeric(x)) {
+    min(x, na.rm=T) %&gt;% paste
+  } else {
+    x %&gt;% unique %&gt;% paste(collapse=&quot;; &quot;)
+  }
+}
+
+orphanet_asthma_selected_wide &lt;- orphanet_asthma_selected %&gt;%
+  mutate_at(vars(starts_with(&quot;HPO&quot;)), ~ifelse(.data$asthma_HPO, ., NA)) %&gt;%
+  arrange(evidence) %&gt;%
+  group_by(Symbol, Gene) %&gt;%
+  summarise(Evidence=evidence[1],
+            nDisease=n_distinct(Disease, na.rm = TRUE),
+            Diseases=concat(Disease),
+            Validation=concat(SourceOfValidation),
+            nHPOTerm=n_distinct(HPOTerm, na.rm = TRUE),
+            HPOTerms=concat(HPOTerm)) %&gt;%
+  ungroup %&gt;%
+  arrange(Evidence)
+  implicated_rare &lt;- right_join(nearby_genes, orphanet_asthma_selected_wide) %&gt;%
+  add_column(Rare=&quot;Rare&quot;, .before = &quot;txStart&quot;)
+
+results &lt;- implicated_rare %&gt;% select(-Position) %&gt;% left_join(sentinels, .)
+
+results_rare &lt;- results %&gt;% filter(!is.na(Rare)) %&gt;% arrange(Evidence, distance, chr, pos) %&gt;% ungroup 
+
+results_by_snp &lt;- results %&gt;%
+  arrange(Evidence, distance) %&gt;%
+  mutate_at(vars(Rare), ~ifelse(!is.na(.), .data$Symbol, NA)) %&gt;%
+  group_by(sentinel) %&gt;%
+  summarise_at(vars(Rare, Evidence, distance), concat) %&gt;%
+  ungroup %&gt;% 
+  left_join(sentinels, .)
+
+results_by_snp_phyper &lt;- results_rare %&gt;%
+  group_by(sentinel) %&gt;%
+  summarise(hitInSample_snp=n()) %&gt;%
+  ungroup %&gt;%
+  left_join(nearby_genes %&gt;%
+              group_by(sentinel) %&gt;%
+              summarise(sampleSize_snp=n())) %&gt;%
+  mutate(hyperG_p=phyper(q=hitInSample_snp - 1,
+                 m=hitInPop,
+                 n=failInPop,
+                 k=sampleSize_snp,
+                 lower.tail = FALSE)) %&gt;%
+  left_join(results_by_snp, .)
+
+results_by_gene &lt;- results %&gt;%
+  filter(!is.na(Symbol)) %&gt;%
+  arrange(Evidence, distance) %&gt;%
+  mutate_at(vars(Rare), ~ifelse(!is.na(.), .data$sentinel, NA)) %&gt;%
+  group_by(Symbol) %&gt;%
+  summarise_at(vars(Rare, Evidence, distance, Diseases, HPOTerms), concat)
+
+out_base &lt;- paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/rare_disease/results_&quot;, DISTANCE/1000, &quot;kb&quot;)
+write_csv(results, paste0(out_base, &quot;.csv&quot;), na = &quot;&quot;)
+write_csv(results_rare, paste0(out_base, &quot;_rare.csv&quot;), na = &quot;&quot;)
+write_csv(results_by_snp_phyper, paste0(out_base, &quot;_by_snp.csv&quot;), na = &quot;&quot;)
+write_csv(results_by_gene, paste0(out_base, &quot;_by_gene.csv&quot;), na = &quot;&quot;)
+#save genes only:
+fwrite(as.data.frame(results_by_gene$Symbol), &quot;/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt&quot;, na = &quot;&quot;,col.names=F,quote=F)</code></pre>
+<p>Using the Orphadata resource (website link), I analysed if any genes
+within 500Kb of fine-mapped sentinel variants were associated with rare
+diseases showing implication in asthma. In doing so, I filtered the HPO
+term or any disease including key terms:
+‘asthma,eosin,immunodef,cili,autoimm,leukopenia,neutropenia’.</p>
 </div>
 <div id="nearby-mouse-knockout-orthologs" class="section level2">
 <h2>Nearby Mouse knockout orthologs</h2>
+<p>src/mouse_ko/mouse_ko.r</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+#Rationale: Find nearby human ortholog of mouse knockout genes that are within +/- 500Kb from SA GWAS sentinels.
+
+library(GenomicRanges)
+library(rtracklayer)
+library(tidyverse)
+library(pander)
+library(scales)
+library(readxl)
+library(data.table)
+
+setwd(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/&quot;)
+
+DISTANCE &lt;- 5e5
+
+getN &lt;- function(x, y) x %&gt;% pull({{y}}) %&gt;% n_distinct
+
+
+##Retrieve Sentinel SNPs - highest PIP in the fine-mapped loci:
+sig_list_tmp &lt;- fread(&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt&quot;)
+setnames(sig_list_tmp,&quot;chromosome&quot;,&quot;chr&quot;)
+setnames(sig_list_tmp,&quot;position&quot;,&quot;pos&quot;)
+sig_list_tmp$sentinel &lt;- paste0(sig_list_tmp$chr,&quot;_&quot;,sig_list_tmp$pos,&quot;_&quot;,sig_list_tmp$allele1,&quot;_&quot;,sig_list_tmp$allele2)
+locus &lt;- unique(sig_list_tmp$locus)
+
+sentinels &lt;- data.frame(matrix(ncol = 4,nrow = 0))
+colnames(sentinels) &lt;- c(&quot;locus&quot;,&quot;sentinel&quot;,&quot;chr&quot;,&quot;pos&quot;)
+for(i in locus){
+    locus_sig_list &lt;- sig_list_tmp %&gt;% filter(locus == as.character(i))
+    locus_sig_list &lt;- locus_sig_list %&gt;% filter(PIP_average == max(locus_sig_list$PIP_average)) %&gt;% select(locus,sentinel,chr,pos)
+    sentinels &lt;- rbind(sentinels,locus_sig_list)
+    }
+
+## retrieve genomic reference for genes
+#resolved problem:
+#if (!require(&quot;BiocManager&quot;, quietly = TRUE))
+#    install.packages(&quot;BiocManager&quot;)
+#BiocManager::install(version = &quot;3.18&quot;)
+
+ucsc &lt;- browserSession(&quot;UCSC&quot;)
+genome(ucsc) &lt;- &quot;hg19&quot;
+refseq &lt;- ucsc %&gt;%
+  ucscTableQuery(track=&quot;NCBI RefSeq&quot;, table=&quot;refGene&quot;) %&gt;%
+  getTable %&gt;%
+  as_tibble
+
+## Mouse genotype-phenotype data
+## Store in /scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/ and downloaded from:
+#latest release 2023-07-06:
+#wget -P ${tmp_path}/mouse_ko/ https://ftp.ebi.ac.uk/pub/databases/impc/all-data-releases/latest/results/genotype-phenotype-assertions-ALL.csv.gz
+#latest release 2023-11-22:
+#wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/human_mouse_hcop_fifteen_column.txt.gz
+
+orthologs &lt;- read_tsv(&quot;human_mouse_hcop_fifteen_column.txt.gz&quot;)
+all_geno_pheno &lt;- read_csv(&quot;genotype-phenotype-assertions-ALL.csv.gz&quot;)
+
+geno_pheno &lt;- all_geno_pheno %&gt;%
+  separate(top_level_mp_term_name, c(&quot;top_level_mp_term&quot;, &quot;top_level_mp_subtype&quot;), &quot;,&quot;)
+
+#display all the possible top level mp term and related number of genes:
+geno_pheno %&gt;%
+  group_by(top_level_mp_term) %&gt;%
+  summarise(nlines=n(), ngenes=n_distinct(marker_symbol)) %&gt;%
+  drop_na %&gt;%
+  pander(big.mark=&quot;,&quot;)
+
+
+## Overlap of severe asthma - SA signals with NCBI Refseq genes
+refseq.GRanges &lt;- refseq %&gt;%
+  select(Symbol=name2, chrom, start=txStart, end=txEnd) %&gt;%
+  makeGRangesFromDataFrame(keep.extra.columns = TRUE)
+
+SA.GRanges &lt;- sentinels %&gt;%
+  mutate(Chrom=paste0(&quot;chr&quot;, chr)) %&gt;%
+  select(Chrom, start=pos, end=pos, sentinel) %&gt;%
+  makeGRangesFromDataFrame(keep.extra.columns = TRUE)
+
+nearby_genes &lt;- mergeByOverlaps(SA.GRanges, refseq.GRanges, maxgap=DISTANCE) %&gt;%
+  as_tibble %&gt;%
+  select(sentinel, Position=SA.GRanges.start, Symbol,
+         txStart=refseq.GRanges.start, txEnd=refseq.GRanges.end,
+         width=refseq.GRanges.width) %&gt;%
+  mutate(distance=ifelse(txStart &lt;= Position &amp; txEnd &gt;= Position, 0,
+                         ifelse(Position &lt; txStart, txStart - Position, Position - txEnd))) %&gt;%
+  group_by(sentinel, Symbol) %&gt;%
+  filter(distance == min(distance)) %&gt;%
+  filter(width == max(width)) %&gt;%
+  slice(1) %&gt;%
+  ungroup
+
+n_refseq &lt;- refseq %&gt;% getN(name2)
+n_nearby_genes_sentinel &lt;- nearby_genes %&gt;% getN(sentinel)
+n_nearby_genes_Symbol &lt;- nearby_genes %&gt;% getN(Symbol)
+
+## Orthologs of mouse KO genes with asthma relevant phenotype - BROAD filter
+#BROAD filter for top_level_mp_term == &quot;respiratory system phenotype&quot; give immunity and/or muscle related term as well:
+ko_mouse_mp &lt;- geno_pheno %&gt;%
+  filter(top_level_mp_term == &quot;respiratory system phenotype&quot; |
+         top_level_mp_term == &quot;immune system phenotype&quot; |
+         top_level_mp_term == &quot;muscle phenotype&quot;) %&gt;%
+  select(top_level_mp_term, mp_term_name) %&gt;%
+  distinct %&gt;% arrange(top_level_mp_term,mp_term_name)
+#save the top level and suptypes level that I use:
+fwrite(ko_mouse_mp,&quot;/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/MP_TERM_approx_asthma_respimmmuscle.txt&quot;,quote=F, sep=&quot;\t&quot;)
+
+#Actual filter for relevant top level and subtypes
+ko_mouse &lt;- geno_pheno %&gt;%
+  filter(top_level_mp_term == &quot;respiratory system phenotype&quot; |
+         top_level_mp_term == &quot;immune system phenotype&quot; |
+         top_level_mp_term == &quot;muscle phenotype&quot;) %&gt;%
+  select(marker_symbol, mp_term_name) %&gt;%
+  distinct
+
+ko_human &lt;- orthologs %&gt;%
+  filter(support != &quot;OrthoMCL&quot;) %&gt;%
+  select(mouse_symbol, human_symbol) %&gt;%
+  inner_join(ko_mouse, c(&quot;mouse_symbol&quot; = &quot;marker_symbol&quot;)) %&gt;%
+  mutate(overlap=human_symbol %in% nearby_genes$Symbol)
+
+no_ortholog &lt;- setdiff(ko_mouse$marker_symbol, ko_human$mouse_symbol)
+ko_human_selected &lt;- ko_human %&gt;%
+  filter(overlap)
+
+## Hypergeometric test
+hitInSample &lt;- nrow(ko_human_selected)
+hitInPop &lt;- nrow(ko_human)
+failInPop &lt;- n_refseq - hitInPop
+sampleSize &lt;- n_nearby_genes_Symbol
+
+p_resp_en &lt;- phyper(q=hitInSample - 1,
+                 m=hitInPop,
+                 n=failInPop,
+                 k=sampleSize,
+                 lower.tail = FALSE)
+
+table3a.m &lt;- matrix(c(hitInSample, hitInPop - hitInSample,
+                      sampleSize - hitInSample, failInPop - sampleSize + hitInSample), 2, 2)
+rownames(table3a.m) &lt;- c(&quot;yes&quot;, &quot;no&quot;)
+colnames(table3a.m) &lt;- c(&quot;asthma&quot;, &quot;others&quot;)
+table3a &lt;- table3a.m %&gt;%
+  as_tibble(rownames = &quot;Near severe asthma sentinel&quot;) %&gt;%
+  mutate(pc_asthma=(asthma/(asthma + others)) %&gt;% percent)
+
+pander(table3a, big.mark=&quot;,&quot;, caption=paste0(&quot;Table 3: For mouse knockout-causing genes, the proportion that are asthma related within &quot;, DISTANCE/1000, &quot;kb of an asthma function sentinel.&quot;))
+
+### By-gene and by-SNP results
+concat &lt;- function(x) x[!is.na(x)] %&gt;% unique %&gt;% paste(collapse=&quot;; &quot;)
+
+implicated_mko &lt;- right_join(nearby_genes, ko_human_selected, c(&quot;Symbol&quot; = &quot;human_symbol&quot;)) %&gt;%
+  add_column(MKO=&quot;MKO&quot;, .before = &quot;txStart&quot;)
+
+results &lt;- left_join(sentinels, implicated_mko)
+
+results_mko &lt;- results %&gt;%
+  filter(!is.na(MKO)) %&gt;%
+  arrange(distance, chr, pos) %&gt;%
+  ungroup 
+
+results_by_snp &lt;- results %&gt;%
+  arrange(distance) %&gt;%
+  mutate_at(vars(MKO), ~ifelse(!is.na(.), .data$Symbol, NA)) %&gt;%
+  group_by(sentinel) %&gt;%
+  summarise_at(vars(MKO, distance), concat) %&gt;%
+  ungroup %&gt;% 
+  left_join(sentinels, .) 
+
+results_by_snp_phyper &lt;- results_mko %&gt;%
+  group_by(sentinel) %&gt;%
+  summarise(hitInSample_snp=n()) %&gt;%
+  ungroup %&gt;%
+  left_join(nearby_genes %&gt;%
+              group_by(sentinel) %&gt;%
+              summarise(sampleSize_snp=n())) %&gt;%
+  mutate(hyperG_p=phyper(q=hitInSample_snp - 1,
+                 m=hitInPop,
+                 n=failInPop,
+                 k=sampleSize_snp,
+                 lower.tail = FALSE)) %&gt;%
+  left_join(results_by_snp, .)
+
+results_by_gene &lt;- results %&gt;%
+  filter(!is.na(Symbol)) %&gt;%
+  arrange(distance) %&gt;%
+  mutate_at(vars(MKO), ~ifelse(!is.na(.), .data$sentinel, NA)) %&gt;%
+  group_by(Symbol) %&gt;%
+  summarise_at(vars(MKO, distance), concat) %&gt;%
+  ungroup 
+
+results_by_snp_phyper %&gt;% filter(!is.na(hyperG_p)) %&gt;% count(hyperG_p &lt; 0.05) %&gt;%
+  pander(caption=&quot;By SNP hypergeometric results&quot;)
+
+out_base &lt;- paste0(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/results_&quot;, DISTANCE/1000, &quot;kb&quot;)
+write_csv(results, paste0(out_base, &quot;.csv&quot;), na = &quot;&quot;)
+write_csv(results_mko, paste0(out_base, &quot;_mko.csv&quot;), na = &quot;&quot;)
+write_csv(results_by_snp_phyper, paste0(out_base, &quot;_by_snp.csv&quot;), na = &quot;&quot;)
+write_csv(results_by_gene, paste0(out_base, &quot;_by_gene.csv&quot;), na = &quot;&quot;) # gives me the gene list
+MP_TERM &lt;- unique(ko_mouse_mp$mp_term_name)
+inner_join(results_mko %&gt;%
+             select(-MKO, -txStart, -txEnd, -width, -overlap),
+           results_by_snp_phyper %&gt;% select(sentinel, hyperG_p)) %&gt;%
+  inner_join(all_geno_pheno %&gt;%
+               filter(mp_term_name %in% MP_TERM) %&gt;%
+               select(marker_symbol, mp_term_name, p_value, percentage_change, effect_size),
+             c(&quot;mouse_symbol&quot; = &quot;marker_symbol&quot;)) %&gt;%
+  group_by(Symbol, mouse_symbol) %&gt;%
+  arrange(p_value) %&gt;%
+  slice(1) %&gt;%
+  write_csv(&quot;mouse_ko.csv&quot;)
+
+#save genes only:
+fwrite(as.data.frame(results_by_gene$Symbol), &quot;/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/mouse_ko_genes_raw.txt&quot;, na = &quot;&quot;,col.names=F,quote=F)</code></pre>
+<p>Using the International Mouse Phenotyping (website link), I analysed
+if any human ortholog gene has been studied in mouse model in the
+context of respiratory, immune or muscle phenotypes (top Mouse Phenotype
+(MP) terms: respiratory system phenotype”, “immune system phenotype”,
+“muscle phenotype”). I selected relevant genes within 500Kb from the top
+causal variant for each fine mapped locus.</p>
+</div>
+<div id="rare-variant-analysis" class="section level2">
+<h2>Rare Variant Analysis</h2>
 </div>
 </div>
 <div id="results" class="section level1">

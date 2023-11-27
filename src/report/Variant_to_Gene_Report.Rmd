@@ -239,14 +239,19 @@ PoPS is run in three steps, plus a preliminary four step:
 
 
 ## Nearby Mendelian rare disease-genes
-
+src/rare_disease/rare_disease.r
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/rare_disease/rare_disease.r'), eval=FALSE, hide=TRUE}
+```
+Using the Orphadata resource (website link), I analysed if any genes within 500Kb of fine-mapped sentinel variants were associated
+with rare diseases showing implication in asthma. In doing so, I filtered the HPO term or any disease including key terms:
+'asthma,eosin,immunodef,cili,autoimm,leukopenia,neutropenia'.
 
 ## Nearby Mouse knockout orthologs
 src/mouse_ko/mouse_ko.r
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/mouse_ko/mouse_ko.r'), eval=FALSE, hide=TRUE}
 ```
-Using the XXX I analysed if any human ortholog gene has been studied in mouse model in the context of respiratory, immune or muscle phenotypes
-(top MP terms: respiratory system phenotype", "immune system phenotype", "muscle phenotype"). I selected relevant genes within 500Kb from the top causal variant for
+Using the International Mouse Phenotyping (website link), I analysed if any human ortholog gene has been studied in mouse model in the context of respiratory, immune or muscle phenotypes
+(top Mouse Phenotype (MP) terms: respiratory system phenotype", "immune system phenotype", "muscle phenotype"). I selected relevant genes within 500Kb from the top causal variant for
 each fine mapped locus.
 
 ## Rare Variant Analysis
