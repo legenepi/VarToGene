@@ -1,3 +1,7 @@
+#!/usr/bin/env Rscript
+
+#Rationale: Find nearby rare mendelian genes that are within +/- 500Kb from SA GWAS sentinels.
+
 library(GenomicRanges)
 library(rtracklayer)
 library(tidyverse)
@@ -5,9 +9,7 @@ library(pander)
 library(scales)
 library(readxl)
 library(data.table)
-# R/4.0.0
 
-setwd("/data/gen1/TSH/rare_disease/")
 # Define distance to look up nearby rare disease associated genes
 DISTANCE <- 5e5
 # funtion to work out the number unique element of the yth column of data table x
@@ -23,26 +25,37 @@ refseq <- ucsc %>%
   as_tibble
 
 ## genes and rare disease association from orphadata 
-# http://www.orphadata.org/data/xml/en_product6.xml
-orphanet_genes <- read_xlsx("en_product6.xlsx") %>%
+#https://www.orphadata.com/data/xml/en_product6.xml
+orphanet_genes <- read_xlsx("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product6.xlsx") %>%
   select(Symbol, Gene=Name12, OrphaCode, Disease=Name, SourceOfValidation,
          DisorderGeneAssociationType=Name24) %>%
   distinct
+
+# hpo: human phenotype ontology provides a standardized vocabulary of phenotypic abnormalities encountered in human disease
+#https://www.orphadata.org/data/xml/en_product4.xml
+#create the levels for HPOFrequency column:
 hpo_f_levels <- c("Obligate (100%)","Very frequent (99-80%)","Frequent (79-30%)","Occasional (29-5%)","Very rare (<4-1%)","Excluded (0%)")
-# hpo: human phenotype ontology provides a standardized vocabulary of phenotypic abnormalities encounterd in human disease
-# http://www.orphadata.org/data/xml/en_product4.xml
-orphanet_hpo <- read_xlsx("en_product4.xlsx") %>%
+orphanet_hpo <- read_xlsx("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product4.xlsx") %>%
   select(OrphaCode, HPOId, HPOTerm, HPOFrequency=Name15) %>%
   distinct %>%
   mutate(HPOFrequency=factor(HPOFrequency, levels=hpo_f_levels))
 
-## TSH signals
-sentinels <- read_tsv("/data/gen1/TSH/novel_signals/TSH_signal_list.txt")
-setnames(sentinels,"MarkerName","sentinel")
-setnames(sentinels,"Chromosome","chr")
-setnames(sentinels,"Position","pos")
+##Retrieve Sentinel SNPs - highest PIP in the fine-mapped loci:
+sig_list_tmp <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt")
+setnames(sig_list_tmp,"chromosome","chr")
+setnames(sig_list_tmp,"position","pos")
+sig_list_tmp$sentinel <- paste0(sig_list_tmp$chr,"_",sig_list_tmp$pos,"_",sig_list_tmp$allele1,"_",sig_list_tmp$allele2)
+locus <- unique(sig_list_tmp$locus)
 
-## Overlap of TSH function signals with NCBI Refseq genes
+sentinels <- data.frame(matrix(ncol = 4,nrow = 0))
+colnames(sentinels) <- c("locus","sentinel","chr","pos")
+for(i in locus){
+    locus_sig_list <- sig_list_tmp %>% filter(locus == as.character(i))
+    locus_sig_list <- locus_sig_list %>% filter(PIP_average == max(locus_sig_list$PIP_average)) %>% select(locus,sentinel,chr,pos)
+    sentinels <- rbind(sentinels,locus_sig_list)
+    }
+
+## Overlap of GWAS function signals with NCBI Refseq genes
 # Create a GRanges object for reference of genes
 refseq.GRanges <- refseq %>%
   mutate(chrom=sub("^chr", "", chrom)) %>%
@@ -102,21 +115,19 @@ orphanet %>%
   pander(big.mark=",", caption=paste("Table 1b: Distribution of highest HPO term frequency per gene across",
                                      n_genes_c %>% comma, "Disease-causing germline genes"))
 
-## Filtering for thyroid terms
+## Filtering for asthma terms
 red <- hpo_f_levels[1:2]
 yellow <- hpo_f_levels[3]
 green <- hpo_f_levels[4:5]
 
+#HPOId term for asthma: HP:0002099
 orphanet <- orphanet %>%
-  mutate(thyro_HPO=grepl("thyro", HPOTerm, ignore.case = TRUE) &
+  mutate(asthma_HPO=grepl("asthma", HPOTerm, ignore.case = TRUE) &
                    HPOFrequency != "Excluded (0%)",
-         thyro_disease=grepl("thyro", Disease, ignore.case = TRUE),
-         parathyro=!grepl("parathyro", HPOTerm, ignore.case = TRUE) &
-                   !grepl("parathyro", Disease, ignore.case = TRUE),
-         thyro=(thyro_disease | thyro_HPO) & parathyro,
+         asthma=asthma_HPO,
          overlap=Symbol %in% nearby_genes$Symbol,
-         evidence=ifelse(!thyro, "Not thyroid related",
-                         ifelse(thyro_disease | HPOFrequency %in% red,
+         evidence=ifelse(!asthma, "Not asthma related",
+                         ifelse(HPOFrequency %in% red,
                          "Disease name, obligate or very frequent",
                          ifelse(HPOFrequency %in% yellow, "Frequent",
                                 ifelse(HPOFrequency %in% green, "Occasional or rare", "Excluded")))) %>%
@@ -124,27 +135,27 @@ orphanet <- orphanet %>%
                              "Frequent",
                              "Occasional or rare",
                              "Excluded",
-                             "Not thyroid related"))) 
+                             "Not asthma related")))
 
-n_thyro_genes_disease <- orphanet %>% filter(thyro_disease) %>% getN(Symbol)
-n_thyro_genes_hpo <- orphanet %>% filter(thyro_HPO) %>% getN(Symbol)
+#n_asthma_genes_disease <- orphanet %>% filter(asthma_disease) %>% getN(Symbol) #not available for asthma
+n_asthma_genes_hpo <- orphanet %>% filter(asthma_HPO) %>% getN(Symbol)
 
-orphanet_thyro <- orphanet %>%
-  filter(thyro)
+orphanet_asthma <- orphanet %>%
+  filter(asthma)
 
-n_thyro_genes <- orphanet_thyro %>% getN(Symbol)
+n_asthma_genes <- orphanet_asthma %>% getN(Symbol)
 
-orphanet_thyro_selected <- orphanet_thyro %>%
+orphanet_asthma_selected <- orphanet_asthma %>%
   filter(overlap) %>%
   select(-overlap)
 
-n_thyro_genes_selected <- orphanet_thyro_selected %>% getN(Symbol)
+n_asthma_genes_selected <- orphanet_asthma_selected %>% getN(Symbol)
 
 table2a <- orphanet %>%
   group_by(Symbol) %>%
-  summarise_at(vars(thyro, overlap), any) %>%
+  summarise_at(vars(asthma, overlap), any) %>%
   ungroup %>%
-  count(thyro, overlap) %>%
+  count(asthma, overlap) %>%
   pivot_wider(names_from = "overlap", values_from = "n", names_prefix = "overlap_") %>%
   mutate_at(vars(starts_with("overlap")), list(pc=~(./sum(.)) %>% percent))
 
@@ -163,18 +174,18 @@ table2b <- orphanet %>%
 table2b_chisq <- table2b %>% select(2:3) %>% chisq.test
 
 pander(table2a, big.mark=",",
-       caption=paste("Table 2a: For", n_genes_c %>% comma, "rare Disease-causing, germline genes, the numbers of thyroid and non-thyroid related genes vs. numbers overlapping TSH signals $\\pm$", DISTANCE/1000, "kb. $\\chi^2$ P =", table2a_chisq$p.value %>% round(3)))
+       caption=paste0("Table 2a: For", n_genes_c %>% comma, "rare Disease-causing, germline genes, the numbers of asthma and non-asthma related genes vs. numbers overlapping severe asthma signals ", DISTANCE/1000, "kb. chi^2 P =", table2a_chisq$p.value %>% round(3)))
 
 pander(table2b, big.mark=",",
-       caption=paste("Table 2b: For", n_genes_c %>% comma, "rare Disease-causing, germline genes, the numbers of genes in each thyroid evidence category vs. numbers overlapping TSH signals $\\pm$", DISTANCE/1000, "kb. $\\chi^2$ P =", table2b_chisq$p.value %>% round(3)), split.table=Inf)
+       caption=paste0("Table 2b: For", n_genes_c %>% comma, "rare Disease-causing, germline genes, the numbers of genes in each asthma evidence category vs. numbers overlapping severe asthma signals ", DISTANCE/1000, "kb. chi^2 P =", table2b_chisq$p.value %>% round(3)), split.table=Inf)
 
 ## Hypergeometric test
-hitInSample <- n_thyro_genes_selected
-hitInPop <- n_thyro_genes
-failInPop <- n_refseq - n_thyro_genes
+hitInSample <- n_asthma_genes_selected
+hitInPop <- n_asthma_genes
+failInPop <- n_refseq - n_asthma_genes
 sampleSize <- n_nearby_genes_Symbol
 
-p_thyro_en <- phyper(q=hitInSample - 1,
+p_asthma_en <- phyper(q=hitInSample - 1,
                  m=hitInPop,
                  n=failInPop,
                  k=sampleSize,
@@ -183,11 +194,11 @@ p_thyro_en <- phyper(q=hitInSample - 1,
 table3a.m <- matrix(c(hitInSample, hitInPop - hitInSample,
                       sampleSize - hitInSample, failInPop - sampleSize + hitInSample), 2, 2)
 rownames(table3a.m) <- c("yes", "no")
-colnames(table3a.m) <- c("thyroid", "others")
+colnames(table3a.m) <- c("asthma", "others")
 table3a <- table3a.m %>%
-  as_tibble(rownames = "Near TSH sentinel") %>%
-  mutate(pc_thyro=(thyroid/(thyroid + others)) %>% percent)
-pander(table3a, big.mark=",", caption=paste("Table 3: For rare disease-causing genes, the proportion that are thyroid related within $\\pm$", DISTANCE/1000, "kb of a TSH sentinel."))
+  as_tibble(rownames = "Near severe asthma sentinel") %>%
+  mutate(pc_asthma=(asthma/(asthma + others)) %>% percent)
+pander(table3a, big.mark=",", caption=paste0("Table 3: For rare disease-causing genes, the proportion that are asthma related within ", DISTANCE/1000, "kb of a severe asthma sentinel."))
 
 ## By-gene and by-SNP results
 concat <- function(x) {
@@ -199,8 +210,8 @@ concat <- function(x) {
   }
 }
 
-orphanet_thyro_selected_wide <- orphanet_thyro_selected %>%
-  mutate_at(vars(starts_with("HPO")), ~ifelse(.data$thyro_HPO, ., NA)) %>%
+orphanet_asthma_selected_wide <- orphanet_asthma_selected %>%
+  mutate_at(vars(starts_with("HPO")), ~ifelse(.data$asthma_HPO, ., NA)) %>%
   arrange(evidence) %>%
   group_by(Symbol, Gene) %>%
   summarise(Evidence=evidence[1],
@@ -211,7 +222,7 @@ orphanet_thyro_selected_wide <- orphanet_thyro_selected %>%
             HPOTerms=concat(HPOTerm)) %>%
   ungroup %>%
   arrange(Evidence)
-  implicated_rare <- right_join(nearby_genes, orphanet_thyro_selected_wide) %>%
+  implicated_rare <- right_join(nearby_genes, orphanet_asthma_selected_wide) %>%
   add_column(Rare="Rare", .before = "txStart")
 
 results <- implicated_rare %>% select(-Position) %>% left_join(sentinels, .)
@@ -247,8 +258,10 @@ results_by_gene <- results %>%
   group_by(Symbol) %>%
   summarise_at(vars(Rare, Evidence, distance, Diseases, HPOTerms), concat)
 
-out_base <- paste0("results_", DISTANCE/1000, "kb")
+out_base <- paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/rare_disease/results_", DISTANCE/1000, "kb")
 write_csv(results, paste0(out_base, ".csv"), na = "")
 write_csv(results_rare, paste0(out_base, "_rare.csv"), na = "")
 write_csv(results_by_snp_phyper, paste0(out_base, "_by_snp.csv"), na = "")
 write_csv(results_by_gene, paste0(out_base, "_by_gene.csv"), na = "")
+#save genes only:
+fwrite(as.data.frame(results_by_gene$Symbol), "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt", na = "",col.names=F,quote=F)

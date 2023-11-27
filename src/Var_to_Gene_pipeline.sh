@@ -363,17 +363,35 @@ Rscript src/PoPS/PoPS_summary.R
 #Added /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/pops_var2genes_raw.txt to the var2genes_raw.xlsx.
 
 ################
-#3 MOUSE KO
+#3 NEARBY HUMAN ORTHOLOG MOUSE KO GENE
 ################
 #From Jing's code as well as my own input:
 #Download genotype-phenotype data from IMPC (International Mouse Phenotyping consortium)
 #https://www.mousephenotype.org/data/release
-
 mkdir ${tmp_path}/mouse_ko
-
 #latest release 2023-07-06:
 wget -P ${tmp_path}/mouse_ko/ https://ftp.ebi.ac.uk/pub/databases/impc/all-data-releases/latest/results/genotype-phenotype-assertions-ALL.csv.gz
 #latest release 2023-11-22:
 wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/human_mouse_hcop_fifteen_column.txt.gz
+#run the analysis:
+Rscript src/mouse_ko/mouse_ko.r > ${tmp_path}/mouse_ko/output_mouse_ko
+#Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/mouse_ko_genes_raw.txt genes into var2genes_raw.xlsx.
 
-Rscript src/mouse_ko/mouse_ko.r
+################
+#4 NEARBY RARE MENDELIAN DISEASE GENE
+################
+#From Jing's code as well as my own input:
+#Download genotype-phenotype data from https://www.orphadata.com/genes/:
+mkdir ${tmp_path}/rare_disease/
+#latest release 2023-06-22:
+wget -P ${tmp_path}/rare_disease/ https://www.orphadata.com/data/xml/en_product6.xml
+#downloaded locally and converted in xlsx in Excel - uploaded in /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product6.xlsx
+#dowload description of the file:
+wget -P src/report/ https://www.orphadata.com/docs/OrphadataFreeAccessProductsDescription.pdf
+#Downloaded hpo: human phenotype ontology provides a standardized vocabulary of phenotypic abnormalities encounterd in human disease
+#latest release June 2023:
+#Downloaded locally and converted in xlsx in Excel - uploaded in /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product4.xlsx
+#https://github.com/Orphanet/Orphadata_aggregated/blob/master/Rare%20diseases%20with%20associated%20phenotypes/en_product4.xml
+#run the analysis:
+Rscript src/rare_disease/rare_disease.r > ${tmp_path}/rare_disease/output_rare_disease
+#Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt genes into var2genes_raw.xlsx.
