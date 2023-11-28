@@ -1575,7 +1575,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Variant to Gene mapping analysis in the
 severe asthma UK Biobank GWAS</h1>
 <h4 class="author">Noemi Nicole Piga</h4>
-<h4 class="date">27 November, 2023</h4>
+<h4 class="date">28 November, 2023</h4>
 
 </div>
 
@@ -1915,26 +1915,33 @@ cd ${tmp_path}/ukb_pqtl/
 /home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/001_combine_pqtl.awk *rs*/* \
     &gt; ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt
 cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene/ #of wherever the folder &#39;Var_to_Gene&#39; is located
-
 #extract gene showing look-up results:
 awk &#39;NR &gt; 1 {print $2}&#39; ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt | sort -u \
     &gt; input/ukbpqtl_var2genes_raw
 
-###deCODE pQTL LOOK-UP###
 
+###deCODE pQTL LOOK-UP###
 #Found this script of Nick for decode lookup (from /data/gen1/TSH/coloc_susie/lookup_decode.awk):
 #create credible_set.snps: create credible_set.snps in alphabetical order
 #($5 &lt; $6 ? $5 : $6)&quot;_&quot;($6 &gt; $5 ? $6 : $5)
 #locus85    10_101220474_A_G
 #locus85    10_101221275_C_T
 mkdir ${tmp_path}/decode_pqtl
-NOT SURE THIS IS THE RIGHT WAY TO RUN IT: ASK NICK !
-awk &#39;NR &gt;1 {print $1, $3&quot;_&quot;$4&quot;_&quot;$5&quot;_&quot;$6}&#39; $cs_all &gt; ${tmp_path}/decode_pqtl/credible_set.snps
-src/pQTL_coloc/000_lookup_decode.awk \
-    ${tmp_path}/decode_pqtl/credible_set.snps \
-    /data/gen1/pQTL/Ferkingstad_2021_b37/8479_4_MMP10_MMP_10.b37.txt.gz
+#From Chiara/Kayesha script and Nick:
+sbatch src/pQTL_coloc/000_submit_lookup_decode.sh
+#filter out gene name with significant pQTL:
+awk &#39;NR &gt; 1 &amp;&amp; $5 &gt; 0 {print $1}&#39; ${tmp_path}/decode_pqtl/log_pQTL_decode_analysis | sed &#39;s/.txt//g&#39; \
+    &gt; input/scallop_pqtl_var2genes_raw
+
 
 ###SCALLOP pQTL LOOK-UP###
+#From Chiara&#39;s script R:\TobinGroup\GWAtraits\Chiara\pQTL_SCALLOP and Nick&#39;s script scallop_lookup.awk
+mkidr ${tmp_path}/scallop_pqtl
+#From Chiara and Nick script:
+sbatch src/pQTL_coloc/000_submit_lookup_scallop.sh
+#filter out gene name with significant pQTL:
+awk &#39;NR &gt; 1 &amp;&amp; $5 &gt; 0 {print $1}&#39; ${tmp_path}/scallop_pqtl/log_pQTL_SCALLOP_analysis | sed &#39;s/.txt//g&#39; \
+    &gt; input/scallop_pqtl_var2genes_raw
 
 
 ################
@@ -3955,9 +3962,8 @@ the list of significant gene-variant associations for UBC Lung eQTL
 after p-value correction. She also provided me backbone scripts to run
 colocalisation with this eQTL. <br> U-BIORPED is (not yet done)</p>
 </div>
-<div id="colocalisation-with-protein-quantitative-trait-loci-qtl-analysis" class="section level2">
-<h2>Colocalisation with protein quantitative trait loci (QTL)
-analysis</h2>
+<div id="look-up-with-protein-quantitative-trait-loci-qtl-analysis" class="section level2">
+<h2>Look-up with protein quantitative trait loci (QTL) analysis</h2>
 <p>Code <br> src/pQTL_coloc/000_preprocess_cs_b38.R</p>
 <pre class="r"><code>#!/bin/bash
 
@@ -4037,15 +4043,182 @@ FNR &gt; 1 {
     sub(&quot;_ukb_protein_lookup.txt&quot;, &quot;&quot;, FILENAME)
     print FILENAME, $0
 }</code></pre>
-<p>deCODE is a free collection of protein plasma pQTL data for 4,907
-proteins and 27.2 million tested variants. They used Bonferroni
-corrected p-value for multiple testing; thus, 0.05/27,200,000=1.8x10−9.
-They included variants with a MAF &gt; 0.01% and imputation score &gt;
-0.9. If the associated variant was within 1Mb from the transcription
-start site of the gene, the pQTL was defined as cis, if outside this
-threshold as trans. <br> SCALLOP <br> UK Biobank pQTL data</p>
-<p><br> For the fine-mapped loci, I created separate files for each
-locus’ credible set (17 locus –&gt; 17 files).</p>
+<p>src/pQTL_coloc/000_submit_lookup_scallop.sh</p>
+<pre class="r"><code>#!/bin/bash
+
+#SBATCH --job-name=scallop_pqtl_lookup
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=4
+#SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
+#SBATCH --time=01:00:00
+#SBATCH --mem=24gb
+#SBATCH --account=gen1
+#SBATCH --export=NONE
+
+
+#Rationale: look-up in pQTL in SCALLOP pQTL - script from Chiara
+
+PQTL_DATA=&quot;/data/gen1/reference/SCALLOP&quot;
+SNP_LIST=&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt&quot;
+PQTL_PATH=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/scallop_pqtl&quot;
+
+## List of variants with columns: ID, CHROM, POS
+cat ${SNP_LIST} | awk &#39;{print $3&quot;_&quot;$4&quot;_&quot;$5&quot;_&quot;$6,$3,$4}&#39; &gt; ${PQTL_PATH}/snps_list.txt
+
+# Set up log file
+touch ${PQTL_PATH}/log_pQTL_SCALLOP_analysis
+echo -ne &quot;FILENAME\tPROTEIN\tN_LOOKUP\tN_NOMINAL\tN_SIG&quot; &gt; ${PQTL_PATH}/log_pQTL_SCALLOP_analysis
+echo &gt;&gt; ${PQTL_PATH}/log_pQTL_SCALLOP_analysis
+
+
+# Perform look-up using Nick&#39;s awk script
+for filename in ${PQTL_DATA}/*.txt.gz
+do
+  ## Set file name
+  name=$(basename ${filename} .txt.gz)
+  ## Header for output
+  zcat ${filename} | head -1 &gt; ${PQTL_PATH}/${name}.txt
+  ## Perform look-up
+  /home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_scallop_lookup.awk \
+      ${PQTL_PATH}/snps_list.txt &lt;(zcat $filename) &gt; ${PQTL_PATH}/${name}.txt
+  ## Report look-up statistics in log file
+  N_total=`cat ${PQTL_PATH}/${name}.txt | tail -n +2 -q | wc -l`
+  N_nominal=`cat ${PQTL_PATH}/${name}.txt | awk &#39;$8 &lt; 0.05 {print $0}&#39; | wc -l`
+  N_sig=`cat ${PQTL_PATH}/${name}.txt | awk &#39;$8 &lt; 5E-8 {print $0}&#39; | wc -l`
+  echo -ne &quot;${name}.txt\t${name}\t${N_total}\t${N_nominal}\t${N_sig}&quot; &gt;&gt; ${PQTL_PATH}/log_pQTL_SCALLOP_analysis
+  echo &gt;&gt; ${PQTL_PATH}/log_pQTL_SCALLOP_analysis
+done</code></pre>
+<p>src/pQTL_coloc/000_scallop_lookup.awk</p>
+<pre class="r"><code>#!/usr/bin/awk -f
+
+# For each line of the first input file (the proxies) add a chr:pos key to the proxies array
+# The array keys are unique so there won&#39;t be any duplicates even if you 
+# add the same chr, pos twice.
+#
+# NR = line number over all input files
+# FNR = line number in current file
+# Hence when NR == FNR you must be in the first input file
+# &quot;next&quot; means go to the next line in the file without processing any subsequent rules
+NR == FNR {
+    proxies[$2][$3] = 1
+    next
+}
+
+# For the second input file (the pQTL results) output the header
+# (processing will only get this far if the rule above didn&#39;t match)
+FNR == 1 {
+    print
+}
+
+# For subsequent lines in the the second file 
+FNR &gt; 1 {
+
+    # Store a copy of the original line to output
+    line = $0
+
+    # Substitute &quot;:&quot; to split chr, pos into fields for matching
+    gsub(&quot;:&quot;, &quot;\t&quot;, $0)
+}
+
+# Print the original line if chr, pos is in our array of proxies
+proxies[$1][$2] {
+    print line
+}</code></pre>
+<p>src/pQTL_coloc/000_submit_lookup_decode.sh</p>
+<pre class="r"><code>#!/bin/bash
+
+#SBATCH --job-name=decode_pqtl_lookup
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=4
+#SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
+#SBATCH --time=5:00:00
+#SBATCH --mem=50gb
+#SBATCH --account=gen1
+#SBATCH --export=NONE
+
+
+#Rationale: look-up in pQTL in deCODE pQTL - script from Chiara
+ukbb38_path=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/ukb_pqtl&quot;
+PQTL_DATA=&quot;/data/gen1/pQTL/Ferkingstad_2021&quot;
+PQTL_PATH=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/decode_pqtl&quot;
+
+#USE b38 POSITION:
+##NOTE: DEPENDENCIES ON SCRIPT src/pQTL_coloc/000_preprocess_cs_b38.R TO CREATE B38 FILES:
+## List of variants with columns: ID (chr_posb37_a1_a2), CHROM, POS (pos b38):
+awk &#39;NR &gt;1 {print $3&quot;_&quot;$4&quot;_&quot;$5&quot;_&quot;$6, &quot;chr&quot;$3, $11}&#39; \
+    ${ukbb38_path}/SA_*_b38 | grep -v &quot;^chromosome&quot; &gt; ${PQTL_PATH}/snps_list.txt
+
+# Set up log file
+touch ${PQTL_PATH}/log_pQTL_decode_analysis
+echo -ne &quot;FILENAME\tPROTEIN\tN_LOOKUP\tN_NOMINAL\tN_SIG&quot; &gt; ${PQTL_PATH}/log_pQTL_decode_analysis
+echo &gt;&gt; ${PQTL_PATH}/log_pQTL_decode_analysis
+
+
+# Perform look-up using Nick&#39;s awk script
+for filename in ${PQTL_DATA}/*.txt.gz
+do
+  ## Set file name
+  name=$(basename ${filename} .txt.gz)
+  ## Header for output
+  zcat ${filename} | head -1 &gt; ${PQTL_PATH}/${name}.txt
+  ## Perform look-up
+  ## Perform look-up
+  /home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_decode_lookup.awk \
+      ${PQTL_PATH}/snps_list.txt &lt;(zcat $filename) &gt; ${PQTL_PATH}/${name}.txt
+  ## Report look-up statistics in log file
+  N_total=`cat ${PQTL_PATH}/${name}.txt | tail -n +2 -q | wc -l`
+  N_nominal=`cat ${PQTL_PATH}/${name}.txt | awk &#39;$10 &lt; 0.05 {print $0}&#39; | wc -l`
+  N_sig=`cat ${PQTL_PATH}/${name}.txt | awk &#39;$10 &lt; 1.8E-9 {print $0}&#39; | wc -l`
+  echo -ne &quot;${name}.txt\t${name}\t${N_total}\t${N_nominal}\t${N_sig}&quot; &gt;&gt; ${PQTL_PATH}/log_pQTL_decode_analysis
+  echo &gt;&gt; ${PQTL_PATH}/log_pQTL_decode_analysis
+done</code></pre>
+<p>src/pQTL_coloc/000_decode_lookup.awk</p>
+<pre class="r"><code>#!/usr/bin/awk -f
+
+# For each line of the first input file (the proxies) add a chr:pos key to the proxies array
+# The array keys are unique so there won&#39;t be any duplicates even if you 
+# add the same chr, pos twice.
+#
+# NR = line number over all input files
+# FNR = line number in current file
+# Hence when NR == FNR you must be in the first input file
+# &quot;next&quot; means go to the next line in the file without processing any subsequent rules
+NR == FNR {
+    proxies[$2][$3] = 1
+    next
+}
+
+# For the second input file (the pQTL results) output the header
+# (processing will only get this far if the rule above didn&#39;t match)
+FNR == 1 {
+    print
+}
+
+# For subsequent lines in the the second file 
+FNR &gt; 1 {
+
+    # Store a copy of the original line to output
+    line = $0
+
+    # Substitute &quot;:&quot; to split chr, pos into fields for matching
+    gsub(&quot;:&quot;, &quot;\t&quot;, $0)
+}
+
+# Print the original line if chr, pos is in our array of proxies
+proxies[$1][$2] {
+    print line
+}</code></pre>
+<p>I decided to perform a look-up of the 615 credible set varaints in
+three pQTL sources: deCODE, SCALLOP, and UKBiobank pQTL data. <br> I
+applied filters for significant association as 1.8E-9 for deCODE, 5e-8
+for SCALLOP, and 0.05/1463 for UKBiobank pQTL data. <br> deCODE is a
+free collection of protein plasma pQTL data for 4,907 proteins and 27.2
+million tested variants. They used Bonferroni corrected p-value for
+multiple testing; thus, 0.05/27,200,000=1.8x10−9. They included variants
+with a MAF &gt; 0.01% and imputation score &gt; 0.9. If the associated
+variant was within 1Mb from the transcription start site of the gene,
+the pQTL was defined as cis, if outside this threshold as trans. <br>
+SCALLOP <br> UK Biobank pQTL data</p>
 </div>
 <div id="polygenic-priority-score-pops" class="section level2">
 <h2>Polygenic Priority Score (PoPS)</h2>
@@ -4477,7 +4650,7 @@ yellow &lt;- hpo_f_levels[3]
 green &lt;- hpo_f_levels[4:5]
 
 #HPOId term for asthma: HP:0002099
-key_terms &lt;- c(&quot;asthma&quot;,&quot;eosin&quot;,&quot;immunodef&quot;,&quot;cili&quot;,&quot;autoimm&quot;,&quot;leukopenia&quot;,&quot;neutropenia&quot;)
+key_terms &lt;- c(&quot;asthma&quot;,&quot;eosin&quot;,&quot;immunodef&quot;,&quot;cili&quot;,&quot;autoimm&quot;,&quot;leukopenia&quot;,&quot;neutropenia&quot;,&quot;macroph&quot;)
 orphanet &lt;- orphanet %&gt;%
   mutate(asthma_HPO=grepl(paste(key_terms, collapse=&#39;|&#39;), HPOTerm, ignore.case = TRUE) &amp;
                    HPOFrequency != &quot;Excluded (0%)&quot;,
@@ -4585,7 +4758,7 @@ orphanet_asthma_selected_wide &lt;- orphanet_asthma_selected %&gt;%
 
 results &lt;- implicated_rare %&gt;% select(-Position) %&gt;% left_join(sentinels, .)
 
-results_rare &lt;- results %&gt;% filter(!is.na(Rare)) %&gt;% arrange(Evidence, distance, chr, pos) %&gt;% ungroup 
+results_rare &lt;- results %&gt;% filter(!is.na(Rare)) %&gt;% arrange(Evidence, distance, chr, pos) %&gt;% ungroup
 
 results_by_snp &lt;- results %&gt;%
   arrange(Evidence, distance) %&gt;%
@@ -4627,7 +4800,7 @@ fwrite(as.data.frame(results_by_gene$Symbol), &quot;/home/n/nnp5/PhD/PhD_project
 within 500Kb of fine-mapped sentinel variants were associated with rare
 diseases showing implication in asthma. In doing so, I filtered the HPO
 term or any disease including key terms:
-‘asthma,eosin,immunodef,cili,autoimm,leukopenia,neutropenia’.</p>
+‘asthma,eosin,immunodef,cili,autoimm,leukopenia,neutropenia,macroph’.</p>
 </div>
 <div id="nearby-mouse-knockout-orthologs" class="section level2">
 <h2>Nearby Mouse knockout orthologs</h2>

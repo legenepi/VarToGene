@@ -37,8 +37,8 @@ do
       ${PQTL_PATH}/snps_list.txt <(zcat $filename) > ${PQTL_PATH}/${name}.txt
   ## Report look-up statistics in log file
   N_total=`cat ${PQTL_PATH}/${name}.txt | tail -n +2 -q | wc -l`
-  N_nominal=`cat ${PQTL_PATH}/${name}.txt | awk '$10 < 0.05 {print $0}' | wc -l`
-  N_sig=`cat ${PQTL_PATH}/${name}.txt | awk '$10 < 5E-8 {print $0}' | wc -l`
+  N_nominal=`cat ${PQTL_PATH}/${name}.txt | awk '$8 < 0.05 {print $0}' | wc -l`
+  N_sig=`cat ${PQTL_PATH}/${name}.txt | awk '$8 < 5E-8 {print $0}' | wc -l`
   echo -ne "${name}.txt\t${name}\t${N_total}\t${N_nominal}\t${N_sig}" >> ${PQTL_PATH}/log_pQTL_SCALLOP_analysis
   echo >> ${PQTL_PATH}/log_pQTL_SCALLOP_analysis
 done

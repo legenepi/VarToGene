@@ -192,7 +192,7 @@ She also provided me backbone scripts to run colocalisation with this eQTL.
 <br>
 U-BIORPED is (not yet done)
 
-## Colocalisation with protein quantitative trait loci (QTL) analysis
+## Look-up with protein quantitative trait loci (QTL) analysis
 Code
 <br>
 src/pQTL_coloc/000_preprocess_cs_b38.R
@@ -204,6 +204,22 @@ src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
 src/pQTL_coloc/001_combine_pqtl.awk
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/001_combine_pqtl.awk'), eval=FALSE, hide=TRUE}
 ```
+src/pQTL_coloc/000_submit_lookup_scallop.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_submit_lookup_scallop.sh'), eval=FALSE, hide=TRUE}
+```
+src/pQTL_coloc/000_scallop_lookup.awk
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_scallop_lookup.awk'), eval=FALSE, hide=TRUE}
+```
+src/pQTL_coloc/000_submit_lookup_decode.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_submit_lookup_decode.sh'), eval=FALSE, hide=TRUE}
+```
+src/pQTL_coloc/000_decode_lookup.awk
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_decode_lookup.awk'), eval=FALSE, hide=TRUE}
+```
+I decided to perform a look-up of the 615 credible set varaints in three pQTL sources: deCODE, SCALLOP, and UKBiobank pQTL data.
+<br>
+I applied filters for significant association as 1.8E-9 for deCODE, 5e-8 for SCALLOP, and 0.05/1463 for UKBiobank pQTL data.
+<br>
 deCODE is a free collection of protein plasma pQTL data for 4,907 proteins and 27.2 million tested variants. They used Bonferroni corrected p-value for multiple testing; thus,
 0.05/27,200,000=1.8x10−9. They included variants with a MAF > 0.01% and imputation score > 0.9. If the associated variant was within 1Mb from the transcription start site of the gene, the
 pQTL was defined as cis, if outside this threshold as trans.
@@ -211,9 +227,6 @@ pQTL was defined as cis, if outside this threshold as trans.
 SCALLOP
 <br>
 UK Biobank pQTL data
-
-<br>
-For the fine-mapped loci, I created separate files for each locus' credible set (17 locus --> 17 files).
 
 ## Polygenic Priority Score (PoPS)
 Code
@@ -244,7 +257,7 @@ src/rare_disease/rare_disease.r
 ```
 Using the Orphadata resource (website link), I analysed if any genes within 500Kb of fine-mapped sentinel variants were associated
 with rare diseases showing implication in asthma. In doing so, I filtered the HPO term or any disease including key terms:
-'asthma,eosin,immunodef,cili,autoimm,leukopenia,neutropenia'.
+'asthma,eosin,immunodef,cili,autoimm,leukopenia,neutropenia,macroph'.
 
 ## Nearby Mouse knockout orthologs
 src/mouse_ko/mouse_ko.r
