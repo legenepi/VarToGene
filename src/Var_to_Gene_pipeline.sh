@@ -413,4 +413,8 @@ Rscript src/rare_disease/rare_disease.r > ${tmp_path}/rare_disease/output_rare_d
 mkdir ${tmp_path}/rare_variant/
 Rscript src/rare_variant/000_dataprep_rarevar.R
 #Copy the pheno covatiare file in /rfs/:
-cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma.txt /rfs/TobinGroup/data/UKBiobank/application_88144/
+cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma_app88144.txt /rfs/TobinGroup/data/UKBiobank/application_88144/
+#Gene-collapsing rare variant analysis:
+#https://github.com/legenepi/rare_collapsing
+#Single rare variant analysis: NB - need to do it for rare variant ExWAS ! change filter in plink!
+#src/rare_variant/Regenie_RAP_CLI.txt

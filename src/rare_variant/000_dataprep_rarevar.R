@@ -18,5 +18,5 @@ pheno_cov <- pheno_cov %>% rename("eid_56607" = eid)
 
 pheno_cov_88144 <- left_join(pheno_cov,bridge,by="eid_56607") %>% relocate(IID, .before = missing) %>% relocate(FID, .before = IID)
 
-write.table(pheno_cov_88144,"/scratch/gen1/nnp5/Var_to_Gen_tmp/rare_variant/demo_EUR_pheno_cov_broadasthma.txt",
+write.table(pheno_cov_88144,"/scratch/gen1/nnp5/Var_to_Gen_tmp/rare_variant/demo_EUR_pheno_cov_broadasthma_app88144.txt",
 row.names = FALSE, col.names = TRUE ,quote=FALSE, sep=" ", na = "NA")

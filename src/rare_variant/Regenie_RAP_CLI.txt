@@ -1,0 +1,52 @@
+Command-line interface (script)
+
+What follows is my bash script for running a GWAS (using regenie) on the command-line interface.  I used the genotyping data for the first step and the exome data for the second.  For more information on the command-line interface and how to use it, I'd recommend the videos on this page: https://dnanexus.gitbook.io/uk-biobank-rap/working-on-the-research-analysis-platform/accessing-and-using-the-command-line-interface
+
+#Start of script for regenie GWAS:
+
+dx login
+# You will need to enter your username and password at this stage, and select the number corresponding to your project from the list
+
+dx mkdir analysis
+
+data_file_dir="/analysis/"
+
+# Merging chromosomes together (genotyping data):
+
+run_merge="cp /mnt/project/Bulk/Genotype\ Results/Genotype\ calls/ukb22418_c[1-9]* . ; ls *.bed | sed -e 's/.bed//g'> files_to_merge.txt; plink --merge-list files_to_merge.txt --make-bed --autosome-xy --out ukb22418_c1_22_v2_merged; rm files_to_merge.txt;"
+
+dx run swiss-army-knife -iin="/mnt/project/asthma_wes.phe" -icmd="${run_merge}" --tag="Step1" --instance-type "mem1_ssd1_v2_x16" --destination="${data_file_dir}" --brief --yes
+# astma_wes.phe is the filtered phenotype file I generated using JupyterLab.
+
+# QC-ing the merged genotyping data:
+
+run_plink_qc="plink2 --bfile ukb22418_c1_22_v2_merged --keep asthma_wes.phe --autosome --maf 0.01 --mac 20 --geno 0.1 --hwe 1e-15 --mind 0.1 --write-snplist --write-samples --no-id-header --out snp_qc_pass"
+
+dx run swiss-army-knife -iin="${data_file_dir}/ukb22418_c1_22_v2_merged.bed" -iin="${data_file_dir}/ukb22418_c1_22_v2_merged.bim" -iin="${data_file_dir}/ukb22418_c1_22_v2_merged.fam" -iin="/mnt/project/asthma_wes.phe" -icmd="${run_plink_qc}" --tag="Step1" --instance-type "mem1_ssd1_v2_x16" --destination="${data_file_dir}" --brief --yes
+
+#  Running regenie step 1:
+
+run_regenie_step1="regenie --step 1 --lowmem --out asthma_results --bed ukb22418_c1_22_v2_merged --phenoFile asthma_wes.phe --covarFile asthma_wes.phe --extract snp_qc_pass.snplist --phenoCol asthma --covarCol age --bsize 1000 --bt --loocv --gz --threads 16"
+
+dx run swiss-army-knife -iin="${data_file_dir}/ukb22418_c1_22_v2_merged.bed" -iin="${data_file_dir}/ukb22418_c1_22_v2_merged.bim" -iin="${data_file_dir}/ukb22418_c1_22_v2_merged.fam" -iin="/mnt/project/asthma_wes.phe" -iin="${data_file_dir}/snp_qc_pass.snplist" -icmd="${run_regenie_step1}" --tag="Step1" --instance-type "mem1_ssd1_v2_x16" --destination="${data_file_dir}" --brief --yes
+
+# QC-ing the exome data:
+
+exome_file_dir="/Bulk/Exome sequences_Previous exome releases/Population level exome OQFE variants, PLINK format - interim 200k release/"
+
+field_name="ukb23155"
+
+for chr in {1..22}; do run_plink_wes="plink2 --bfile ukb23155_c${chr}_b0_v1 --no-psam-pheno --keep asthma_wes.phe --autosome --maf 0.01 --mac 20 --geno 0.1 --hwe 1e-15 --mind 0.1 --write-snplist --write-samples --no-id-header --out WES_c${chr}_snps_qc_pass"; dx run swiss-army-knife -iin="${exome_file_dir}/${field_name}_c${chr}_b0_v1.bed" -iin="${exome_file_dir}/${field_name}_c${chr}_b0_v1.bim" -iin="${exome_file_dir}/${field_name}_c${chr}_b0_v1.fam" -iin="/mnt/project/asthma_wes.phe" -icmd="${run_plink_wes}" --tag="Step2" --instance-type "mem1_ssd1_v2_x16" --name "QC_chr${chr}" --destination="${data_file_dir}" --brief --yes; done
+
+# Running regenie step 2:
+
+for chr in {1..22}; do run_regenie_cmd="regenie --step 2 --bed ukb23155_c${chr}_b0_v1 --out assoc.c${chr} --phenoFile asthma_wes.phe --covarFile asthma_wes.phe --bt --approx --firth-se --firth --extract WES_c${chr}_snps_qc_pass.snplist --phenoCol asthma --covarCol age --pred asthma_results_pred.list --bsize 200 --pThresh 0.05 --minMAC 3 --threads 16 --gz"; dx run swiss-army-knife -iin="${exome_file_dir}/${field_name}_c${chr}_b0_v1.bed" -iin="${exome_file_dir}/${field_name}_c${chr}_b0_v1.bim" -iin="${exome_file_dir}/${field_name}_c${chr}_b0_v1.fam" -iin="${data_file_dir}/WES_c${chr}_snps_qc_pass.snplist" -iin="/mnt/project/asthma_wes.phe" -iin="${data_file_dir}/asthma_results_pred.list" -iin="${data_file_dir}/asthma_results_1.loco.gz" -icmd="${run_regenie_cmd}" --tag="Step2" --instance-type "mem1_ssd1_v2_x16" --name="regenie_step2_chr${chr}" --destination="${data_file_dir}" --brief --yes; done
+
+# Merging output of regenie and formatting for visualising using LocusZoom:
+
+merge_cmd='out_file="assoc.regenie.merged.txt"; cp /mnt/project/analysis/*.regenie.gz . ; gunzip *.regenie.gz ; echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tEXTRA" > $out_file ; files="./*.regenie"; for f in $files; do tail -n+2 $f | tr " " "\t" >> $out_file; done ; rm *.regenie'
+
+dx run swiss-army-knife -iin="${data_file_dir}/assoc.c1_asthma.regenie.gz" -icmd="${merge_cmd}" --tag="Final" --instance-type "mem1_ssd1_v2_x16" --destination="${data_file_dir}" --brief --yes
+
+# End of script.
+
