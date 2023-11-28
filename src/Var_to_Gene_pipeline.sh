@@ -403,3 +403,14 @@ wget -P src/report/ https://www.orphadata.com/docs/OrphadataFreeAccessProductsDe
 #run the analysis:
 Rscript src/rare_disease/rare_disease.r > ${tmp_path}/rare_disease/output_rare_disease
 #Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt genes into var2genes_raw.xlsx.
+
+
+################
+#5 RARE VARIANT UKBiobank ANALYSIS in RAP
+################
+#Prep file ALICE3:
+##Match UK Biobank application IDs:
+mkdir ${tmp_path}/rare_variant/
+Rscript src/rare_variant/000_dataprep_rarevar.R
+#Copy the pheno covatiare file in /rfs/:
+cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma.txt /rfs/TobinGroup/data/UKBiobank/application_88144/

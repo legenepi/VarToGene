@@ -1993,7 +1993,18 @@ wget -P src/report/ https://www.orphadata.com/docs/OrphadataFreeAccessProductsDe
 #https://github.com/Orphanet/Orphadata_aggregated/blob/master/Rare%20diseases%20with%20associated%20phenotypes/en_product4.xml
 #run the analysis:
 Rscript src/rare_disease/rare_disease.r &gt; ${tmp_path}/rare_disease/output_rare_disease
-#Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt genes into var2genes_raw.xlsx.</code></pre>
+#Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt genes into var2genes_raw.xlsx.
+
+
+################
+#5 RARE VARIANT UKBiobank ANALYSIS in RAP
+################
+#Prep file ALICE3:
+##Match UK Biobank application IDs:
+mkdir ${tmp_path}/rare_variant/
+Rscript src/rare_variant/000_dataprep_rarevar.R
+#Copy the pheno covatiare file in /rfs/:
+cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma.txt /rfs/TobinGroup/data/UKBiobank/application_88144/</code></pre>
 <p>Prioritise genes using variant-to-gene mapping tools with credible
 sets variants from fine-mapping results of GWAS on severe asthma in UK
 Biobank European individuals. <br> I used several methods, following the
@@ -5026,6 +5037,36 @@ causal variant for each fine mapped locus.</p>
 </div>
 <div id="rare-variant-analysis" class="section level2">
 <h2>Rare Variant Analysis</h2>
+<p>src/rare_variant/000_dataprep_rarevar.R</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+#Rationale: data prep for rare-variant analysis in the RAP - phenotype-covariate file
+
+library(tidyverse)
+library(data.table)
+
+bridge_file &lt;- &quot;/data/gen1/UKBiobank/application_88144/Bridge_eids_88144_56607.csv&quot;
+pheno_cov_file &lt;- &quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/demo_EUR_pheno_cov_broadasthma.txt&quot;
+
+#match ID application 56607 to obtain phenotype-covariate file with ID application 88144:
+
+bridge &lt;- fread(bridge_file)
+bridge$FID &lt;- bridge$eid_88144
+bridge$IID &lt;- bridge$eid_88144
+pheno_cov &lt;- fread(pheno_cov_file) %&gt;% select(-FID,-IID)
+pheno_cov &lt;- pheno_cov %&gt;% rename(&quot;eid_56607&quot; = eid)
+
+pheno_cov_88144 &lt;- left_join(pheno_cov,bridge,by=&quot;eid_56607&quot;) %&gt;% relocate(IID, .before = missing) %&gt;% relocate(FID, .before = IID)
+
+write.table(pheno_cov_88144,&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/rare_variant/demo_EUR_pheno_cov_broadasthma.txt&quot;,
+row.names = FALSE, col.names = TRUE ,quote=FALSE, sep=&quot; &quot;, na = &quot;NA&quot;)</code></pre>
+<p>src/rare_variant/README.txt</p>
+<pre class="r"><code>#Rationale: hwo to run the rare-variant analysis step by step
+
+#In REGENIE, phenotype and covariates column names:
+file: /rfs/TobinGroup/data/UKBiobank/application_88144/demo_EUR_pheno_cov_broadasthma.txt
+pheno=&quot;broad_pheno_1_5_ratio&quot;
+--covarColList age_at_recruitment,age2,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,genetic_sex</code></pre>
 </div>
 </div>
 <div id="results" class="section level1">
