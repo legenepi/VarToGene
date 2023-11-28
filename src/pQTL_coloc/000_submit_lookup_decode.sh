@@ -4,8 +4,8 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
-#SBATCH --time=5:00:00
-#SBATCH --mem=50gb
+#SBATCH --time=72:00:00
+#SBATCH --mem=70gb
 #SBATCH --account=gen1
 #SBATCH --export=NONE
 
