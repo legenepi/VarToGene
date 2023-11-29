@@ -135,6 +135,10 @@ grep ${tissue} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $
 ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
 ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
 
+#gtex converted in gene symbol:
+#https://www.biotools.fr/human/ensembl_symbol_converter
+#added in GTExV8_eQTL_genes_symbol table in the input/var2gene.xlsx file.
+
 ###eqtlGen eQTL###
 mkdir ${tmp_path}/results/eqtlgen
 mkdir ${tmp_path}/eqtlgen
@@ -267,6 +271,8 @@ Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
 
 #Added genes into Var_to_Gene/input/var2genes_raw.xlsx file.
 
+#Merge all the gene from eQTL colocalisation:
+Rscript src/merge_genes_eqtl_coloc.R
 
 ################
 #2.2 APPROXIMATE COLOCALISATION - pQTL (LOOK-UP FOR ALL CREDIBLE SET VARIANTS)
