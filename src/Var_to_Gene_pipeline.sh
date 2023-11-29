@@ -340,7 +340,7 @@ mkdir ${tmp_path}/decode_pqtl
 sbatch src/pQTL_coloc/000_submit_lookup_decode.sh
 #filter out gene name with significant pQTL:
 awk 'NR > 1 && $5 > 0 {print $1}' ${tmp_path}/decode_pqtl/log_pQTL_decode_analysis | sed 's/.txt//g' \
-    > input/scallop_pqtl_var2genes_raw
+    > input/decode_pqtl_var2genes_raw
 
 
 ###SCALLOP pQTL LOOK-UP###
@@ -351,6 +351,11 @@ sbatch src/pQTL_coloc/000_submit_lookup_scallop.sh
 #filter out gene name with significant pQTL:
 awk 'NR > 1 && $5 > 0 {print $1}' ${tmp_path}/scallop_pqtl/log_pQTL_SCALLOP_analysis | sed 's/.txt//g' \
     > input/scallop_pqtl_var2genes_raw
+
+
+#Merge genes from the different pQTL look-up analyses:
+cat input/ukbpqtl_var2genes_raw input/scallop_pqtl_var2genes_raw input/decode_pqtl_var2genes_raw \
+    | awk '{print $2="pQTL", $1}' > input/pqtl_lookup_genes_merged
 
 
 ################
