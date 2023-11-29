@@ -1,4 +1,4 @@
-#Rationale: hwo to run the rare-variant analysis step by step
+#Rationale: Micellaneous knowldege about dx toolkit, RAP and CLI to run the rare-variant single and gene-based collapsing analysis analysis step by step
 
 #In REGENIE, phenotype and covariates column names:
 file: /rfs/TobinGroup/data/UKBiobank/application_88144/demo_EUR_pheno_cov_broadasthma_app88144.txt

@@ -417,4 +417,4 @@ cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma_app88144.txt /rfs/Tob
 #Gene-collapsing rare variant analysis:
 #https://github.com/legenepi/rare_collapsing
 #Single rare variant analysis: NB - need to do it for rare variant ExWAS ! change filter in plink!
-#src/rare_variant/Regenie_RAP_CLI.txt
+#src/rare_variant/submit_rare_variant.sh
