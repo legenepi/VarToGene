@@ -274,6 +274,17 @@ src/rare_variant/000_dataprep_rarevar.R
 src/rare_variant/README.txt
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/rare_variant/README.txt'), eval=FALSE, hide=TRUE}
 ```
+src/rare_variant/submit_rare_variant.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/rare_variant/submit_rare_variant.sh'), eval=FALSE, hide=TRUE}
+```
+src/rare_variant/submit_collapsing_bt.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/rare_variant/submit_collapsing_bt.sh'), eval=FALSE, hide=TRUE}
+```
+I performed single and gene-based collapsing ExWAS in the severe asthma case/control cohorts.
+<br>
+Single ExWAS was performed in 7,413 cases and 36,955 controls; I applied the same covariate of the discovery GWAS
+(age_at_recruitment,age2,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,genetic_sex). I used REGENIE v3.1.1
+and the analysis was performed using the Research Analysis Platform. More detailed on the available code.
 
 # Results
 

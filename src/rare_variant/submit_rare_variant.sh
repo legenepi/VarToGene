@@ -80,8 +80,9 @@ do
 done
 
 # Running regenie step 2:
-EXOME_PATH="/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release"
+exome_file_dir="/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release"
 EXCLUDE="ukb23158_500k_OQFE.90pct10dp_qc_variants.txt"
+field_name="ukb23158"
 for chr in {1..22}
 do
   run_regenie_cmd="regenie \
@@ -95,11 +96,11 @@ do
   --firth-se \
   --firth \
   --extract WES_c${chr}_snps_qc_pass.snplist \
-  --exclude $EXCLUDE
+  --exclude $EXCLUDE \
   --phenoCol broad_pheno_1_5_ratio \
   --covarCol age_at_recruitment,age2,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,genetic_sex \
+  --bsize 400 \
   --pred sa_results_pred.list \
-  --bsize 200 \
   --pThresh 0.05 \
   --minMAC 3 \
   --threads 16 \
@@ -109,7 +110,7 @@ do
   -iin="${exome_file_dir}/${field_name}_c${chr}_b0_v1.bim" \
   -iin="${exome_file_dir}/${field_name}_c${chr}_b0_v1.fam" \
   -iin="${data_file_dir}/WES_c${chr}_snps_qc_pass.snplist" \
-  -iin="${EXOME_PATH}/helper_files/${EXCLUDE}" \
+  -iin="${exome_file_dir}/helper_files/${EXCLUDE}" \
   -iin="/demo_EUR_pheno_cov_broadasthma_app88144.txt" \
   -iin="${data_file_dir}/sa_results_pred.list" \
   -iin="${data_file_dir}/sa_results_1.loco.gz" \
@@ -122,22 +123,25 @@ do
   --yes
 done
 
+#Downlaod a log file to have it locally on ALICE3:
+#Var_to_Gene/input/regenie_step2_chr5:
+#REGENIE v3.1.1.gz
+#* case-control counts for each trait:
+#'broad_pheno_1_5_ratio': 7413 cases and 36955 controls
+
 # Merging output of regenie and formatting for visualising using LocusZoom:
-merge_cmd='out_file="ExWAS_SA_assoc.regenie.merged.txt" \
-    cp /mnt/project/analysis/*.regenie.gz . \
-    gunzip *.regenie.gz \
-    echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tEXTRA" \
-    > $out_file \
-    files="./*.regenie" \
-    for f in $files; do tail -n+2 $f | tr " " "\t" >> $out_file; done ; rm *.regenie'
+merge_cmd='out_file="assoc.regenie.merged.txt"; cp /mnt/project/analysis/*.regenie.gz . ; gunzip *.regenie.gz ; echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tEXTRA" > $out_file ; files="./*.regenie"; for f in $files; do tail -n+2 $f | tr " " "\t" >> $out_file; done ; rm *.regenie'
 dx run swiss-army-knife \
-    -iin="${data_file_dir}/ExWAS_SA_assoc.c1_asthma.regenie.gz" \
+    -iin="${data_file_dir}/ExWAS_SA_assoc.c1_broad_pheno_1_5_ratio.regenie.gz" \
     -icmd="${merge_cmd}" \
     --tag="Merge_regenie_results" \
     --instance-type "mem1_ssd1_v2_x16" \
     --destination="${data_file_dir}" \
     --brief \
     --yes
+
+#Run LocusZoom:
+dx run locuszoom -igwas_files="${data_file_dir}assoc.regenie.merged.txt"
 
 # End of script.
 
