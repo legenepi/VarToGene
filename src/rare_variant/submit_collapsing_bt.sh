@@ -1,4 +1,9 @@
 #!/bin/bash
+#Rationale: gene-based collapsing rare variant ExWAS - Based on Nick's script
+#guidelines at:
+#https://dnanexus.gitbook.io/uk-biobank-rap/science-corner/using-regenie-to-generate-variant-masks
+#https://community.dnanexus.com/s/question/0D582000004zTItCAM/burden-test-from-regenie-in-ukb-wes-data-the-result-does-not-contain-alleles-or-beta-and-se
+#https://github.com/rgcgithub/regenie/issues/327
 
 dx mkdir /analysis/collapsing_Hg38/
 dx cd /analysis/collapsing_Hg38/
@@ -11,13 +16,10 @@ dx upload /scratch/gen1/nnp5/Var_to_Gen_tmp/rare_variant/backmask.def
 dx cd ../..
 
 CHR=$1
-BASE=/rare_variants/collapsing_Hg38
-REGENIE=regenie_v3.3.gz_x86_64_Centos7_mkl
+SEED=/analysis/
+BASE=/collapsing_Hg38/
 BED=ukb23158_c${CHR}_b0_v1
 EXOME_PATH="/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release"
-COVAR="/demo_EUR_pheno_cov_broadasthma_app88144.txt"
-PHENO="/demo_EUR_pheno_cov_broadasthma_app88144.txt"
-PRED=sa_fit_bt_out_Hg38
 ANNOT=ukb23158_500k_OQFE.annotations.txt.gz
 SETLIST=ukb23158_500k_OQFE.sets.txt.gz
 EXCLUDE=ukb23158_500k_OQFE.90pct10dp_qc_variants.txt
@@ -38,46 +40,48 @@ else
     BUILD_MASK="--write-mask --write-mask-snplist"
 fi
 
-REGENIE_CMD="cp ${REGENIE} /tmp; chmod u+x /tmp/${REGENIE}; /tmp/${REGENIE} --bed $BED --exclude $EXCLUDE --step 2 --pred ${PRED}_pred.list --covarFile $COVAR --phenoFile $PHENO --bt --anno-file ${ANNOT} --set-list ${SETLIST} --mask-def ${MASK} $BUILD_MASK --firth --approx --pThresh 0.01 --bsize 400 --minMAC 3 --aaf-bins $AAF_BINS --joint $JOINT_TESTS --vc-maxAAF $MAXAFF --vc-tests $TESTS --rgc-gene-p --threads=$THREADS --out $OUT"
-
-dx run swiss-army-knife \
+for chr in {1..22}
+do
+  REGENIE_CMD="regenie \
+    --bed $BED \
+    --exclude $EXCLUDE \
+    --extract WES_c${CHR}_snps_qc_pass.snplist \
+    --step 2 \
+    --pred sa_results_pred.list \
+    --phenoFile demo_EUR_pheno_cov_broadasthma_app88144.txt \
+    --covarFile demo_EUR_pheno_cov_broadasthma_app88144.txt \
+    --phenoCol broad_pheno_1_5_ratio \
+    --covarCol age_at_recruitment,age2,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,genetic_sex \
+    --bt \
+    --anno-file ${ANNOT} \
+    --set-list ${SETLIST} \
+    --mask-def ${MASK} $BUILD_MASK \
+    --firth --approx --pThresh 0.01 \
+    --bsize 400 \
+    --minMAC 3 \
+    --aaf-bins $AAF_BINS \
+    --joint $JOINT_TESTS \
+    --vc-maxAAF $MAXAFF \
+    --vc-tests $TESTS \
+    --rgc-gene-p \
+    --threads=$THREADS \
+    --out $OUT"
+  dx run swiss-army-knife \
     -iin="${EXOME_PATH}/${BED}.bed" \
-    -iin="`[ $CHR != "Y" ] && echo ${EXOME_PATH}/${BED}.bim || echo /rare_variants/${BED}.bim`" \
+    -iin="${EXOME_PATH}/${BED}.bim" \
     -iin="${EXOME_PATH}/${BED}.fam" \
-    -iin="${BASE}/$COVAR" \
-    -iin="${BASE}/$PHENO" \
-    -iin="${BASE}/${PRED}_pred.list" \
-    -iin="${BASE}/${PRED}_1.loco" \
-    -iin="${BASE}/${PRED}_2.loco" \
-    -iin="${BASE}/${PRED}_3.loco" \
-    -iin="${BASE}/${PRED}_4.loco" \
-    -iin="${BASE}/${PRED}_5.loco" \
-    -iin="${BASE}/${PRED}_6.loco" \
-    -iin="${BASE}/${PRED}_7.loco" \
-    -iin="${BASE}/${PRED}_8.loco" \
-    -iin="${BASE}/${PRED}_9.loco" \
-    -iin="${BASE}/${PRED}_10.loco" \
-    -iin="${BASE}/${PRED}_11.loco" \
-    -iin="${BASE}/${PRED}_12.loco" \
-    -iin="${BASE}/${PRED}_13.loco" \
-    -iin="${BASE}/${PRED}_14.loco" \
-    -iin="${BASE}/${PRED}_15.loco" \
-    -iin="${BASE}/${PRED}_16.loco" \
-    -iin="${BASE}/${PRED}_17.loco" \
-    -iin="${BASE}/${PRED}_18.loco" \
-    -iin="${BASE}/${PRED}_19.loco" \
-    -iin="${BASE}/${PRED}_20.loco" \
-    -iin="${BASE}/${PRED}_21.loco" \
-    -iin="${BASE}/${PRED}_22.loco" \
-    -iin="${BASE}/${PRED}_23.loco" \
-    -iin="${BASE}/${ANNOT}" \
+    -iin="${SEED}/WES_c${CHR}_snps_qc_pass.snplist" \
+    -iin="/demo_EUR_pheno_cov_broadasthma_app88144.txt" \
+    -iin="${SEED}/sa_results_pred.list" \
+    -iin="${SEED}/sa_results_1.loco.gz" \
+    -iin="${SEED}/${BASE}/${ANNOT}" \
     -iin="${EXOME_PATH}/helper_files/${EXCLUDE}" \
-    -iin="${BASE}/${SETLIST}" \
-    -iin="${BASE}/${MASK}" \
-    -iin="${BASE}/${REGENIE}" \
+    -iin="${SEED}/${BASE}/${SETLIST}" \
+    -iin="${SEED}/${BASE}/${MASK}" \
     -icmd="$REGENIE_CMD" \
     --instance-type "mem1_ssd1_v2_x16" \
     --name="$NAME" \
     --destination="$BASE" \
     --brief --yes --allow-ssh
 #    -imount_inputs="true" \
+done
