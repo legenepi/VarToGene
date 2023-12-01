@@ -139,9 +139,37 @@ dx run swiss-army-knife \
     --destination="${data_file_dir}" \
     --brief \
     --yes
+done
 
 #Run LocusZoom:
-dx run locuszoom -igwas_files="${data_file_dir}assoc.regenie.merged.txt"
+#On the RAP Platform:
+#Tools > Tools Library > LocusZoom > Run
+#Output folder: Severe_asthma/analysis/
+#Input files: Severe_asthma/analysis/assoc.regenie.merged.txt"
+#JobName: LocusZoom_single_rarevar_ExWAS
+#and then WORKER URL to select the column:
+#Build38
+#Chromosome: CHROM
+#Ref allele: ALLELE0
+#P-value column: LOG10P tick 'is -log10(p)'
+#Position: GENPOS
+#Alt alelle: ALLELE1
+#Effect size: BETA
+#Std Err.: SE
+#Affect allele: Alt
+#Specify from: Frequency
+#Frequency: A1FREQ
+#Dowload summary statistics, log, screenshot of LocusZoom and QQPlot and upload in /Var_to_Gene/input/rare_variant/single_rarevar_EwWAS/
 
-# End of script.
+#Let's filter our data first
+#MAF < 0.01 (Because for my common variants SA GWAS, I filter for MAF >= 0.01) and p-value <= 5E-6 (as suggestive threshold):
 
+Rscript src/rare_variant/create_input_munge_summary_stats.R \
+    input/rare_variant/single_rarevar_EwWAS/summary_stats.gz \
+    "SA"
+
+Rscript src/rare_variant/sentinel_selection.R \
+    input/rare_variant/single_rarevar_EwWAS/SArarevar_betase_input_mungestat \
+    "SA"\
+    500000 \
+    0.000005

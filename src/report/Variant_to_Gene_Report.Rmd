@@ -277,6 +277,9 @@ src/rare_variant/README.txt
 src/rare_variant/submit_rare_variant.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/rare_variant/submit_rare_variant.sh'), eval=FALSE, hide=TRUE}
 ```
+src/rare_variant/create_input_munge_summary_stats.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/rare_variant/create_input_munge_summary_stats.R'), eval=FALSE, hide=TRUE}
+```
 src/rare_variant/submit_collapsing_bt.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/rare_variant/submit_collapsing_bt.sh'), eval=FALSE, hide=TRUE}
 ```

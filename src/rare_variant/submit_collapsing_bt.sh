@@ -15,10 +15,8 @@ printf "M1 LoF\nM3 LoF,missense(5/5)\nM4 LoF,missense(5/5),missense(>=1/5)" > /s
 dx upload /scratch/gen1/nnp5/Var_to_Gen_tmp/rare_variant/backmask.def
 dx cd ../..
 
-CHR=$1
 SEED=/analysis/
 BASE=/collapsing_Hg38/
-BED=ukb23158_c${CHR}_b0_v1
 EXOME_PATH="/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release"
 ANNOT=ukb23158_500k_OQFE.annotations.txt.gz
 SETLIST=ukb23158_500k_OQFE.sets.txt.gz
@@ -29,7 +27,6 @@ JOINT_TESTS=acat
 MAXAFF=0.01
 TESTS=acatv,skato
 OUT=${BED}_sa_collapsing_backman_gene_p
-NAME=sa_collapsing_chr${CHR}_gene_p
 THREADS=16
 
 if [ $# -gt 1 ]; then
@@ -40,8 +37,10 @@ else
     BUILD_MASK="--write-mask --write-mask-snplist"
 fi
 
-for chr in {1..22}
+for CHR in {1..22}
 do
+  NAME=sa_collapsing_chr${CHR}_gene_p
+  BED=ukb23158_c${CHR}_b0_v1
   REGENIE_CMD="regenie \
     --bed $BED \
     --exclude $EXCLUDE \
@@ -81,7 +80,14 @@ do
     -icmd="$REGENIE_CMD" \
     --instance-type "mem1_ssd1_v2_x16" \
     --name="$NAME" \
-    --destination="$BASE" \
+    --destination="${SEED}/${BASE}" \
     --brief --yes --allow-ssh
-#    -imount_inputs="true" \
 done
+
+#Downlaod a log file to have it locally on ALICE3:
+#Not able to download the full log, copy a part of it.
+#Var_to_Gene/input/ukb23158_c22_b0_v1_sa_collapsing_backman_gene_p.log
+#REGENIE v3.1.1.gz
+#case-control counts for each trait:
+#- 'broad_pheno_1_5_ratio': 7413 cases and 36955 controls
+
