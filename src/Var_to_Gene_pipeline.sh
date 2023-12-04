@@ -429,3 +429,87 @@ cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma_app88144.txt /rfs/Tob
 #https://github.com/legenepi/rare_collapsing
 #Single rare variant analysis: NB - need to do it for rare variant ExWAS ! change filter in plink!
 #src/rare_variant/submit_rare_variant.sh
+
+################
+#6 MERGE GENES FOR GENE PRIORITISATION AND VISUALISATION
+################
+#TO NOTE: ONLY FOR
+#annotation
+#eQTL
+#mouse_KO
+#PoPS
+#pQTL
+#rare_disease
+##STILL NEED TO ADD SINGLE AND GENE-BASED COLLAPSING ANALYSIS GENES !
+Rscript src/gene_heatmap.R
+
+#how many evidence for each gene?
+awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq -c | sort -k1 -r
+awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq -c | awk '$1 != 1 {print $2}' \
+    > ${tmp_path}/gene_2plus_evidence
+#Are these genes with 2+ evidence already described/found in asthma studies ?
+##Valette et al. 2021:
+wget -F ${tmp_path}/ https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8187656/bin/42003_2021_2227_MOESM4_ESM.xlsx
+#SD17: "Supplementary Data 17. Druggability of the 806 target genes identified in this study.
+#Put all the 806 gene identified by Valette et al. 2021 into this file:
+nano ${tmp_path}/all_genes_Valette2021
+grep -F -f ${tmp_path}/gene_2plus_evidence ${tmp_path}/all_genes_Valette2021 | wc -l
+#All genes are identified by Valette et al.2021
+#59 genes, among which all the 2+ evidence were found by Valette et al. as well:
+awk 'NR > 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq  | grep -w -F -f - ${tmp_path}/all_genes_Valette2021 | wc -l
+grep -w -F -f ${tmp_path}/gene_2plus_evidence ${tmp_path}/all_genes_Valette2021 | wc -l
+#34 NOT IDENTIFIED BY VALETTE (but all with just one level of evidence in my analysis):
+awk 'NR > 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq  | \
+    grep -v -w -F -f ${tmp_path}/all_genes_Valette2021 - | sort | sed -z 's/\n/,/g;s/,$/\n/'
+#In green are 29 target genes that overlapped among lung TWAS genes, blood eGenes, and chromatin contact genes."
+#Put the 29 genes into this file:
+#9 genes in the 29 with three level of evidence: 4 in the 2+ my level of evidence, 5 just one evidence.
+nano ${tmp_path}/target_genes_Valette2021
+awk 'NR > 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq  | grep -w -F -f - ${tmp_path}/target_genes_Valette2021
+grep -F -f ${tmp_path}/gene_2plus_evidence ${tmp_path}/target_genes_Valette2021
+#the four with two+ level of evidence:
+#CAMK4
+#IKZF3
+#IL4R
+#SMAD3
+#The five with one level of evidence:
+#GSDMB
+#HLA-DQB1
+#MED1
+#RAD50
+#TAP2
+#Supplementary Data 18. PheWAS for the 40 genes prioritized as therapeutic targets for asthma.
+#aOverall association score for asthma from the Open Targets Platform (ref21).
+#bDGIdb, Drug-gene interaction database (ref22).
+#cDruggable genome (ref23).
+#dAsthma drug targets derived from El-Husseini et al. (ref20)
+#Put the 40 genes into this file:
+#9 in total: 4 in the 2+ my level of evidence, 5 just one evidence.
+nano ${tmp_path}/druggable_genes_Valette2021
+awk 'NR > 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq  | grep -w -F -f - ${tmp_path}/druggable_genes_Valette2021
+grep -F -f ${tmp_path}/gene_2plus_evidence ${tmp_path}/druggable_genes_Valette2021
+#the four with two+ level of evidence:
+#IL1RL1
+#RORA
+#SMAD3
+#IL4R
+#The five with one level of evidence:
+#IL18RAP
+#CCR4
+#IL13
+#IL33
+#ERBB3
+
+#Targets of existing asthma drugs are in bold - taken from Table 4 of Valette et al 2021.
+#CCR4, IL13,IL2RA,IL4R,IL5,IL6,SMAD3,TNFSF4,TSLP
+nano ${tmp_path}/existing_asthma_drugtarget
+#Two genes in the two+ level of evidence among the gene already targeted for asthma:
+#IL4R,SMAD3
+awk 'NR > 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq  | grep -w -F -f - ${tmp_path}/existing_asthma_drugtarget
+#CCR4
+#IL13
+#IL4R
+#SMAD3
+grep -F -f ${tmp_path}/gene_2plus_evidence ${tmp_path}/existing_asthma_drugtarget
+#IL4R
+#SMAD3

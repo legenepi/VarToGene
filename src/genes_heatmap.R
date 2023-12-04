@@ -8,7 +8,6 @@ library(data.table)
 library(readxl)
 library(RColorBrewer)
 
-options(show.error.locations = TRUE)
 
 #input each analysis table:
 genes_raw <- "input/var2genes_raw.xlsx"
@@ -31,7 +30,7 @@ v2g_full_combination <- unique(expand.grid(x = v2g_full$gene, y = v2g_full$evide
 colnames(v2g_full_combination) <- colnames(v2g_full)
 #mask (conceptually: v2g_full_combination %in% v2g_full):
 mask <- as.data.frame(do.call(paste0, v2g_full_combination) %in% do.call(paste0, v2g_full)) %>% rename(status='do.call(paste0, v2g_full_combination) %in% do.call(paste0, v2g_full)')
-v2g_full_combination <- cbind(v2g_full_combination,mask) %>% mutate(status=as.integer(as.logical(status)))
+v2g_full_combination <- cbind(v2g_full_combination,mask) %>% mutate(status=as.integer(as.logical(status))) %>% arrange(status,gene)
 #long to wide reshape using spread() in tidyr:
 v2g_full_combination <- spread(v2g_full_combination, evidence, status) %>% remove_rownames %>% column_to_rownames(var="gene")
 
@@ -39,9 +38,9 @@ v2g_full_combination <- spread(v2g_full_combination, evidence, status) %>% remov
 v2g_full_combination <- setDT(v2g_full_combination, keep.rownames = TRUE)[]
 setnames(v2g_full_combination, "rn", "gene")
 
-
 # reshape your data
 v2g_full_combination2 <- melt(v2g_full_combination, id.var = "gene")
+fwrite(v2g_full_combination2,"./output/v2g_gene_prioritisation.txt",sep="\t",quote=F)
 
 # Plot
 ##use this to find which colour I want: fro the pie, I extract the index for the colour I want:
@@ -66,10 +65,6 @@ fc_heatmap_all <- function(df,x_val,y_val,fill_val) {
       ggtitle("Gene prioritization")
       }
 
-#save the full plot(genes):
-png("./output/V2G_heatmap.png")
-fc_heatmap_all(v2g_full_combination2,v2g_full_combination2$variable,v2g_full_combination2$gene,v2g_full_combination2$value)
-dev.off()
 
 #Split plot into 3 plots of 31 genes each:
 test <- v2g_full_combination2 %>%
@@ -78,10 +73,10 @@ test <- v2g_full_combination2 %>%
     mutate(facet=c(rep(3, ceiling(n()/3)),rep(2, ceiling(n()/3)), rep(1, floor(n()/3)))) %>%
     ungroup
 
-png("./output/V2G_heatmap_subplots.png")
+png("./output/V2G_heatmap_subplots.png", width=800, height = 500)
 fc_heatmap_all(test,test$variable,test$gene,test$value) + facet_wrap(~facet, scales="free", ncol=3) +
         theme(strip.background = element_blank(), strip.text = element_blank(),
-        axis.text.x=element_text(angle=90, vjust=0, hjust=0, face="bold"),
+        axis.text.x=element_text(angle=75, vjust=0, hjust=0, face="bold"),
         axis.title=element_blank(),
         axis.text.y=element_text(hjust=1, face="italic"),
         axis.ticks = element_blank(),
