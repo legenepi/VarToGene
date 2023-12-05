@@ -5,6 +5,10 @@
 #https://community.dnanexus.com/s/question/0D582000004zTItCAM/burden-test-from-regenie-in-ukb-wes-data-the-result-does-not-contain-alleles-or-beta-and-se
 #https://github.com/rgcgithub/regenie/issues/327
 
+dx login
+dx select Severe_asthma
+
+
 dx mkdir /analysis/collapsing_Hg38/
 dx cd /analysis/collapsing_Hg38/
 dx upload /scratch/gen1/nrgs1/rare_variant/collapsing_Hg38/ukb23158_500k_OQFE.annotations.txt.gz
@@ -26,7 +30,6 @@ AAF_BINS=0.01,0.001,0.0001,0.00001
 JOINT_TESTS=acat
 MAXAFF=0.01
 TESTS=acatv,skato
-OUT=${BED}_sa_collapsing_backman_gene_p
 THREADS=16
 
 if [ $# -gt 1 ]; then
@@ -41,6 +44,7 @@ for CHR in {1..22}
 do
   NAME=sa_collapsing_chr${CHR}_gene_p
   BED=ukb23158_c${CHR}_b0_v1
+  OUT=${BED}_sa_collapsing_backman_gene_p
   REGENIE_CMD="regenie \
     --bed $BED \
     --exclude $EXCLUDE \
@@ -84,10 +88,8 @@ do
     --brief --yes --allow-ssh
 done
 
-#Downlaod a log file to have it locally on ALICE3:
-#Not able to download the full log, copy a part of it.
-#Var_to_Gene/input/ukb23158_c22_b0_v1_sa_collapsing_backman_gene_p.log
-#REGENIE v3.1.1.gz
-#case-control counts for each trait:
-#- 'broad_pheno_1_5_ratio': 7413 cases and 36955 controls
+#Downlaod files in ALICE3:
+mkdir /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/genecollaps_ExWAS
+dx download project-GGzFY70JBJzVx22v4Yj980J1:/analysis/collapsing_Hg38/ukb23158_c*
+
 
