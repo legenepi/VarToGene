@@ -11,14 +11,13 @@ sink(stderr())
 suppressMessages(library(tidyverse))
 suppressMessages(library(data.table))
 suppressMessages(library(corrplot))
-suppressMessages(library(xlsx))
-suppressMessages(library(qdap))
+#suppressMessages(library(xlsx))
+#suppressMessages(library(qdap))
 suppressMessages(library(VennDiagram))
 library(RColorBrewer)
 
-args <- commandArgs(T)
-
-favor_file <- args[1]
+#args <- commandArgs(T)
+#favor_file <- args[1]
 favor_file <- "/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/FAVOR_credset_chrpos38_2023_08_08.csv"
 favor <- fread(favor_file)
 
@@ -34,6 +33,55 @@ favor.digest <- favor %>% select("Variant (VCF)", "Chromosome", "Position", "rsI
 
 colnames(favor.digest) <- make.names(colnames(favor.digest), unique=TRUE)
 
+#FAVOR - Nearest Gene to variants with highest PIP in the locus:
+#Identify whether variants cause protein coding changes using Gencode genes definition systems
+#it will label the gene name of the variants has impact, if it is intergenic region
+#the nearby gene name will be labeled in the annotation.
+##Retrieve Sentinel SNPs - highest PIP in the fine-mapped loci:
+#cp /scratch/gen1/nnp5/Var_to_Gen_tmp/ukb_pqtl/cs_vars_liftover_output.bed /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/
+sig_list_tmp <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt")
+setnames(sig_list_tmp,"chromosome","chr")
+setnames(sig_list_tmp,"position","posb37")
+sig_list_tmp$sentinel <- paste0(sig_list_tmp$chr,"_",sig_list_tmp$posb37,"_",sig_list_tmp$allele1,"_",sig_list_tmp$allele2)
+locus <- unique(sig_list_tmp$locus)
+
+sentinels <- data.frame(matrix(ncol = 4,nrow = 0))
+colnames(sentinels) <- c("locus","sentinel","chr","posb37")
+for(i in locus){
+    locus_sig_list <- sig_list_tmp %>% filter(locus == as.character(i))
+    locus_sig_list <- locus_sig_list %>% filter(PIP_average == max(locus_sig_list$PIP_average)) %>% select(locus,sentinel,chr,posb37)
+    sentinels <- rbind(sentinels,locus_sig_list)
+    }
+
+#liftover fo rhte senitnel to find b38:
+posb38 <- fread("input/highestPIP_sentinels_hglft_genome_b38.bed") %>% rename(posb38=V2)
+posb38  <- posb38 %>% separate(V4, c("chr", "pos2", "posb37"))
+posb38  <- posb38 %>% select(chr, posb37, posb38)
+posb38$chr <- as.numeric(gsub("chr","",posb38$chr))
+posb38$posb37 <- as.numeric(posb38$posb37)
+sentinel_b38 <- sentinels %>% left_join(posb38, by =c("chr", "posb37")) %>% rename(Chromosome=chr, Position=posb38)
+
+
+
+###Nearest genes:
+favor.digest.NG <- favor.digest %>% select(Chromosome, Position, "Genecode.Comprehensive.Info") %>% rename(Nearest_gene="Genecode.Comprehensive.Info")
+sentinel_b38_NG <- sentinel_b38 %>% left_join(favor.digest.NG, by = c("Chromosome", "Position")) %>% rename(posb38=Position)
+#Take closet genes when multiples are annotated:
+#1:AP001189.5
+#5:TSLP
+#8:IL33
+#9:IL1RL1
+#16:HLA-DQA1
+#17:AC044784.1
+sentinel_b38_NG$Nearest_gene[1] <- "AP001189.5"
+sentinel_b38_NG$Nearest_gene[5] <- "TSLP"
+sentinel_b38_NG$Nearest_gene[8] <- "IL33"
+sentinel_b38_NG$Nearest_gene[9] <- "IL1RL1"
+sentinel_b38_NG$Nearest_gene[16] <- "HLA-DQA1"
+sentinel_b38_NG$Nearest_gene[17] <- "AC044784.1"
+fwrite(sentinel_b38_NG,"output/PIP_sentinels_nearestgenes",sep="\t",quote=F)
+nearest_gene <- unique(unlist(strsplit(sentinel_b38_NG$Nearest_gene,",")))
+
 #Categorical annotation:
 ##Exploratory:
 summary(as.factor(favor.digest$"Genecode.Comprehensive.Category"))
@@ -42,6 +90,8 @@ summary(as.factor(favor.digest$"Genecode.Comprehensive.Info"))
 summary(as.factor(favor.digest$"Genecode.Comprehensive.Exonic.Category"))
 summary(as.factor(favor.digest$"Genecode.Comprehensive.Exonic.Info"))
 
+#FAVOR functional:
+#FANTOM5 CAGE promoter or enhancer, Functional Integrative score > 15, ClinVar
 #CAGE promoter or enhancer (from FANTOM5):
 fantom5 <- favor.digest %>% filter(!is.na(CAGE.Promoter) | !is.na(CAGE.Enhancer))
 fantom5_genes <- unique(fantom5$Genecode.Comprehensive.Info)
@@ -135,4 +185,5 @@ venn.diagram(
 varannot_genes <- list(unique(c(fantom5_genes,inscores_genes,clin_genes)))
 
 #Save the genes:
+fwrite(as.data.frame(nearest_gene),"input/nearest_genes_raw",row.names=FALSE, col.names=FALSE,quote=F)
 write.xlsx(varannot_genes,"/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx",sheetName = "varannot_genes", row.names=FALSE, col.names=FALSE)

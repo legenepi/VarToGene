@@ -11,8 +11,12 @@ tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 
 ################
 #1.VARIANT ANNOTATION
-Rscript src/Variant_annotation_FAVOR.R
 ################
+#From FAVOR website: Two Info:
+#Nearest gene for sentinel with highest PIP in each locus
+#Functional annotated credset variants according to FANTOM5, ClinVar and Integrative Functional Score criteria
+Rscript src/Variant_annotation_FAVOR.R input/FAVOR_credset_chrpos38_2023_08_08.csv
+#Add nearest genes to the var2gene_raw.xlsx file.
 
 
 ################
