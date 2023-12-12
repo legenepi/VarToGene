@@ -95,6 +95,8 @@ summary(as.factor(favor.digest$"Genecode.Comprehensive.Exonic.Info"))
 #CAGE promoter or enhancer (from FANTOM5):
 fantom5 <- favor.digest %>% filter(!is.na(CAGE.Promoter) | !is.na(CAGE.Enhancer))
 fantom5_genes <- unique(fantom5$Genecode.Comprehensive.Info)
+fantom5_df <- fantom5 %>% select(Chromosome, Position, "Genecode.Comprehensive.Info", CAGE.Promoter, CAGE.Enhancer) %>% rename(Nearest_gene="Genecode.Comprehensive.Info")
+fwrite(fantom5_df,"output/fnc_annot_fantom5",sep="\t",quote=F,row.names=F)
 
 
 #Functional integrative score:
@@ -125,10 +127,16 @@ png(file = "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/corrplot_integrative
 corplot_integrativescore <- corrplot(M2, method="number")
 dev.off()
 
+inscores.aPCs_df <- inscores %>% select(Chromosome, Position, Genecode.Comprehensive.Info, "CADD.phred","aPC.Protein.Function", "aPC.Conservation","aPC.Epigenetics.Active",
+                                      "aPC.Epigenetics.Repressed","aPC.Epigenetics.Transcription","aPC.Local.Nucleotide.Diversity",
+                                      "aPC.Mutation.Density", "aPC.Transcription.Factor", "aPC.Mappability")
+fwrite(inscores.aPCs_df,"output/fnc_annot_inscores",sep="\t",quote=F,row.names=F)
 
 #Clinical annotation:
 clinvar <- favor.digest %>% filter(!is.na(Clinical.Significance))
 clin_genes <- unique(clinvar$Gene.Reported)
+clinvar_df <- clinvar %>% select(Chromosome, Position, Clinical.Significance, Gene.Reported)
+fwrite(clinvar_df,"output/fnc_annot_clinvar",sep="\t",quote=F,row.names=F)
 
 #Genes from Variant Annotation:
 #fantom5_genes, inscores_genes, clin_genes
