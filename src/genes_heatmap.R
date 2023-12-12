@@ -11,8 +11,10 @@ library(RColorBrewer)
 
 #input each analysis table:
 genes_raw <- "input/var2genes_raw.xlsx"
+nearest_gene <- read_excel(genes_raw, sheet = "nearest_genes",col_names = "gene")
+nearest_gene$evidence <- "nearest"
 annotation <- read_excel(genes_raw, sheet = "varannot_genes",col_names = "gene")
-annotation$evidence <- as.factor("annotation")
+annotation$evidence <- as.factor("func_annot")
 eqtl <- read_excel(genes_raw, sheet = "eQTL_genes_merge")
 pqtl <- read_excel(genes_raw, sheet = "pQTL_genes_merge")
 pops <- read_excel(genes_raw, sheet = "PoPS_genes",col_names = "gene")
@@ -23,7 +25,7 @@ raredis <- read_excel(genes_raw, sheet = "Raredisease_genes",col_names = "gene")
 raredis$evidence <- as.factor("rare_disease")
 
 #merge:
-v2g_full <- rbind(annotation,eqtl,pqtl,pops,mouseko,raredis)
+v2g_full <- rbind(nearest_gene,annotation,eqtl,pqtl,pops,mouseko,raredis)
 
 #table with all the possible combination:
 v2g_full_combination <- unique(expand.grid(x = v2g_full$gene, y = v2g_full$evidence, KEEP.OUT.ATTRS = TRUE)) %>% arrange(x)
@@ -40,6 +42,7 @@ setnames(v2g_full_combination, "rn", "gene")
 
 # reshape your data
 v2g_full_combination2 <- melt(v2g_full_combination, id.var = "gene")
+length(unique(v2g_full_combination2$gene))
 fwrite(v2g_full_combination2,"./output/v2g_gene_prioritisation.txt",sep="\t",quote=F)
 
 # Plot
@@ -70,10 +73,10 @@ fc_heatmap_all <- function(df,x_val,y_val,fill_val) {
 test <- v2g_full_combination2 %>%
     arrange(gene, variable) %>%
     group_by() %>%
-    mutate(facet=c(rep(3, ceiling(n()/3)),rep(2, ceiling(n()/3)), rep(1, floor(n()/3)))) %>%
+    mutate(facet=c(rep(7, ceiling(n()/7)),rep(6, ceiling(n()/7)),rep(5, ceiling(n()/7)),rep(4, ceiling(n()/7)),rep(3, ceiling(n()/7)),rep(2, ceiling(n()/7)), rep(1, floor(n()/7)))) %>%
     ungroup
 
-png("./output/V2G_heatmap_subplots.png", width=800, height = 500)
+png("./output/V2G_heatmap_subplots.png", width=1000, height = 800)
 fc_heatmap_all(test,test$variable,test$gene,test$value) + facet_wrap(~facet, scales="free", ncol=3) +
         theme(strip.background = element_blank(), strip.text = element_blank(),
         axis.text.x=element_text(angle=75, vjust=0, hjust=0, face="bold"),
