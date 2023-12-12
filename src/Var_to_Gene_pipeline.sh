@@ -143,6 +143,12 @@ ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
 #https://www.biotools.fr/human/ensembl_symbol_converter
 #added in GTExV8_eQTL_genes_symbol table in the input/var2gene.xlsx file.
 
+awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_GTEx.tsv \
+    > output/coloc_asthma_GTEx.tsv
+
+awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTEx.tsv \
+    > output/colocsusie_asthma_GTEx.tsv
+
 ###eqtlGen eQTL###
 mkdir ${tmp_path}/results/eqtlgen
 mkdir ${tmp_path}/eqtlgen
@@ -195,6 +201,12 @@ grep "eqtlGenWB" ${tmp_path}/logerror/coloc_susie_eqtlgen*.out | awk -F ":" '{pr
 ##Check how many genes per tissue have been analysed for colocalisation:
 ls -lthr  ${tmp_path}/results/eqtlgen/*all_coloc.rds | grep "eqtlGenWB" | wc -l
 ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep "eqtlGenWB" | wc -l
+
+
+awk 'NR ==1; $11 == "TRUE" {print $0}' /scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_eqtlgen.tsv \
+    > output/coloc_asthma_eqtlgen.tsv
+
+#no true results fo rcolocsusie in eqtlGen
 
 
 #Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
@@ -268,6 +280,10 @@ grep "UBClung" ${tmp_path}/logerror/coloc_susie_UBCLung*.out | awk -F ":" '{prin
 ls -lthr  ${tmp_path}/results/ubclung/*all_coloc.rds | grep "ubclung" | wc -l
 ls -lthr ${tmp_path}/results/ubclung/*all_susie*.rds | grep "UBCLung" | wc -l
 
+awk 'NR ==1; $13 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_ubclung.tsv \
+    > output/coloc_asthma_ubclung.tsv
+#no TRUE colocsusie resutls for UBCLung
+
 
 #Find statistically significant colocalisation results for UBCLung, and add results into var2gene_raw.xlsx:
 #R gave error for xlsx and Java, so I find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
@@ -333,6 +349,7 @@ find ${tmp_path}/ukb_pqtl/*rs*/ -type f | wc -l
 cd ${tmp_path}/ukb_pqtl/
 /home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/001_combine_pqtl.awk *rs*/* \
     > ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt
+cp ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt output/
 cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene/ #of wherever the folder 'Var_to_Gene' is located
 #extract gene showing look-up results:
 awk 'NR > 1 {print $2}' ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt | sort -u \
@@ -340,6 +357,7 @@ awk 'NR > 1 {print $2}' ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt | sort -u \
 
 
 ###deCODE pQTL LOOK-UP###
+#No look-up results for deCode
 #Found this script of Nick for decode lookup (from /data/gen1/TSH/coloc_susie/lookup_decode.awk):
 #create credible_set.snps: create credible_set.snps in alphabetical order
 #($5 < $6 ? $5 : $6)"_"($6 > $5 ? $6 : $5)
@@ -362,6 +380,11 @@ sbatch src/pQTL_coloc/000_submit_lookup_scallop.sh
 awk 'NR > 1 && $5 > 0 {print $1}' ${tmp_path}/scallop_pqtl/log_pQTL_SCALLOP_analysis | sed 's/.txt//g' \
     > input/scallop_pqtl_var2genes_raw
 
+##Chrom	Pos	MarkerName	Allele1	Allele2	Freq1	FreqSE	Effect	StdErr	P-value	Direction	TotalSampleSize Gene
+awk -F "\t" '$10 < 5e-8 {print $0, $13="CA-125"}' ${tmp_path}/scallop_pqtl/CA-125.txt \
+    > output/scallop_ukbpqtl.txt
+awk -F "\t" '$10 < 5e-8 {print $0, $13="ST2"}' ${tmp_path}/scallop_pqtl/ST2.txt \
+    >> output/scallop_ukbpqtl.txt
 
 #Merge genes from the different pQTL look-up analyses:
 cat input/ukbpqtl_var2genes_raw input/scallop_pqtl_var2genes_raw input/decode_pqtl_var2genes_raw \
@@ -445,7 +468,7 @@ cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma_app88144.txt /rfs/Tob
 #pQTL
 #rare_disease
 ##STILL NEED TO ADD SINGLE AND GENE-BASED COLLAPSING ANALYSIS GENES !
-Rscript src/gene_heatmap.R
+Rscript src/genes_heatmap.R
 
 #how many evidence for each gene?
 awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq -c | sort -k1 -r
