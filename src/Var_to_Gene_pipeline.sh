@@ -459,17 +459,22 @@ cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma_app88144.txt /rfs/Tob
 #src/rare_variant/submit_rare_variant.sh
 
 ################
-#6 MERGE GENES FOR GENE PRIORITISATION AND VISUALISATION
+#6 TABLES FOR EACH ANALYSIS AND MERGE GENES FOR GENE PRIORITISATION AND VISUALISATION
 ################
 #TO NOTE: ONLY FOR
-#annotation
+#nearest gene
+#functional annotation
 #eQTL
 #mouse_KO
 #PoPS
 #pQTL
 #rare_disease
 ##STILL NEED TO ADD SINGLE AND GENE-BASED COLLAPSING ANALYSIS GENES !
+Rscript src/Locus_to_genes_table.R
 Rscript src/genes_heatmap.R
+cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
+cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
+
 
 #how many evidence for each gene?
 awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq -c | sort -k1 -r
