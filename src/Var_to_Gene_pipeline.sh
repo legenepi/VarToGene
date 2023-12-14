@@ -422,6 +422,7 @@ wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/
 #run the analysis:
 Rscript src/mouse_ko/mouse_ko.r > ${tmp_path}/mouse_ko/output_mouse_ko
 #Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/mouse_ko_genes_raw.txt genes into var2genes_raw.xlsx.
+cp ${tmp_path}/mouse_ko/results_500kb.csv input/mko_results_500kb.csv
 
 ################
 #4 NEARBY RARE MENDELIAN DISEASE GENE
@@ -441,7 +442,7 @@ wget -P src/report/ https://www.orphadata.com/docs/OrphadataFreeAccessProductsDe
 #run the analysis:
 Rscript src/rare_disease/rare_disease.r > ${tmp_path}/rare_disease/output_rare_disease
 #Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt genes into var2genes_raw.xlsx.
-
+cp ${tmp_path}/rare_disease/results_500kb_by_gene.csv input/raredis_results_500kb_by_gene.csv
 
 ################
 #5 RARE VARIANT UKBiobank ANALYSIS in RAP

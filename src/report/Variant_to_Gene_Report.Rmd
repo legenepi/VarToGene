@@ -216,7 +216,7 @@ src/pQTL_coloc/000_submit_lookup_decode.sh
 src/pQTL_coloc/000_decode_lookup.awk
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_decode_lookup.awk'), eval=FALSE, hide=TRUE}
 ```
-I decided to perform a look-up of the 615 credible set varaints in three pQTL sources: deCODE, SCALLOP, and UKBiobank pQTL data.
+I decided to perform a look-up of the 615 credible set variants in three pQTL sources: deCODE, SCALLOP, and UKBiobank pQTL data.
 <br>
 I applied filters for significant association as 1.8E-9 for deCODE, 5e-8 for SCALLOP, and 0.05/1463 for UKBiobank pQTL data.
 <br>
