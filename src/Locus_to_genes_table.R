@@ -6,6 +6,7 @@
 library(tidyverse)
 library(data.table)
 library(writexl)
+library(readxl)
 
 #Cred_set variants:
 #in credset, a1 is actually allele2 in gwas; a2 is actually allele1 in gwas
@@ -60,7 +61,11 @@ gtex <- rbind(gtex_coloc, gtex_colocsusie)  %>% rename(sentinel_gtex=snp)
 gtex$evidence <- as.factor("eqtl_gtex")
 credset_gwas$sentinel_gtex <- paste0(credset_gwas$chr,"_",credset_gwas$posb37,"_",credset_gwas$a1,"_",credset_gwas$a2)
 credset_gwas_gtex <- credset_gwas %>% left_join(gtex, by="sentinel_gtex")
-credset_gwas_gtex2 <- credset_gwas_gtex %>% filter(!is.na(evidence))
+credset_gwas_gtex2 <- credset_gwas_gtex %>% filter(!is.na(evidence)) %>% rename(gene_ensembl=gene)
+#put gene symbol instead of ensembl:
+gtex_genesymbol <- read_excel("input/var2genes_raw.xlsx", sheet="GTExV8_eQTL_genes_symbol",col_names=F) %>% rename(gene_ensembl="...1",gene="...2")
+credset_gwas_gtex2 <- credset_gwas_gtex2 %>% left_join(gtex_genesymbol,by="gene_ensembl") %>% select(-gene_ensembl)
+
 
 #eqtlGen:
 eqtlgen<- fread("output/coloc_asthma_eqtlgen.tsv") %>% select(snp, gene, tissue) %>% rename(sentinel_eqtlgen=snp)
@@ -108,10 +113,44 @@ raredis$evidence <- as.factor("rare_disease")
 credset_gwas_raredis <- credset_gwas %>% left_join(raredis, by= "sentinel")
 credset_gwas_raredis2 <- credset_gwas_raredis %>% filter(!is.na(evidence))
 
-#Save all results for each analysis into a unique xlsx file:
-df_list <- list(credset_gwas_ng2,fantom5_inscores_clinvar,credset_gwas_gtex2,credset_gwas_eqtlgen2,
+#Merge the results altogether to obtain a single file with locus - snp - gene - evidence:
+#only thing that can be different are 'evidence' and 'gene'
+#and 'tissue' only for eQTL data:
+col_for_join <- c("locus","snpid","chr","posb37","posb38","a2","a1","PIP_average","LOG_ODDS","se","eaf","pval","MAF","sentinel","evidence","gene","tissue")
+credset_gwas_gtex2 <- credset_gwas_gtex2 %>% rename(gene=gene)
+credset_gwas_eqtlgen2 <- credset_gwas_eqtlgen2 %>% rename(gene=gene)
+credset_gwas_ubclung2 <- credset_gwas_ubclung2 %>% rename(gene=gene_id)
+
+eqtl_all <- credset_gwas_gtex2 %>%
+            full_join(credset_gwas_eqtlgen2,by=col_for_join)%>%
+            full_join(credset_gwas_ubclung2, by=col_for_join) %>%
+            select("locus","snpid","chr","posb37","posb38","a2","a1","PIP_average","LOG_ODDS","se","eaf","pval","MAF","sentinel","evidence","gene","tissue")
+
+col_for_join <- c("locus","snpid","chr","posb37","gene","evidence","posb38","a2","a1","PIP_average","LOG_ODDS","se","eaf","pval","MAF","sentinel")
+credset_gwas_ng2 <- credset_gwas_ng2 %>% rename(gene=Nearest_gene)
+fantom5_inscores_clinvar <- fantom5_inscores_clinvar %>% rename(gene=Gene)
+credset_gwas_ukbpqtl2 <- credset_gwas_ukbpqtl2 %>% rename(gene=PROTEIN)
+credset_gwas_scallop2 <- credset_gwas_scallop2 %>% rename(gene=Gene)
+credset_gwas_raredis2 <- credset_gwas_raredis2 %>% rename(gene=Symbol)
+credset_gwas_mko2 <- credset_gwas_mko2 %>% rename(gene=Symbol)
+v2g_all <- eqtl_all %>%
+           full_join(credset_gwas_ng2,by=col_for_join) %>%
+           full_join(fantom5_inscores_clinvar,by=col_for_join) %>%
+           full_join(credset_gwas_ukbpqtl2,by=col_for_join) %>%
+           full_join(credset_gwas_scallop2,by=col_for_join) %>%
+           full_join(credset_gwas_raredis2,by=col_for_join) %>%
+           full_join(credset_gwas_mko2,by=col_for_join) %>% select(all_of(col_for_join)) %>% arrange(chr,posb37,locus,gene,evidence) %>% unique()
+
+v2g_minimal <- v2g_all %>% select(locus,snpid,chr,posb37,gene) %>% select(locus,gene) %>% unique()
+
+
+#Save each results for each analysis into a tables to populate a xlsx file:
+df_list <- list(v2g_minimal,v2g_all,credset_gwas_ng2,fantom5_inscores_clinvar,credset_gwas_gtex2,credset_gwas_eqtlgen2,
 credset_gwas_ubclung2,credset_gwas_ukbpqtl2,credset_gwas_scallop2,credset_gwas_raredis2,credset_gwas_mko2)
 write_xlsx(df_list,path = "src/report/var2gene_full.xlsx", col_names = TRUE, format_headers = TRUE)
+
+
+
 
 ##Rare variant ExWAS
 ##Single rare-variant:
