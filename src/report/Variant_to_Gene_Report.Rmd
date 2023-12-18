@@ -20,18 +20,15 @@ output:
 ```
 
 # Rationale
-Master Code
+Identify and prioritise genes using variant-to-gene mapping tools with credible sets variants from fine-mapping
+results of GWAS on severe asthma in UK Biobank European individuals.
 <br>
-src/Var_to_Gene_pipeline.sh
+Master Code (overall pipeline): src/Var_to_Gene_pipeline.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Var_to_Gene_pipeline.sh'), eval=FALSE, hide=TRUE}
 ```
-Prioritise genes using variant-to-gene mapping tools with credible sets variants from fine-mapping results of GWAS on severe asthma in UK Biobank European individuals.
 <br>
-I used several methods, following the Shrine et al. methodology (https://www.nature.com/articles/s41588-023-01314-0).
+I used several methods, mainly following the previous study of our group, Shrine et al. 2023 (https://www.nature.com/articles/s41588-023-01314-0).
 <br>
-Colocalisation was based on codes from Jing Cheng, and as adapted from Alex Williams.
-<br>
-Genes with more than X evidence of being mapped with associated variants are selected for following analysis.
 
 # Analysis
 
@@ -45,26 +42,29 @@ src/Variant_annotation_FAVOR.R
 Variant annotation can be represented in qualitative terms, such as variant effect predictor category or in quantitative
 terms with a score including protein function, conservation, epigenetics, integrative function
 (ref https://www.nature.com/articles/s41588-020-0676-4).
-When dealing with quantitative measures for the same functional category,
-these can be summed up using principal components, as implemented for the first time in the STAAR
-framework (ref https://www.nature.com/articles/s41588-020-0676-4) and adopted in Functional Annotation of Variants Online Resources (FAVOR) as well.
+When dealing with quantitative measures for the same functional category,these can be summed up using principal components,
+as implemented for the first time in the STAAR framework (ref https://www.nature.com/articles/s41588-020-0676-4) and adopted in Functional Annotation of Variants Online Resources (FAVOR) as well.
 Annotation Principal Component (aPC) is the first PC among standardised individual score for a specific functional
 category. AnnotationPC is transformed in PHRED-scale score, as CADD. CADD authors suggest 15 as a good threshold for functionally
-relevant variants (https://cadd.gs.washington.edu/info). Details on thresholds and information used are stored in Supplementary Information (link to the .xlsx file).
+relevant variants (https://cadd.gs.washington.edu/info).
 <br>
 FAVOR aggregates different sources and categories of annotation. I decided to focus on:
 
- 1.Categorical annotation: information from Gencode on coding with exonic details or non-coding variant, gene affected or nearby;
+ 1.Nearest gene for each credible set top PIP variant ("Genecode.Comprehensive.Info");
 
- 2.Functional integrative score: integrative scores for different categories;
+ 2.Functional annotation for all 615 credible set variants looking at either:
 
- 3.Clinical annotation: annotation from ClinVar about effect on a disease
+  2.1.FANTOM5 Gene Enhancer and/or Gene Promoter ("CAGE.Promoter", "CAGE.Enhancer")
+
+  2.2.Integrative scores > 15 ("CADD.phred","aPC.Protein.Function","aPC.Conservation","aPC.Epigenetics.Active",
+  "aPC.Epigenetics.Repressed","aPC.Epigenetics.Transcription","aPC.Local.Nucleotide.Diversity","aPC.Mutation.Density",
+  "aPC.Transcription.Factor", "aPC.Mappability");
+
+  2.3.Clinical annotation from ClinVar ("Clinical.Significance", "Gene.Reported")
 
 ## Colocalisation with expression quantitative trait loci (QTL) analysis
 Code
 <br>
-NB: There are different scripts for this pipeline. Please, refer to 'Var_to_Gene_pipeline.sh' script to have a look at the pipeline workflow.
-Codes below are ordered as in their order of appearance in 'Var_to_Gene_pipeline.sh' script.
 src/coloc/000_preprocess_cs.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/000_preprocess_cs.R'), eval=FALSE, hide=TRUE}
 ```
@@ -151,48 +151,51 @@ Looking at QTL and GWAS summary statistics, we can use statistical methods -colo
 association in the same loci for the same variant. If so, we can then declare that the variant we found from the GWAS show evidence of association
 with a gene in a specific tissue.
 <br>
-For this reason, QTL colocalisation is used as one of the variant-to-gene mapping analysis.
-<br>
-Different types of QTL data are available, based on the quantitative trait we study as well as at the type of variant-gene relationship we want to look at.
-<br>
-As an example, expression QTL looks at mRNA expression; in addition, if the analysis is only for variants near
+Different types of QTL data are available, based on the quantitative trait we study as well as at the type of
+variant-gene relationship we want to look at. As an example, expression QTL looks at mRNA expression; in addition, if the analysis is only for variants near
 the gene's transcription start site (usually +/-1Mb), this QTL is called 'cis'-eQTL; if the analysis is for variants further away
 that can have an effect on gene expression via the 3D conformation on DNA, they are called 'trans'-eQTL. If, instead, we want
-to investigate the role of the variant on the splicing of the mRNA, we call it 's'QTL; they can be both cis or trans- sQTL.
+to investigate the role of the variant on the splicing of the mRNA, we call it 's'QTL (cis or trans-sQTL). When analysing protein level,
+we identify the measure as it 'p'QTL (methylation quantitative measure, 'm'QTL).
 <br>
-If we are looking at protein level, we call it 'p'QTL; if looking at methylation quantitative measure, we call it 'm'QTL.
+## eQTL colocalisation
+I used cis-QTL data from three datasets: GTExV8, eQTLGen blood, and UBC lung eQTL. I run the analysis if the cis-eQTL showed
+significant association within the credible set regions, and I included shared variants present in both eQTL and the
+GWAS summary statistic within +/-500Kb from the associated variant. The colocalisation was performed using coloc (https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004383) or coloc.susie
+(http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=34587156) methods.
 <br>
-For my asthma project, I run the following cis-QTL types with the listed dataset:
-
- 1. cis-eQTL: GTExV8, eQTLGen blood, UBC lung eQTL, and U-BIOPRED;
-
- 3. pQTL: pQTL UKBiobank, SCALLOP pQTL, deCODE plasma
-
+Here, a little description of each cis-eQTL data and the used parameters.
+<br>
+**GTExV8** (https://www.gtexportal.org/)
 <br>
 GTExV8 is a collection of eQTL data for significant variant-gene association in 49 tissues with at least 70 samples (https://www.gtexportal.org/home/methods).
-I run co-localisation for the following tissues: 'Artery_Aorta', 'Artery_Coronary', 'Artery_Tibial', 'Colon_Sigmoid', 'Colon_Transverse', 'Esophagus_Gastroesophageal_Junction', 'Esophagus_Muscularis',  'Lung', 'Small_Intestine_Terminal_Ileum', 'Stomach'.
+I run co-localisation for the following tissues: 'Artery_Aorta', 'Artery_Coronary', 'Artery_Tibial', 'Colon_Sigmoid',
+'Colon_Transverse', 'Esophagus_Gastroesophageal_Junction', 'Esophagus_Muscularis',  'Lung', 'Skin_Not_Sun_Exposed_Suprapubic',
+'Skin_Sun_Exposed_Lower_leg','Small_Intestine_Terminal_Ileum', 'Stomach'.
 <br>
-I used filtered GTExv8 data including variant-gene pairs for each tissue with both either GWAS or eQTL pvalues <= 5x10-6.
-Kayesha Coley, my colleague, created the filtered files and split into chromosomes. She also added information on allele frequency for European
-ancestry individuals.
+I used filtered GTExV8 data including variant-gene pairs for each tissue with both GWAS and eQTL pvalues <= 5x10-6.
 <br>
-eQTLGen blood is a source for 16,989 eQTL genes from 37 dataset and a total of 31,684 individuals: 11M SNPs with MAF >=1% and within 1Mb from the analysed genes. (https://www.eqtlgen.org/phase1.html)
+**eQTLgen blood eQTLs** (http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=34475573)
 <br>
-UBC lung eQTL is
+eQTLgen blood eQTLs is a source for 16,989 eQTL genes from 37 dataset and a total of 31,684 individuals,
+counting 11M SNPs with MAF >=1% and within 1Mb from the analysed genes (https://www.eqtlgen.org/phase1.html).
+I used filtered eQTLGen blood variant-gene pairs with both GWAS or eQTL pvalues <= 5x10-6.
 <br>
-TO BE EDITED:
-Additional step of p-value correction: since eQTL are less power due ot small sample size,
-genome-wide pvalue is not applicable; plus, a lost of genes so there is a larger number of test campared to GWAS, so if using bonferroni the correction would be very small. Instead, we can us eigenMT to corrects for LD strcuture pvalue,
-and then usign benjamin hockjerb correction(FDR) to calculate fdr corrected-egineMTadjusted p-value
-fdr correction is for accounting multiple testing.
-EigenMT and FDR p-value correction were performed by Jing Chen as for the multi-ancestry lung function paper.
-Detailed information on the analysis can be found in the main manuscript and related supplementary information (add ref paper).
+***UBC lung eQTL*** (http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=23209423)
+<br>
+UBC Lung eQTL is a collection of lung specimens from 1,111 individuals of European ancestry including 17,178 cis- and 593 trans- lung eQTLs.
+<br>
+For UBC Lung, raw data were adjusted to find significant p-value: eigenMT to correct for LD structure p-value,
+and then benjamini hochberg correction (FDR) to take into account of multiple testing.
+<br>
+EigenMT and FDR p-value correction were performed by Jing Chen as for the multi-ancestry lung function paper; detailed information
+on the analysis can be found in the main manuscript and related supplementary information (https://static-content.springer.com/esm/art%3A10.1038%2Fs41588-023-01314-0/MediaObjects/41588_2023_1314_MOESM1_ESM.pdf).
+<br>
 Jing provided me with the list of significant gene-variant associations for UBC Lung eQTL after p-value correction.
 She also provided me backbone scripts to run colocalisation with this eQTL.
 <br>
-U-BIORPED is (not yet done)
 
-## Look-up with protein quantitative trait loci (QTL) analysis
+## pQTL Look-up
 Code
 <br>
 src/pQTL_coloc/000_preprocess_cs_b38.R
@@ -216,17 +219,26 @@ src/pQTL_coloc/000_submit_lookup_decode.sh
 src/pQTL_coloc/000_decode_lookup.awk
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/000_decode_lookup.awk'), eval=FALSE, hide=TRUE}
 ```
-I decided to perform a look-up of the 615 credible set variants in three pQTL sources: deCODE, SCALLOP, and UKBiobank pQTL data.
+I decided to perform a look-up of the 615 credible set variants in three pQTL sources: deCODE plasma, SCALLOP, and UKBiobank pQTL data.
+Significant
 <br>
-I applied filters for significant association as 1.8E-9 for deCODE, 5e-8 for SCALLOP, and 0.05/1463 for UKBiobank pQTL data.
+*deCODE plasma pQTL (https://pubmed.ncbi.nlm.nih.gov/34857953/)*
+deCODE is a free collection of protein plasma pQTL data for 4,907 proteins and 27.2 million tested variants.
+They used Bonferroni corrected p-value for multiple testing (0.05/27,200,000=1.8x10−9). They included variants with a MAF > 0.01% and imputation score > 0.9.
+If the associated variant was within 1Mb from the transcription start site of the gene, the pQTL was defined as cis, if outside this threshold as trans.
 <br>
-deCODE is a free collection of protein plasma pQTL data for 4,907 proteins and 27.2 million tested variants. They used Bonferroni corrected p-value for multiple testing; thus,
-0.05/27,200,000=1.8x10−9. They included variants with a MAF > 0.01% and imputation score > 0.9. If the associated variant was within 1Mb from the transcription start site of the gene, the
-pQTL was defined as cis, if outside this threshold as trans.
+**SCALLOP pQTL (https://pubmed.ncbi.nlm.nih.gov/33067605/)**
 <br>
-SCALLOP
+SCALLOP (Systematic and Combined Analysis of Olink Proteins) pQTL combines measures from 90 circulating cardiovascular proteins
+in about 30,000 individuals from 13 cohorts.
 <br>
-UK Biobank pQTL data
+**UK Biobank pQTL** data
+The Pharma Proteomics Project led to the analysis of 2,923 plasma proteins in 54,219 UK Biobank participants overall.
+Within our group, the pQTL association was performed again in 48,195 European samples (as defined in Shrine et al. 2023) and for 1,463 proteins,
+including 44.8 million MAC >= 5 variants.
+<br>
+Variant-protein associations were defined as significant if pQTL p-value was less or equal to 1.8E-9 for deCODE, 5E-8 for SCALLOP,
+and 3.41E-5 (0.05/1,463) for UK Biobank pQTL.
 
 ## Polygenic Priority Score (PoPS)
 Code
@@ -239,33 +251,35 @@ src/PoPS/submit_pops.sh
 src/PoPS/PoPS_summary.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/PoPS/PoPS_summary.R'), eval=FALSE, hide=TRUE}
 ```
-PoPS is a gene prioritisation analysis that uses genome-wide signal from GWAS summary statistics and identified prioritised genes
-looking into public bulk and single-cell expression datasets, curated biological pathways, and predicted protein-protein interactions (https://github.com/FinucaneLab/pops; https://www.nature.com/articles/s41588-023-01443-6)
+PoPS is a gene prioritisation analysis that uses genome-wide signals from GWAS summary statistics and identified prioritised genes
+looking into public bulk and single-cell expression datasets, curated biological pathways, and predicted protein-protein interactions (https://github.com/FinucaneLab/pops; https://www.nature.com/articles/s41588-023-01443-6).
 <br>
-PoPS is run in three steps, plus a preliminary four step:
+PoPS includes three steps:
 
- -Step 0: Generate MAGMA scores: run MAGMA to obtain gene association statistics (z-scores) using severe asthma GWAS sumstats and 1000G European individuals;
+ -Step 0: Generate MAGMA  scores: run MAGMA to obtain gene association statistics (z-scores) using severe asthma GWAS sumstats and 1000G European individuals;
 
  -Step 1: Select features: looking at the MAGMA scores, certain features are selected since they are enriched, and stored in the .feature output files;
 
  -Step 2: Run PoPS: calculate the POP score for each gene using a joint model with a leave-one chromosome out method for the enrichment of all selected features
 
+For each variant, I analysed all the genes within 500Kb and reported the top prioritised genes as by PoPS; if no prioritised
+genes, I enlarged the genomic window to 1MB.
 
 ## Nearby Mendelian rare disease-genes
 src/rare_disease/rare_disease.r
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/rare_disease/rare_disease.r'), eval=FALSE, hide=TRUE}
 ```
-Using the Orphadata resource (website link), I analysed if any genes within 500Kb of fine-mapped sentinel variants were associated
-with rare diseases showing implication in asthma. In doing so, I filtered the HPO term or any disease including key terms:
-'asthma,eosin,immunodef,cili,autoimm,leukopenia,neutropenia,macroph'.
+Using the ORPHANET resource (https://www.orpha.net/), I analysed if any genes within 500Kb the top causal variant for each fine mapped locus
+was associated with rare diseases showing implication in asthma. In doing so, I filtered the Human Phenotype Ontology (HPO)
+term or any disease including key terms 'asthma'/'eosin'/'immunodef'/'cili'/'autoimm'/'leukopenia'/'neutropenia'/'macroph'.
 
 ## Nearby Mouse knockout orthologs
 src/mouse_ko/mouse_ko.r
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/mouse_ko/mouse_ko.r'), eval=FALSE, hide=TRUE}
 ```
-Using the International Mouse Phenotyping (website link), I analysed if any human ortholog gene has been studied in mouse model in the context of respiratory, immune or muscle phenotypes
-(top Mouse Phenotype (MP) terms: respiratory system phenotype", "immune system phenotype", "muscle phenotype"). I selected relevant genes within 500Kb from the top causal variant for
-each fine mapped locus.
+Using the International Mouse Phenotyping (website link), I analysed if any human ortholog gene has been studied in mouse
+model in the context of respiratory, immune or muscle phenotypes (top Mouse Phenotype (MP) terms 'respiratory system phenotype'/'immune system phenotype'/'muscle phenotype'.
+I selected relevant genes within 500Kb from the top causal variant for each fine mapped locus.
 
 ## Rare Variant Analysis
 src/rare_variant/000_dataprep_rarevar.R
@@ -287,7 +301,7 @@ I performed single and gene-based collapsing ExWAS in the severe asthma case/con
 <br>
 Single ExWAS was performed in 7,413 cases and 36,955 controls; I applied the same covariate of the discovery GWAS
 (age_at_recruitment,age2,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,genetic_sex). I used REGENIE v3.1.1
-and the analysis was performed using the Research Analysis Platform. More detailed on the available code.
+and the analysis was performed using the Research Analysis Platform.
 
 # Results
 

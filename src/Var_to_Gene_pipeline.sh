@@ -472,10 +472,14 @@ cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma_app88144.txt /rfs/Tob
 ##STILL NEED TO ADD SINGLE AND GENE-BASED COLLAPSING ANALYSIS GENES !
 Rscript src/Locus_to_genes_table.R
 Rscript src/genes_heatmap.R
+Rscript src/
 cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 
 
+
+
+#######ADDITIONAL - COMPARISON WITH VALETTE ET AL. 2021 RESULTS#############
 #how many evidence for each gene?
 awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq -c | sort -k1 -r
 awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation.txt | sort | uniq -c | awk '$1 != 1 {print $2}' \
