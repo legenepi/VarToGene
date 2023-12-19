@@ -50,17 +50,17 @@ relevant variants (https://cadd.gs.washington.edu/info).
 <br>
 FAVOR aggregates different sources and categories of annotation. I decided to focus on:
 
- 1.Nearest gene for each credible set top PIP variant ("Genecode.Comprehensive.Info");
+ 1. Nearest gene for each credible set top PIP variant ("Genecode.Comprehensive.Info");
 
- 2.Functional annotation for all 615 credible set variants looking at either:
+ 2. Functional annotation for all 615 credible set variants looking at either:
 
-  2.1.FANTOM5 Gene Enhancer and/or Gene Promoter ("CAGE.Promoter", "CAGE.Enhancer")
+    2.1. FANTOM5 Gene Enhancer and/or Gene Promoter ("CAGE.Promoter", "CAGE.Enhancer")
 
-  2.2.Integrative scores > 15 ("CADD.phred","aPC.Protein.Function","aPC.Conservation","aPC.Epigenetics.Active",
-  "aPC.Epigenetics.Repressed","aPC.Epigenetics.Transcription","aPC.Local.Nucleotide.Diversity","aPC.Mutation.Density",
-  "aPC.Transcription.Factor", "aPC.Mappability");
+    2.2. Integrative scores > 15 ("CADD.phred","aPC.Protein.Function","aPC.Conservation","aPC.Epigenetics.Active",
+    "aPC.Epigenetics.Repressed","aPC.Epigenetics.Transcription","aPC.Local.Nucleotide.Diversity","aPC.Mutation.Density",
+    "aPC.Transcription.Factor", "aPC.Mappability");
 
-  2.3.Clinical annotation from ClinVar ("Clinical.Significance", "Gene.Reported")
+    2.3. Clinical annotation from ClinVar ("Clinical.Significance", "Gene.Reported")
 
 ## Colocalisation with expression quantitative trait loci (QTL) analysis
 Code
@@ -143,6 +143,9 @@ src/coloc_UBClung/003_run_ coloc_susie_lung_eQTL.r
 src/coloc_UBClung/004_concat_coloc_susie_ubclung.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc_UBClung/004_concat_coloc_results_ubclung.R'), eval=FALSE, hide=TRUE}
 ```
+src/merge_genes_eqtl_coloc.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/merge_genes_eqtl_coloc.R'), eval=FALSE, hide=TRUE}
+```
 Quantitative trait loci (QTL) allows us to measure a trait, such as RNA expression of genes or protein levels, in a specific tissue
 and test for association of genes within the interested tissue with genetic variant. In other words, the expression trait is
 used as a quantitative trait for a genome-wide analysis.
@@ -166,7 +169,7 @@ GWAS summary statistic within +/-500Kb from the associated variant. The colocali
 <br>
 Here, a little description of each cis-eQTL data and the used parameters.
 <br>
-**GTExV8** (https://www.gtexportal.org/)
+***GTExV8*** (https://www.gtexportal.org/)
 <br>
 GTExV8 is a collection of eQTL data for significant variant-gene association in 49 tissues with at least 70 samples (https://www.gtexportal.org/home/methods).
 I run co-localisation for the following tissues: 'Artery_Aorta', 'Artery_Coronary', 'Artery_Tibial', 'Colon_Sigmoid',
@@ -175,7 +178,7 @@ I run co-localisation for the following tissues: 'Artery_Aorta', 'Artery_Coronar
 <br>
 I used filtered GTExV8 data including variant-gene pairs for each tissue with both GWAS and eQTL pvalues <= 5x10-6.
 <br>
-**eQTLgen blood eQTLs** (http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=34475573)
+***eQTLgen blood eQTLs*** (http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&dopt=Abstract&list_uids=34475573)
 <br>
 eQTLgen blood eQTLs is a source for 16,989 eQTL genes from 37 dataset and a total of 31,684 individuals,
 counting 11M SNPs with MAF >=1% and within 1Mb from the analysed genes (https://www.eqtlgen.org/phase1.html).
@@ -222,17 +225,17 @@ src/pQTL_coloc/000_decode_lookup.awk
 I decided to perform a look-up of the 615 credible set variants in three pQTL sources: deCODE plasma, SCALLOP, and UKBiobank pQTL data.
 Significant
 <br>
-*deCODE plasma pQTL (https://pubmed.ncbi.nlm.nih.gov/34857953/)*
+***deCODE plasma pQTL*** (https://pubmed.ncbi.nlm.nih.gov/34857953/)
 deCODE is a free collection of protein plasma pQTL data for 4,907 proteins and 27.2 million tested variants.
 They used Bonferroni corrected p-value for multiple testing (0.05/27,200,000=1.8x10−9). They included variants with a MAF > 0.01% and imputation score > 0.9.
 If the associated variant was within 1Mb from the transcription start site of the gene, the pQTL was defined as cis, if outside this threshold as trans.
 <br>
-**SCALLOP pQTL (https://pubmed.ncbi.nlm.nih.gov/33067605/)**
+***SCALLOP pQTL*** (https://pubmed.ncbi.nlm.nih.gov/33067605/)
 <br>
 SCALLOP (Systematic and Combined Analysis of Olink Proteins) pQTL combines measures from 90 circulating cardiovascular proteins
 in about 30,000 individuals from 13 cohorts.
 <br>
-**UK Biobank pQTL** data
+***UK Biobank pQTL*** (https://www.nature.com/articles/s41586-023-06592-6)
 The Pharma Proteomics Project led to the analysis of 2,923 plasma proteins in 54,219 UK Biobank participants overall.
 Within our group, the pQTL association was performed again in 48,195 European samples (as defined in Shrine et al. 2023) and for 1,463 proteins,
 including 44.8 million MAC >= 5 variants.
@@ -256,11 +259,11 @@ looking into public bulk and single-cell expression datasets, curated biological
 <br>
 PoPS includes three steps:
 
- -Step 0: Generate MAGMA  scores: run MAGMA to obtain gene association statistics (z-scores) using severe asthma GWAS sumstats and 1000G European individuals;
+ - Step 0: Generate MAGMA  scores: run MAGMA to obtain gene association statistics (z-scores) using severe asthma GWAS sumstats and 1000G European individuals;
 
- -Step 1: Select features: looking at the MAGMA scores, certain features are selected since they are enriched, and stored in the .feature output files;
+ - Step 1: Select features: looking at the MAGMA scores, certain features are selected since they are enriched, and stored in the .feature output files;
 
- -Step 2: Run PoPS: calculate the POP score for each gene using a joint model with a leave-one chromosome out method for the enrichment of all selected features
+ - Step 2: Run PoPS: calculate the POP score for each gene using a joint model with a leave-one chromosome out method for the enrichment of all selected features
 
 For each variant, I analysed all the genes within 500Kb and reported the top prioritised genes as by PoPS; if no prioritised
 genes, I enlarged the genomic window to 1MB.
@@ -297,28 +300,52 @@ src/rare_variant/create_input_munge_summary_stats.R
 src/rare_variant/submit_collapsing_bt.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/rare_variant/submit_collapsing_bt.sh'), eval=FALSE, hide=TRUE}
 ```
-I performed single and gene-based collapsing ExWAS in the severe asthma case/control cohorts.
+I obtained results for single variant and gene-based exome-wide association analysis including 7,413 cases and 36,955 controls, and covariates age_at_recruitment,age2,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,genetic_sex.
+ExWASes were performed using the tool REGENIE v3.1.1 and the Research Analysis Platform (RAP, https://ukbiobank.dnanexus.com/landing).
 <br>
-Single ExWAS was performed in 7,413 cases and 36,955 controls; I applied the same covariate of the discovery GWAS
-(age_at_recruitment,age2,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,genetic_sex). I used REGENIE v3.1.1
-and the analysis was performed using the Research Analysis Platform.
+To identify rare variant suggestive association and mapped genes, I implemented a look-up analysis for exonic rare variants (MAF < 0.01) within +/- 500Kb from common credible set variants.
 
-# Results
-
-## Variant Annotation
-Looking at the integrative score, I was able to appreciate a positive correlation between aPC.Epigenetics.Active and aPC.Transcription.Factor (0.69);
-aPC.Mutation.Density and aPC.Local.Nucleotide.Diversity (0.63); CADD.phred and aPCs.Conservation (0.91). There is also, although weaker, negative correlation
-between aPC.Epigenetics.Transcription and aPC.Epigenetics.Repressed (-0.45).
-```{r echo=FALSE, out.width = "50%", fig.align = "center"}
-knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/corrplot_integrative_score_15.png")
-```
-<br>
-I obtained a total of 40 genes from the functional annotation analysis. The Venn diagram shows the discovery overlap
-between the three different annotation sources:
-```{r echo=FALSE, out.width = "30%", fig.align = "center"}
-knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/FAVOR_venn_diagramm_genes.png")
+src/genes_heatmap.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/genes_heatmap.R'), eval=FALSE, hide=TRUE}
 ```
 
-# Conclusion
+src/Locus_to_genes_table.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Locus_to_genes_table.R'), eval=FALSE, hide=TRUE}
+```
 
-# Notes
+# Results and Conclusion
+I identified a total of 98 genes. For each analysis:
+
+ - Nearest gene identified 18 genes;
+
+ - Functional annotation identified 39 genes (FANTOM 14 genes, Integrative scores 36 genes, ClinVar 6 genes);
+
+ - eQTL: GTExV8 8 genes, eQTLgen blood 5 genes, UBC Lung eQTL 3 genes;
+
+ - pQTL: UK Biobank 4 genes, SCALLOP 1 gene (no gene for deCODE);
+
+ - PoPS 16 genes;
+
+ - Mouse knock out 32 genes;
+
+ - Rare disease 6 genes;
+
+No genes were found from the look-up analyses in the exome single or gene-based rare variant analyses. Full summary results available here:
+```{r echo=FALSE}
+xfun::embed_file('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/report/var2gene_full.xlsx')
+```
+
+Out of the 98 genes, 24 genes were supported by at least 2 criteria (Figure 2):
+
+ - 16 genes by two criteria: AC034102.4,AC034114.2,AC044784.1,AC116366.3,CAMK4,HDAC7,HLA-DQA1,HLA-DRB1,HLA-DRB5,IKZF3,IL33,NR1D1,ORMDL3,PGAP3,PPP1R1B,SUOX
+
+ - 6 genes by four criteria: D2HGDH,IL4R,NSMCE1,RORA,RPS26,SMAD3
+
+ - 2 genes by four criteria: BACH2, IL1RL1
+
+```{r, echo=FALSE, out.width = "110%", fig.align = "center"}
+knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/V2G_heatmap_subplots.png")
+```
+
+
+## Gene-locus pairs

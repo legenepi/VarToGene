@@ -92,4 +92,20 @@ done
 mkdir /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/genecollaps_ExWAS
 dx download project-GGzFY70JBJzVx22v4Yj980J1:/analysis/collapsing_Hg38/ukb23158_c*
 
+#Find gene p-value <= 5^10-6:
+mkdir /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_variant/genecollap_ExWAS
+awk '$12 = 10^(-$12)' \
+    /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/genecollaps_ExWAS/ukb23158_c*_b0_v1_sa_collapsing_backman_gene_p_broad_pheno_1_5_ratio.regenie | \
+    grep -v "^#" | awk 'NR > 1 && $12 <= 0.000005 {print}' \
+    > input/rare_variant/genecollap_ExWAS/SArarevar_genecollap_suggestive
 
+##Look-up of exonic rare variants (MAF < 0.01) within +/- 500Kb of credible set variants for each locus single variant and gene-based results.
+##Genes of exonic rare variants in the regions with suggestive p-value <= 5E-6 were identified.
+for line in {1..615}
+do
+chr=$(awk -v row="$line" ' NR == row {print $1 } ' input/cs_vars_liftover_output.bed | sed 's/chr//g')
+pos=$(awk -v row="$line" 'NR == row {print $2 }' input/cs_vars_liftover_output.bed)
+awk -v chr_idx=$chr -v pos_idx=$pos '$1 == chr_idx &&  $2 >= pos_idx-500000 && $3 <= pos_idx+500000 {print}' input/rare_variant/genecollap_ExWAS/SArarevar_genecollap_suggestive
+done
+
+##no Look-up results

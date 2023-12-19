@@ -143,17 +143,9 @@ v2g_all <- eqtl_all %>%
 
 v2g_minimal <- v2g_all %>% select(locus,snpid,chr,posb37,gene) %>% select(locus,gene) %>% unique()
 
-
 #Save each results for each analysis into a tables to populate a xlsx file:
 df_list <- list(v2g_minimal,v2g_all,credset_gwas_ng2,fantom5_inscores_clinvar,credset_gwas_gtex2,credset_gwas_eqtlgen2,
 credset_gwas_ubclung2,credset_gwas_ukbpqtl2,credset_gwas_scallop2,credset_gwas_raredis2,credset_gwas_mko2)
 write_xlsx(df_list,path = "src/report/var2gene_full.xlsx", col_names = TRUE, format_headers = TRUE)
 
-
-
-
-##Rare variant ExWAS
-##Single rare-variant:
-
-##Gene-collpasing rare variant:
-
+##Rare variant ExWAS: (Single rare-variant and Gene-collpasing rare variant): no genes/results form these analyses

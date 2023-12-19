@@ -159,7 +159,7 @@ done
 #Affect allele: Alt
 #Specify from: Frequency
 #Frequency: A1FREQ
-#Dowload summary statistics, log, screenshot of LocusZoom and QQPlot and upload in /Var_to_Gene/input/rare_variant/single_rarevar_EwWAS/
+#Dowload summary statistics, log, screenshot of LocusZoom and QQPlot and upload in /Var_to_Gene/input/rare_variant/single_rarevar_ExWAS/
 
 #Let's filter our data first
 #MAF < 0.01 (Because for my common variants SA GWAS, I filter for MAF >= 0.01) and p-value <= 5E-6 (as suggestive threshold):
@@ -168,8 +168,24 @@ Rscript src/rare_variant/create_input_munge_summary_stats.R \
     input/rare_variant/single_rarevar_EwWAS/summary_stats.gz \
     "SA"
 
+#Look-up of exonic rare variants (MAF < 0.01) within +/- 500Kb of credible set variants for each locus single variant and gene-based results.
+#Genes of exonic rare variants in the regions with suggestive p-value <= 5E-6 were identified.
+for line in {1..615}
+do
+chr=$(awk -v row="$line" ' NR == row {print $1 } ' input/cs_vars_liftover_output.bed | sed 's/chr//g')
+pos=$(awk -v row="$line" 'NR == row {print $2 }' input/cs_vars_liftover_output.bed)
+awk -v chr_idx=$chr -v pos_idx=$pos '$2 == chr_idx &&  $3 >= pos_idx-500000 && $3 <= pos_idx+500000 {print}' input/rare_variant/single_rarevar_EwWAS/SArarevar_suggestive
+done
+
+##no Look-up results
+
+#Discovery analysis of significant associated variants:
+#Significant threshold: 0.05/N-markers: 0.05/1772264
+pval_thr=$(0.05/1772264)
+
 Rscript src/rare_variant/sentinel_selection.R \
     input/rare_variant/single_rarevar_EwWAS/SArarevar_betase_input_mungestat \
     "SA"\
     500000 \
-    0.000005
+    0.05 \ #nominal threshold
+    1772264 #N_markers for correction

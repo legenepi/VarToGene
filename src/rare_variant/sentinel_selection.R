@@ -1,5 +1,8 @@
 sink(stderr())
 
+suppressMessages(library(data.table))
+suppressMessages(library(tidyverse))
+
 args <- commandArgs(T)
 argc <- length(args)
 
@@ -11,13 +14,9 @@ if (argc < 1) {
 tier_file = args[1]
 pheno = args[2]
 WIDTH <- ifelse(argc > 2, as.integer(args[3]), 500000)
-pval_thr <- as.numeric(args[4])
+pval_thr <- as.numeric(args[4])/as.numeric(args[5])
 
 print(paste0("total genomic window used for signal selection:",WIDTH))
-
-suppressMessages(library(data.table))
-suppressMessages(library(tidyverse))
-
 
 selectSentinels <- function(data.dt) {
     regions.list <- list()
