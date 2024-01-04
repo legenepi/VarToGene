@@ -50,20 +50,16 @@ annot_r2 <- df_r2 %>% ggplot(aes(posb37, logP, shape = Functional_annotation, co
   ggtitle(paste0(locus_ggtitle," (snp lead:", snp_lead,")")) + theme(plot.title = element_text(hjust=0.5)) + xlim(start,end) + ylab("-log10(pvalue)")
 
 
-TO BE FINISHED !
 ##Plot with functional annotation, R2 and gene location:
 #Treated the gene plot as a gantt chart plot !
 #prioritised genes and evidence:
-v2g_evidence <- read_excel("src/report/var2gene_full.xlsx",sheet = "Sheet2") %>% select(locus,chr,posb37,evidence) %>% filter(grepl(start,locus)) %>% unique()
-l2g <- read_excel("src/report/locus2gene.xlsx",sheet = "Sheet1") %>% na.omit() %>% unique()
-v2g_polish <- v2g_evidence %>% left_join(l2g,by="locus") %>% rename(chromosome="chr",Gene="gene")
-v2g_polish$evidence <- as.factor(v2g_polish$evidence)
+l2g <- read_excel("src/report/locus2gene.xlsx",sheet = "L2G_clean") %>% filter(grepl(end,locus)) %>% select(gene)
+
 
 #This gene list is from the R package LocusZooms
 genes <- fread("/home/n/nnp5/software/LocusZooms/Gencode_GRCh37_Genes_UniqueList2021.txt")
 #filter gene in the locus:
-genes <- genes %>% left_join(v2g_polish,by="Gene")
-
+genes <- genes %>% filter(Chrom==paste0("chr",chr), Start >= start, End <= end)
 
 ## Set factor level to order the genes on the plot
 genes$Gene <- as.factor(genes$Gene)
@@ -80,7 +76,7 @@ plot_gantt_gene <- qplot(ymin = Start,
     theme(panel.grid = element_blank()) +
     ylab("posb37") +
     xlab("genes") +
-    ylim(start,end)
+    ylim(start,end) + labs(title = paste0("V2G identified genes: ",l2g))
 
 
 plot_grid(annot_r2 + theme(legend.justification = c(0,1)), plot_gantt_gene + theme(legend.justification = c(0,1)), ncol=1, align='v', rel_heights = c(2,1))
