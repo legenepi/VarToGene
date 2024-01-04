@@ -316,6 +316,15 @@ To understand locus-gene(s) association:
 src/Locus_to_genes_table.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Locus_to_genes_table.R'), eval=FALSE, hide=TRUE}
 ```
+src/Region_plot_V2G.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Region_plot_V2G.sh'), eval=FALSE, hide=TRUE}
+```
+src/Region_plot_V2G.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Region_plot_V2G.R'), eval=FALSE, hide=TRUE}
+```
+src/Region_plot_V2G_2.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Region_plot_V2G_2.R'), eval=FALSE, hide=TRUE}
+```
 
 
 # Results and Conclusion

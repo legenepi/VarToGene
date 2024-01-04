@@ -2063,13 +2063,18 @@ cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma_app88144.txt /rfs/Tob
 #PoPS
 #pQTL
 #rare_disease
-##STILL NEED TO ADD SINGLE AND GENE-BASED COLLAPSING ANALYSIS GENES !
+#SINGLE AND GENE-BASED COLLAPSING ANALYSIS: no genes for variant-to-gene mapping, so I did not add them to this table
 Rscript src/Locus_to_genes_table.R
 Rscript src/genes_heatmap.R
-Rscript src/
 cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 
+################
+#7 REGION PLOTS WITH VAR2GENE RESULTS
+################
+#bash Region_plot_V2G.sh
+#Region_plot_V2G.R
+#Region_plot_V2G_2.R
 
 
 
@@ -5893,6 +5898,198 @@ credset_gwas_ubclung2,credset_gwas_ukbpqtl2,credset_gwas_scallop2,credset_gwas_r
 write_xlsx(df_list,path = &quot;src/report/var2gene_full.xlsx&quot;, col_names = TRUE, format_headers = TRUE)
 
 ##Rare variant ExWAS: (Single rare-variant and Gene-collpasing rare variant): no genes/results form these analyses</code></pre>
+<p>src/Region_plot_V2G.sh</p>
+<pre class="r"><code>#!/bin/bash
+
+#Rationale: visualise V2G results in the different credible sets locus- R2 with regards to SNP with highest average PIP.
+#Use of LocusZooms function for R as implemented by Tanya J Major and Riku Takei.
+
+#workdir: Var_to_Gene/
+PATH_data=&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data&quot;
+#mkdir /scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot
+PATH_TMP=&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot&quot;
+
+module unload R/4.2.1
+module load R/4.1.0
+
+##digest FAVOR files:
+awk -F &quot;,&quot; &#39;{print $1, $2, $3, $8, $9, $10, $11, $12}&#39; input/FAVOR_credset_chrpos38_2023_08_08.csv \
+    &gt; ${PATH_TMP}/FAVOR_credset_annotations_digest_08_08_23.csv
+
+
+##Calculate R2 with respect to variant with highest PIP in each locus:
+##Use the 10,000 European ancestry individuals in /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB:
+##find all credible set variants in EUR_UKB by chr and pos (alleles can be flipped):
+awk &#39;{print $3&quot; &quot;$3&quot;_&quot;$4&quot;_&quot;}&#39; /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt | \
+    sed &#39;s/ //g&#39; | \
+    grep -F -f - /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr*_EUR_selected_nodups.bim | \
+    awk &#39;{print $2}&#39; &gt; ${PATH_TMP}/cs_variants_EUR_UKB
+
+##find the SNPs in EUR_UKB by chr and pos (alleles can be flipped):
+awk &#39;{print $2}&#39;input/highest_PIP_sentinels | \
+    awk -F &quot;_&quot; &#39;{print $1, $1&quot;_&quot;$2&quot;_&quot;}&#39; | sed &#39;s/ /   /g&#39; | \
+    grep -F -f - /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr*_EUR_selected_nodups.bim | \
+    awk &#39;{print $2}&#39; &gt; ${PATH_TMP}/highest_PIP_sentinels_EUR_UKB
+
+for line in {1..17}
+do
+SNP=$(awk -v row=&quot;$line&quot; &#39; NR == row {print $0 } &#39; ${PATH_TMP}/highest_PIP_sentinels_EUR_UKB)
+chr=$(awk -F &quot;_&quot; -v row=&quot;$line&quot; &#39; NR == row {print $1 } &#39; ${PATH_TMP}/highest_PIP_sentinels_EUR_UKB)
+SNP_tmp=$(awk -F &quot;_&quot; -v row=&quot;$line&quot; &#39; NR == row {print $1&quot;_&quot;$2 } &#39; ${PATH_TMP}/highest_PIP_sentinels_EUR_UKB)
+start=$(grep ${SNP_tmp}&quot;_&quot; input/highest_PIP_sentinels | awk &#39;{print $1}&#39; | awk -F &quot;_&quot; &#39;{print $(NF-1)}&#39;)
+end=$(grep ${SNP_tmp}&quot;_&quot; input/highest_PIP_sentinels | awk &#39;{print $1}&#39; | awk -F &quot;_&quot; &#39;{print $(NF)}&#39;)
+
+#create R2 according to leading p-value:
+#Calculate R2 with respect to the leading SNP:
+module unload plink2/2.00a
+module load plink
+plink --bfile /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr${chr}_EUR_selected_nodups \
+    --chr ${chr} --from-bp ${start} --to-bp ${end} \
+    --allow-no-sex --r2 inter-chr --ld-snp ${SNP} --ld-window-r2 0 \
+    --out ${PATH_TMP}/${SNP}_${start}_${end}_ld_file
+
+Rscript src/Region_plot_V2G_2.R \
+    ${PATH_TMP}/${SNP}_${start}_${end}_ld_file \
+    output/region_plots_V2G/rp_v2g_${chr}_${SNP}_${start}_${end}.pdf \
+    ${chr}_${SNP}_${start}_${end} \
+    ${start} ${end} ${chr} ${snp_lead}
+
+done</code></pre>
+<p>src/Region_plot_V2G.R</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+
+#Rationale: plot of Genomic Locus and variant-to-gene mapping genes:
+##variants in credible set, with lead variant as the one with highest PIP
+##functional annotation for only credible set variants, using as by FAVOR
+##R2 between variants in the region
+##Gene highlighted by the variant-to-gene mapping analysis with the type of evidence
+
+library(tidyverse)
+library(data.table)
+library(dplyr)
+
+annot &lt;- read.table(&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/FAVOR_credset_chrpos38_2023_08_08.csv&quot;, sep=&quot;,&quot;, stringsAsFactors = FALSE, fill=TRUE, header=TRUE)
+annot &lt;- annot %&gt;% select(&quot;Variant..VCF.&quot;,&quot;Chromosome&quot;,&quot;Position&quot;,&quot;Genecode.Comprehensive.Category&quot;) %&gt;%
+    rename(id=&quot;Variant..VCF.&quot;,chromosome=&quot;Chromosome&quot;,posb38=&quot;Position&quot;)
+annot &lt;- as.data.frame(sapply(annot, function(x) gsub(&quot;\&quot;&quot;, &quot;&quot;, x)))
+annot &lt;- annot %&gt;% rename(Functional_annotation=Genecode.Comprehensive.Category)
+
+#liftover online:
+#awk -F &quot;_&quot; &#39;{print &quot;chr&quot;$1,$2,$2}&#39; /scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot/cs_variants_EUR_UKB &gt; /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/cs_variants_EUR_UKB_lifover_input
+credset &lt;- fread(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot/cs_variants_EUR_UKB&quot;,header=FALSE)
+credset &lt;- credset %&gt;% separate(V1, &quot;_&quot;, into=c(&quot;chromosome&quot;, &quot;posb37&quot;, &quot;allele1&quot;, &quot;allele2&quot;))
+b38 &lt;- fread(&quot;/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/cs_variants_EUR_UKB_liftover_output.bed&quot;,header=FALSE)
+b38 &lt;- b38 %&gt;% separate(V4, &quot;-&quot;, into=c(&quot;chr_pos&quot;, &quot;posb37&quot;))
+b38$chr_pos &lt;- NULL
+b38$posb37 &lt;- as.numeric(b38$posb37)
+credset$V1 &lt;- paste0(&quot;chr&quot;,credset$chromosome)
+credset$posb37 &lt;- as.numeric(credset$posb37)
+credset_b38 &lt;- left_join(credset,b38,by=c(&quot;V1&quot;,&quot;posb37&quot;)) %&gt;% select(-V1, -V3, -V5)
+credset_b38 &lt;- credset_b38 %&gt;% rename(posb38=V2)
+credset_b38$chromosome &lt;- as.numeric(credset_b38$chromosome)
+annot$chromosome &lt;- as.numeric(annot$chromosome)
+credset_b38$posb38 &lt;- as.numeric(credset_b38$posb38)
+annot$posb38 &lt;- as.numeric(annot$posb38)
+credset_annot &lt;- inner_join(credset_b38, annot, by=c(&quot;chromosome&quot;,&quot;posb38&quot;))
+credset_annot$credset &lt;- &quot;1&quot;
+
+
+gwas &lt;- fread(&quot;/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/maf001_broad_pheno_1_5_ratio_betase_input_mungestat&quot;) %&gt;% rename(chromosome=b37chr,posb37=bp)
+gwas_credset_annot &lt;- left_join(gwas,credset_annot,by=c(&quot;chromosome&quot;,&quot;posb37&quot;))
+gwas_credset_annot &lt;- gwas_credset_annot %&gt;% select(chromosome,posb37,pval,a1,a2,Functional_annotation,credset,snpid)
+gwas_credset_annot &lt;- gwas_credset_annot %&gt;% mutate(Functional_annotation=ifelse(is.na(gwas_credset_annot$Functional_annotation), &quot;unknown&quot;,gwas_credset_annot$Functional_annotation))
+gwas_credset_annot$Functional_annotation &lt;- as.factor(gwas_credset_annot$Functional_annotation)
+gwas_credset_annot &lt;- gwas_credset_annot %&gt;% mutate(credset=ifelse(is.na(gwas_credset_annot$credset), 0, gwas_credset_annot$credset))
+fwrite(gwas_credset_annot,&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot/gwas_credset_annot&quot;,quote=F,sep=&quot;\t&quot;,row.names=F,col.names=T)</code></pre>
+<p>src/Region_plot_V2G_2.R</p>
+<pre class="r"><code>#!/usr/bin/env Rscript
+
+
+#Rationale: plot of fine-mapping PIP with functional annotation for variants in credible set:
+
+library(tidyverse)
+library(data.table)
+library(dplyr)
+library(RColorBrewer)
+library(cowplot)
+library(readxl)
+
+args &lt;- commandArgs(T)
+
+r2_file &lt;- args[1]
+locus &lt;- as.character(args[2])
+locus_ggtitle &lt;- as.character(args[3])
+start &lt;- as.numeric(args[4])
+end &lt;- as.numeric(args[5])
+chr &lt;- args[6]
+snp_lead &lt;- as.character(args[7])
+print(start)
+print(end)
+print(chr)
+print(snp_lead)
+df &lt;- fread(&quot;/scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot/gwas_credset_annot&quot;) %&gt;% select(-snpid)
+df &lt;- df %&gt;% mutate(snpid = paste0(chromosome,&quot;_&quot;,posb37,&quot;_&quot;,pmin(a1,a2),&quot;_&quot;,pmax(a1,a2)))
+df_sugg &lt;- df %&gt;% filter(pval &lt;= 0.000005)
+r2 &lt;- fread(r2_file) %&gt;% select(CHR_B,BP_B,SNP_B,R2)
+colnames(r2) &lt;- c(&quot;chromosome&quot;,&quot;posb37&quot;,&quot;snpid&quot;,&quot;R2&quot;)
+
+df_r2 &lt;- left_join(df,r2,by=c(&quot;chromosome&quot;,&quot;posb37&quot;,&quot;snpid&quot;))
+
+df_r2 &lt;- df_r2 %&gt;% mutate(Functional_annotation=ifelse(is.na(df_r2$Functional_annotation), &quot;unknown&quot;,df_r2$Functional_annotation))
+df_r2$Functional_annotation &lt;- as.factor(df_r2$Functional_annotation)
+df_r2$logP &lt;- -log10(df$pval)
+
+#for R2 color gradient in the plot:
+myPalette &lt;- colorRampPalette(rev(brewer.pal(11, &quot;Spectral&quot;)))
+sc &lt;- scale_colour_gradientn(colours = myPalette(100), limits=c(0, 1))
+
+##Plot with functional annotation and R2:
+annot_r2 &lt;- df_r2 %&gt;% ggplot(aes(posb37, logP, shape = Functional_annotation, colour = R2, label = snpid)) +
+  geom_point(size=2) +
+  scale_shape_manual(values=c(&quot;downstream&quot;=15, &quot;exonic&quot;=16, &quot;intergenic&quot;=17, &quot;intronic&quot;=18, &quot;ncRNA_exonic&quot;=19, &quot;ncRNA_intronic&quot;=10, &quot;unknown&quot;=11,&quot;upstream;downstream&quot;=12, &quot;UTR3&quot;=13, &quot;UTR5&quot;=14)) +
+  geom_point(data=df_r2[df_r2$credset==1,], pch=21, fill=NA, size=4, colour=&quot;red&quot;, stroke=1, alpha=0.5) +
+  geom_text(aes(label=ifelse(R2&gt;0.95,as.character(snpid),&#39;&#39;)),hjust=0,vjust=0,size=2.5,colour=&quot;black&quot;) +
+  theme_minimal() +
+  theme(legend.position = &quot;right&quot;) + sc +
+  ggtitle(paste0(locus_ggtitle,&quot; (snp lead:&quot;, snp_lead,&quot;)&quot;)) + theme(plot.title = element_text(hjust=0.5)) + xlim(start,end) + ylab(&quot;-log10(pvalue)&quot;)
+
+
+TO BE FINISHED !
+##Plot with functional annotation, R2 and gene location:
+#Treated the gene plot as a gantt chart plot !
+#prioritised genes and evidence:
+v2g_evidence &lt;- read_excel(&quot;src/report/var2gene_full.xlsx&quot;,sheet = &quot;Sheet2&quot;) %&gt;% select(locus,chr,posb37,evidence) %&gt;% filter(grepl(start,locus)) %&gt;% unique()
+l2g &lt;- read_excel(&quot;src/report/locus2gene.xlsx&quot;,sheet = &quot;Sheet1&quot;) %&gt;% na.omit() %&gt;% unique()
+v2g_polish &lt;- v2g_evidence %&gt;% left_join(l2g,by=&quot;locus&quot;) %&gt;% rename(chromosome=&quot;chr&quot;,Gene=&quot;gene&quot;)
+v2g_polish$evidence &lt;- as.factor(v2g_polish$evidence)
+
+#This gene list is from the R package LocusZooms
+genes &lt;- fread(&quot;/home/n/nnp5/software/LocusZooms/Gencode_GRCh37_Genes_UniqueList2021.txt&quot;)
+#filter gene in the locus:
+genes &lt;- genes %&gt;% left_join(v2g_polish,by=&quot;Gene&quot;)
+
+
+## Set factor level to order the genes on the plot
+genes$Gene &lt;- as.factor(genes$Gene)
+plot_gantt_gene &lt;- qplot(ymin = Start,
+                    ymax = End,
+                    x = Gene,
+                    colour = Coding,
+                    geom = &quot;linerange&quot;,
+                    data = genes,
+                    size = I(5)) +
+    scale_colour_manual(values = c(&quot;lncRNA&quot;=&quot;burlywood3&quot;, &quot;ncRNA&quot;=&quot;aquamarine4&quot;, &quot;proteincoding&quot;=&quot;chocolate&quot;, &quot;pseudogene&quot;=&quot;chocolate4&quot;)) +
+    coord_flip() +
+    theme_bw() +
+    theme(panel.grid = element_blank()) +
+    ylab(&quot;posb37&quot;) +
+    xlab(&quot;genes&quot;) +
+    ylim(start,end)
+
+
+plot_grid(annot_r2 + theme(legend.justification = c(0,1)), plot_gantt_gene + theme(legend.justification = c(0,1)), ncol=1, align=&#39;v&#39;, rel_heights = c(2,1))
+ggsave(locus, width = 50, height = 60, units = &quot;cm&quot;)</code></pre>
 </div>
 </div>
 <div id="results-and-conclusion" class="section level1">
