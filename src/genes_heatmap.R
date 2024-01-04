@@ -69,14 +69,14 @@ fc_heatmap_all <- function(df,x_val,y_val,fill_val) {
       }
 
 
-#Split plot into 3 plots of 31 genes each:
+#Split plot into 9 plots of 11 genes each:
 test <- v2g_full_combination2 %>%
     arrange(gene, variable) %>%
     group_by() %>%
-    mutate(facet=c(rep(7, ceiling(n()/7)),rep(6, ceiling(n()/7)),rep(5, ceiling(n()/7)),rep(4, ceiling(n()/7)),rep(3, ceiling(n()/7)),rep(2, ceiling(n()/7)), rep(1, floor(n()/7)))) %>%
+    mutate(facet=c(rep(9, ceiling(n()/9)),rep(8, ceiling(n()/9)),rep(7, ceiling(n()/9)),rep(6, ceiling(n()/9)),rep(5, ceiling(n()/9)),rep(4, ceiling(n()/9)),rep(3, ceiling(n()/9)),rep(2, ceiling(n()/9)), rep(1, floor(n()/9)))) %>%
     ungroup
 
-png("./output/V2G_heatmap_subplots.png", width=1000, height = 800)
+png("./output/V2G_heatmap_subplots.png", width=1000, height = 900)
 fc_heatmap_all(test,test$variable,test$gene,test$value) + facet_wrap(~facet, scales="free", ncol=3) +
         theme(strip.background = element_blank(), strip.text = element_blank(),
         axis.text.x=element_text(angle=75, vjust=0, hjust=0, face="bold"),

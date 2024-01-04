@@ -469,13 +469,18 @@ cp ${tmp_path}/rare_variant/demo_EUR_pheno_cov_broadasthma_app88144.txt /rfs/Tob
 #PoPS
 #pQTL
 #rare_disease
-##STILL NEED TO ADD SINGLE AND GENE-BASED COLLAPSING ANALYSIS GENES !
+#SINGLE AND GENE-BASED COLLAPSING ANALYSIS: no genes for variant-to-gene mapping, so I did not add them to this table
 Rscript src/Locus_to_genes_table.R
 Rscript src/genes_heatmap.R
-Rscript src/
 cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 
+################
+#7 REGION PLOTS WITH VAR2GENE RESULTS
+################
+#bash Region_plot_V2G.sh
+#Region_plot_V2G.R
+#Region_plot_V2G_2.R
 
 
 

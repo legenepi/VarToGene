@@ -305,24 +305,29 @@ ExWASes were performed using the tool REGENIE v3.1.1 and the Research Analysis P
 <br>
 To identify rare variant suggestive association and mapped genes, I implemented a look-up analysis for exonic rare variants (MAF < 0.01) within +/- 500Kb from common credible set variants.
 
+## Variant-to-Locus-to-Gene
+To combine the results from all the distinct analyses and see which genes were highlighted:
+<br>
 src/genes_heatmap.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/genes_heatmap.R'), eval=FALSE, hide=TRUE}
 ```
-
+To understand locus-gene(s) association:
+<br>
 src/Locus_to_genes_table.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Locus_to_genes_table.R'), eval=FALSE, hide=TRUE}
 ```
+
 
 # Results and Conclusion
 I identified a total of 98 genes. For each analysis:
 
  - Nearest gene identified 18 genes;
 
- - Functional annotation identified 39 genes (FANTOM 14 genes, Integrative scores 36 genes, ClinVar 6 genes);
+ - Functional annotation identified 40 genes (FANTOM 14 genes, Integrative scores 37 genes, ClinVar 6 genes);
 
  - eQTL: GTExV8 8 genes, eQTLgen blood 5 genes, UBC Lung eQTL 3 genes;
 
- - pQTL: UK Biobank 4 genes, SCALLOP 1 gene (no gene for deCODE);
+ - pQTL: UK Biobank 4 genes, SCALLOP 2 gene (no gene for deCODE);
 
  - PoPS 16 genes;
 
@@ -330,22 +335,24 @@ I identified a total of 98 genes. For each analysis:
 
  - Rare disease 6 genes;
 
-No genes were found from the look-up analyses in the exome single or gene-based rare variant analyses. Full summary results available here:
+
+No genes were found from the look-up analyses in the exome single or gene-based rare variant analyses.
+Two variants (chr6_45913842_C_G,chr7_1489310_G_A) were significant, but not in the sentinel regions; they map to genes TTK and INTS1 respectively.
+<br>
+Full variant-to-gene results available here:
 ```{r echo=FALSE}
 xfun::embed_file('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/report/var2gene_full.xlsx')
 ```
 
-Out of the 98 genes, 24 genes were supported by at least 2 criteria (Figure 2):
+Out of the 99 genes, 24 genes were supported by at least 2 criteria (Figure 2):
 
  - 16 genes by two criteria: AC034102.4,AC034114.2,AC044784.1,AC116366.3,CAMK4,HDAC7,HLA-DQA1,HLA-DRB1,HLA-DRB5,IKZF3,IL33,NR1D1,ORMDL3,PGAP3,PPP1R1B,SUOX
 
- - 6 genes by four criteria: D2HGDH,IL4R,NSMCE1,RORA,RPS26,SMAD3
+ - 6 genes by three criteria: D2HGDH,IL4R,NSMCE1,RORA,RPS26,SMAD3
 
  - 2 genes by four criteria: BACH2, IL1RL1
 
 ```{r, echo=FALSE, out.width = "110%", fig.align = "center"}
 knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/V2G_heatmap_subplots.png")
 ```
-
-
-## Gene-locus pairs
+## Locus-to-gene
