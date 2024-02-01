@@ -353,17 +353,20 @@ Full variant-to-gene results available here:
 xfun::embed_file('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/report/var2gene_full.xlsx')
 ```
 
-Out of the 99 genes, 24 genes were supported by at least 2 criteria (Figure 2):
+Out of the 98 genes, 23 genes were supported by at least 2 criteria (Figure 2):
 
  - 16 genes by two criteria: AC034102.4,AC034114.2,AC044784.1,AC116366.3,CAMK4,HDAC7,HLA-DQA1,HLA-DRB1,HLA-DRB5,IKZF3,IL33,NR1D1,ORMDL3,PGAP3,PPP1R1B,SUOX
 
  - 6 genes by three criteria: D2HGDH,IL4R,NSMCE1,RORA,RPS26,SMAD3
 
- - 2 genes by four criteria: BACH2, IL1RL1
+ - 1 gene by four criteria: BACH2
+
+ - 1 gene by five criteria: IL1RL1/ST2
 
 ```{r, echo=FALSE, out.width = "110%", fig.align = "center"}
 knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/V2G_heatmap_subplots.png")
 ```
+
 ## Locus-to-gene
 Below, the region-plots with linkage-disequilibrium measures wth regards to the variant with highest posterior inclusion probability
 as by the fine-mapping analysis with gene-mapped in the genomic locus.
