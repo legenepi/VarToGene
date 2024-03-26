@@ -12,7 +12,7 @@ output:
 
 ```{r, setup, hide = TRUE}
 #library reticulate to be able to add chunks in another language
-#library(reticulate)
+library(reticulate)
 #To run this .rmd file in a terminal being in the project folder:
 #export PATH=${PATH}:/cm/shared/apps/R/deps/rstudio/bin/pandoc
 #file="./report/Variant_to_Gene_Report.Rmd"
@@ -368,22 +368,7 @@ knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/V2G_hea
 ```
 
 ## Locus-to-gene
-Below, the region-plots with linkage-disequilibrium measures wth regards to the variant with highest posterior inclusion probability
-as by the fine-mapping analysis with gene-mapped in the genomic locus.
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_2_2_102913642_A_AAAAC_102426362_103426362.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_2_2_242692858_C_T_242192858_243192858.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_3_3_33042712_C_T_32547662_33547662.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_5_5_110401872_C_T_109901872_110905675.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_5_5_131885240_C_G_131270805_132496500.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_6_6_32586794_G_T_32086794_33086794.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_6_6_90963614_A_AT_90463614_91463614.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_8_8_81292599_A_C_80792599_81792599.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_9_9_6209697_A_G_5709697_6709697.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_10_10_9064716_C_T_8542744_9564361.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_11_11_76296671_A_G_75796671_76796671.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_12_12_48202941_C_T_47695873_48695873.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_12_12_56435504_C_G_55935504_56935504.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_15_15_61068954_C_T_60569988_61569988.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_15_15_67442596_C_T_66942596_67942596.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_16_16_27359021_A_C_26864806_27864806.pdf){width=100% height=400}
-![Alt](/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/region_plots_V2G/rp_v2g_17_17_38168828_A_G_37573838_38573838.pdf){width=100% height=400}
+A separate folder with region plots for each locus has been provided along with this report.
+<br>
+The represented genomic region shows a window of +/- 1Mb from the sentinel variant, defined as the SNP with the highest posterior inclusion probability.
+Other variants in the 95% causal credible set are circled in red; the linkage-disequilibrium measure is with respect to the sentinel variant; functional annotation is reported only for variants in the 95% causal credible set ('unknown' if not in the credible set).
