@@ -35,7 +35,7 @@ awk '{print $1"-"$2}' input/hglft_genome_credset_vars_${region}.bed | sed 's/chr
 ###use FAVOR webtool:
 #https://favor.genohub.org/
 
-Rscript src/Variant_annotation_FAVOR.R \
+Rscript src/Variant_annotation_FAVOR_chr3.R \
     input/FAVOR_credset_chrpos38_2024_05_14_${region}.txt.csv ${region}
 
 #copy and paste the gene for FANTOM5-ClinVar-Integrative Functional Score in the varannot_gene sheet of input/var2genes_raw_chr3_49524027_50524027_rs778801698.xlsx"
