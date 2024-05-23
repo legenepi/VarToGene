@@ -45,7 +45,7 @@ sbatch --array=1-22 src/coloc/000A_submit_eqtl_gtex_extraction.sh
 
 sbatch src/coloc/000B_eqtl_gtex_liftover.sh
 
-sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_extraction.sh
+sbatch --array=1-22 src/coloc/000C_submit_eqtl_gtex_conversion.sh
 
 
 ##variables needed:
