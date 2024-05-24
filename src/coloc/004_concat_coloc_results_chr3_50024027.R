@@ -5,7 +5,6 @@
 library(plyr)
 library(tidyverse)
 library(purrr)
-library(xlsx)
 
 ###############
 ### GTEx v8 ###
@@ -106,7 +105,7 @@ summary_fct = function(df) {
 tmp_1 <- lapply(data_list, summary_fct)
 nonnull <- sapply(tmp_1, typeof)!="NULL"  # find all NULLs to omit
 ID <- file_split$snp
-index_row <- 1:937 #the length of tmp_1 which is the total nuber of all_susie.rds files
+index_row <- 1:232 #the length of tmp_1 which is the total nuber of all_susie.rds files
 tmp_2 <- map2(tmp_1, ID, ~cbind(.x, snp = .y))
 tmp_3 <- map2(tmp_2, index_row, ~cbind(.x, n_index = .y))
 tmp_4 <- tmp_3[nonnull]
@@ -131,7 +130,7 @@ write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/res
 gene_coloc <- as.data.frame(data_summary %>% filter(coloc) %>% select(gene))
 gene_colocsusie <- as.data.frame(data_summary_colocsusie %>% filter(coloc_susie) %>% select(gene))
 gene_gtex <- rbind(gene_coloc,gene_colocsusie) %>% unique()
-write.xlsx(gene_gtex,"/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx", sheetName = "GTExV8_eQTL_genes", row.names=FALSE, col.names=FALSE, append=TRUE)
+write_tsv(gene_gtex,"/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/GTExV8_eQTL_genes")
 
 ###############
 ### eqtlGen ###
@@ -227,7 +226,7 @@ summary_fct = function(df) {
 tmp_1 <- lapply(data_list, summary_fct)
 nonnull <- sapply(tmp_1, typeof)!="NULL"  # find all NULLs to omit
 ID <- file_split$snp
-index_row <- 1:169 #the length of tmp_1 which is the total nuber of all_susie.rds files
+index_row <- 1:26 #the length of tmp_1 which is the total nuber of all_susie.rds files
 tmp_2 <- map2(tmp_1, ID, ~cbind(.x, snp = .y))
 tmp_3 <- map2(tmp_2, index_row, ~cbind(.x, n_index = .y))
 tmp_4 <- tmp_3[nonnull]
@@ -251,4 +250,6 @@ write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/res
 #SAVE COLOC AND COLOC.SUSIE GENES INTO XLSX FILE:
 #coloc.susie does not have any significant colocalisation:
 gene_coloc <- as.data.frame(data_summary %>% filter(coloc) %>% select(gene))
-write.xlsx(gene_coloc,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx", sheetName = "eqtlGen_eQTL_genes", row.names=FALSE, col.names=FALSE, append=TRUE)
+gene_colocsusie <- as.data.frame(data_summary_colocsusie %>% filter(coloc_susie) %>% select(gene))
+gene_gtex <- rbind(gene_coloc,gene_colocsusie) %>% unique()
+write_tsv(gene_coloc,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/eqtlGen_eQTL_genes")

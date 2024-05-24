@@ -197,15 +197,36 @@ ls -lthr  ${tmp_path}/results/eqtlgen/*all_coloc.rds | grep "eqtlGenWB" | wc -l
 ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep "eqtlGenWB" | wc -l
 
 #Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
-Rscript coloc/004_concat_coloc_results_chr3_
+Rscript src/coloc/004_concat_coloc_results_chr3_50024027.R
 
 
 #gtex converted in gene symbol:
 #https://www.biotools.fr/human/ensembl_symbol_converter
-#added in GTExV8_eQTL_genes_symbol table in the input/var2gene.xlsx file.
-awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_GTEx.tsv \
-    > output/coloc_asthma_GTEx.tsv
-awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTEx.tsv \
-    > output/colocsusie_asthma_GTEx.tsv
-awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_eqtlgen.tsv \
-    > output/coloc_asthma_eqtlgen.tsv
+
+#No genes that colocalised with the chose PP.H4.abf threshold.
+
+
+#Additional for curiosity only:
+#If I try filter for PP.H4.abf > 0.85
+#
+#GTEXv8: There is colocalisation for three genes: ENSG00000004534.14:RBM6, ENSG00000164078.12:MST1R, ENSG00000182179.12:UBA7.
+#nsnps PP.H4.abf gene tissue
+#1432 0.8969304215521776 ENSG00000004534.14 coronary
+#1434 0.8942873733156056 ENSG00000004534.14 not_sun_exposed_suprapubic
+#1434 0.8922308534250772 ENSG00000004534.14 sigmoid
+#1434 0.8921686387956137 ENSG00000004534.14 muscularis
+#1434 0.8921109118112002 ENSG00000004534.14 tibial
+#1434 0.8920935039077741 ENSG00000004534.14 transverse
+#1434 0.8919127349079411 ENSG00000004534.14 ensg00000004534.14_stomach
+#1434 0.8918331099081864 ENSG00000004534.14 sun_exposed_lower_leg
+#1434 0.8918261031810106 ENSG00000004534.14 aorta
+#1434 0.8916789774689768 ENSG00000004534.14 gastroesophageal_junction
+#1434 0.888817774187038 ENSG00000004534.14 ensg00000004534.14_lung
+#1434 0.867383436884697 ENSG00000164078.12 muscularis
+#1434 0.8562550686662334 ENSG00000164078.12 sun_exposed_lower_leg
+#1434 0.8548386547510476 ENSG00000182179.12 aorta
+#1434 0.8540520416172054 ENSG00000004534.14 intestine_terminal_ileum
+#
+#eqtlGen: There is a colocalisation for RBM6:
+#nsnps	hit1	hit2	PP.H0.abf	PP.H1.abf	PP.H2.abf	PP.H3.abf	PP.H4.abf	idx1	idx2	snp	n_index	pheno	gene	tissue	coloc_susie
+#1384	0	0	3.352464447545198e-4	0.10008140361218355	0.899583349943249	SA	3_50024027_C_CA	RBM6	eqtlGenWB	FALSE
