@@ -42,6 +42,8 @@ orphanet_hpo <- read_xlsx("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_pro
 
 ##Retrieve Sentinel SNPs - highest PIP in the fine-mapped loci:
 sig_list_tmp <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt")
+#chr 3 rs778801698:
+sig_list_tmp <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt")
 setnames(sig_list_tmp,"chromosome","chr")
 setnames(sig_list_tmp,"position","pos")
 sig_list_tmp$sentinel <- paste0(sig_list_tmp$chr,"_",sig_list_tmp$pos,"_",sig_list_tmp$allele1,"_",sig_list_tmp$allele2)
@@ -54,6 +56,7 @@ for(i in locus){
     locus_sig_list <- locus_sig_list %>% filter(PIP_average == max(locus_sig_list$PIP_average)) %>% select(locus,sentinel,chr,pos)
     sentinels <- rbind(sentinels,locus_sig_list)
     }
+#fwrite(sentinels, "input/highest_PIP_sentinels",row.names=F,quote=F,sep="\t") #save this for easiness to retrieve them.
 
 ## Overlap of GWAS function signals with NCBI Refseq genes
 # Create a GRanges object for reference of genes
@@ -121,7 +124,7 @@ yellow <- hpo_f_levels[3]
 green <- hpo_f_levels[4:5]
 
 #HPOId term for asthma: HP:0002099
-key_terms <- c("asthma","eosin","immunodef","cili","autoimm","leukopenia","neutropenia")
+key_terms <- c("asthma","eosin","immunodef","cili","autoimm","leukopenia","neutropenia","macroph")
 orphanet <- orphanet %>%
   mutate(asthma_HPO=grepl(paste(key_terms, collapse='|'), HPOTerm, ignore.case = TRUE) &
                    HPOFrequency != "Excluded (0%)",
@@ -229,7 +232,7 @@ orphanet_asthma_selected_wide <- orphanet_asthma_selected %>%
 
 results <- implicated_rare %>% select(-Position) %>% left_join(sentinels, .)
 
-results_rare <- results %>% filter(!is.na(Rare)) %>% arrange(Evidence, distance, chr, pos) %>% ungroup 
+results_rare <- results %>% filter(!is.na(Rare)) %>% arrange(Evidence, distance, chr, pos) %>% ungroup
 
 results_by_snp <- results %>%
   arrange(Evidence, distance) %>%
@@ -260,10 +263,12 @@ results_by_gene <- results %>%
   group_by(Symbol) %>%
   summarise_at(vars(Rare, Evidence, distance, Diseases, HPOTerms), concat)
 
-out_base <- paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/rare_disease/results_", DISTANCE/1000, "kb")
+#out_base <- paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/rare_disease/results_", DISTANCE/1000, "kb")
+out_base <- paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/rare_disease/results_chr3_noMHC_", DISTANCE/1000, "kb")
 write_csv(results, paste0(out_base, ".csv"), na = "")
 write_csv(results_rare, paste0(out_base, "_rare.csv"), na = "")
 write_csv(results_by_snp_phyper, paste0(out_base, "_by_snp.csv"), na = "")
 write_csv(results_by_gene, paste0(out_base, "_by_gene.csv"), na = "")
 #save genes only:
-fwrite(as.data.frame(results_by_gene$Symbol), "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt", na = "",col.names=F,quote=F)
+#fwrite(as.data.frame(results_by_gene$Symbol), "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt", na = "",col.names=F,quote=F)
+fwrite(as.data.frame(results_by_gene$Symbol), "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw_chr3_49524027_50524027_rs778801698.txt", na = "",col.names=F,quote=F)

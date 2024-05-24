@@ -18,8 +18,11 @@ PQTL_PATH="/scratch/gen1/nnp5/Var_to_Gen_tmp/decode_pqtl"
 #USE b38 POSITION:
 ##NOTE: DEPENDENCIES ON SCRIPT src/pQTL_coloc/000_preprocess_cs_b38.R TO CREATE B38 FILES:
 ## List of variants with columns: ID (chr_posb37_a1_a2), CHROM, POS (pos b38):
+#awk 'NR >1 {print $3"_"$4"_"$5"_"$6, "chr"$3, $11}' \
+#    ${ukbb38_path}/SA_*_b38 | grep -v "^chromosome" > ${PQTL_PATH}/snps_list.txt
+
 awk 'NR >1 {print $3"_"$4"_"$5"_"$6, "chr"$3, $11}' \
-    ${ukbb38_path}/SA_*_b38 | grep -v "^chromosome" > ${PQTL_PATH}/snps_list.txt
+    ${ukbb38_path}/SA_3_rs778801698_49524027_50524027_b38 | grep -v "^chromosome" > ${PQTL_PATH}/snps_list.txt
 
 # Set up log file
 touch ${PQTL_PATH}/log_pQTL_decode_analysis

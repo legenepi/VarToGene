@@ -48,7 +48,7 @@ Rscript src/Variant_annotation_FAVOR_chr3.R \
 ##Genomic boundaries: PIP-max causal variant +/- 1Mb
 
 cs=('SA_3_50024027_C_CA')
-cs_all="/data/gen1/UKBi/replsugg_valid_credset_chr3_noMHC.txt"
+cs_all="/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt"
 
 ###GTExv8 eQTL###
 ##Create eQTl files in hg19 for Colon Transverse, Colon Sigmoid, Skin_Not_Sun_Exposed_Suprapubic, Skin_Sun_Exposed_Lower_leg
@@ -320,3 +320,172 @@ awk 'NR ==1; $13 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_ubclung.
 
 #Added genes into Var_to_Gene/input/var2genes_raw_chr3_49524027_50524027_rs77880169.xlsx file :
 #The only gene for colocalisation among the three method is RBM6 from ubclung.
+
+
+################
+#2.2 APPROXIMATE COLOCALISATION - pQTL (LOOK-UP FOR ALL CREDIBLE SET VARIANTS)
+#UKB, SCALLOP, deCODE
+################
+##Exclude chromosome 6 - no eQTL colocalisation for this locus.
+##Genomic boundaries: PIP-max causal variant +/- 1Mb
+
+###UKBIOBANK pQTL LOOK-UP###
+#Nick generate the pQTL dataset, as for /data/gen1/UKBiobank/olink/pQTL/README.txt:
+# OLINK pQTL analysis
+#* 48,195 European samples (as defined in Shrine et al. 2023)
+#* 1463 proteins (proteins.txt)
+#* Phenotype: untransformed log2 fold protein levels (olink_pheno.txt)
+#* Covariates: olink batch, age, sex, genotyping array, PC1-10 (olink_covar.txt)
+#* 44.8 million MAC >= 5 variants from HRC+UK10K imputation (/data/ukb/imputed_v3)
+#* Additive model with regenie (run_step1.sh & run_step2.sh)
+#* Full results for each protein tabixed in results directory
+#* Script pqtl_lookup.sh for look ups, run with no arguments for usage info
+
+# Nick created a look up script for UKB pQTL:
+#/data/gen1/UKBiobank/olink/pQTL/pqtl_lookup.sh -s <RSID> -r <CHR:START-END> [ -f <PROTEINS FILE> ] [ -p <P THRESHOLD> ] [-h]
+#UKB pQTL is in GRCh38, need to find sentinel variants position in GRCh38:
+mkdir ${tmp_path}/ukb_pqtl
+#input for liftOver:
+awk -F ' ' 'NR > 1 {print "chr"$3, $4, $4+1}' $cs_all \
+    > ${tmp_path}/ukb_pqtl/cs_vars_liftover_input.txt
+## download the chain file b37 to b38
+wget -P /home/n/nnp5/software/liftover https://hgdownload.soe.ucsc.edu/gbdb/hg19/liftOver/hg19ToHg38.over.chain.gz
+
+/home/n/nnp5/software/liftover/liftOver \
+    ${tmp_path}/ukb_pqtl/cs_vars_liftover_input.txt \
+    /home/n/nnp5/software/liftover/hg19ToHg38.over.chain.gz \
+    ${tmp_path}/ukb_pqtl/cs_vars_liftover_output.bed \
+    ${tmp_path}/ukb_pqtl/cs_vars_liftover_unlifted.bed
+
+##divide cs vars into the respective credset with b38 location:
+dos2unix src/pQTL_coloc/000_preprocess_cs_b38.R
+chmod +x src/pQTL_coloc/000_preprocess_cs_b38.R
+Rscript src/pQTL_coloc/000_preprocess_cs_b38.R \
+     $cs_all \
+     $tmp_path/ukb_pqtl/ \
+     ${tmp_path}/ukb_pqtl/cs_vars_liftover_output.bed
+
+#pvalue theshold based on bonferroni correction by the number of measured proteins:
+dos2unix src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+chmod +x src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+sbatch --array 0 src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
+
+#combine look-up ukb-pqtl files with Nick's script (from /data/gen1/UKBiobank/olink/pQTL/orion_pain):
+cd ${tmp_path}/ukb_pqtl/
+/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/001_combine_pqtl.awk *rs*/* \
+    > ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt
+cp ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt output/lookup_ukbpqtl_${region}.txt
+cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene/ #of wherever the folder 'Var_to_Gene' is located
+#extract gene showing look-up results:
+awk 'NR > 1 {print $2}' ${tmp_path}/ukb_pqtl/lookup_ukbpqtl_${region}.txt | sort -u \
+    > input/ukbpqtl_var2genes_raw_${region}
+
+
+###deCODE pQTL LOOK-UP###
+#Found this script of Nick for decode lookup (from /data/gen1/TSH/coloc_susie/lookup_decode.awk):
+#create credible_set.snps: create credible_set.snps in alphabetical order
+#($5 < $6 ? $5 : $6)"_"($6 > $5 ? $6 : $5)
+#locus85	10_101220474_A_G
+#locus85	10_101221275_C_T
+mkdir ${tmp_path}/decode_pqtl
+#From Chiara/Kayesha script and Nick:
+sbatch src/pQTL_coloc/000_submit_lookup_decode.sh
+#filter out gene name with significant pQTL:
+awk 'NR > 1 && $5 > 0 {print $1}' ${tmp_path}/decode_pqtl/log_pQTL_decode_analysis | sed 's/.txt//g' \
+    > input/decode_pqtl_var2genes_raw_${region}
+
+
+###SCALLOP pQTL LOOK-UP###
+#From Chiara's script R:\TobinGroup\GWAtraits\Chiara\pQTL_SCALLOP and Nick's script scallop_lookup.awk
+mkidr ${tmp_path}/scallop_pqtl
+#From Chiara and Nick script:
+sbatch src/pQTL_coloc/000_submit_lookup_scallop.sh
+#filter out gene name with significant pQTL:
+awk 'NR > 1 && $5 > 0 {print $1}' ${tmp_path}/scallop_pqtl/log_pQTL_SCALLOP_analysis | sed 's/.txt//g' \
+    > input/scallop_pqtl_var2genes_raw_${region}
+
+##Chrom	Pos	MarkerName	Allele1	Allele2	Freq1	FreqSE	Effect	StdErr	P-value	Direction	TotalSampleSize Gene
+awk -F "\t" '$10 < 5e-8 {print $0, $13="CA-125"}' ${tmp_path}/scallop_pqtl/XX.txt \
+    > input/scallop_ukbpqtl_${region}.txt
+awk -F "\t" '$10 < 5e-8 {print $0, $13="ST2"}' ${tmp_path}/scallop_pqtl/XX.txt \
+    >> input/scallop_ukbpqtl_${region}.txt
+
+
+#Merge genes from the different pQTL look-up analyses:
+cat input/ukbpqtl_var2genes_raw input/scallop_pqtl_var2genes_raw input/decode_pqtl_var2genes_raw \
+    | awk '{print $2="pQTL", $1}' > input/pqtl_lookup_genes_merged_${region}
+
+
+################
+#3 POLYGENIC PRIORITY SCORE (PoPS)
+################
+#https://github.com/FinucaneLab/pops
+#Looking at the github repo and to Jing's code, I compiled PoPS in PoPS.sh and submit_pops.sh:
+
+#PoPS.sh internally calls submit_pops.sh to be submitted as a job - it requires lots of time.
+mkdir ${tmp_path}/pops
+mkdir ${tmp_path}/pops/results
+bash PoPS.sh
+
+#Look at the results and find top score genes within a +/-250Kb from highest-PIP variant for each locus -
+#if no top genes in +/- 250Kb, enlarge the window to +/-500Kb:
+Rscript src/PoPS/PoPS_summary.R
+
+
+################
+#3 NEARBY HUMAN ORTHOLOG MOUSE KO GENE
+################
+#From Jing's code as well as my own input:
+#Download genotype-phenotype data from IMPC (International Mouse Phenotyping consortium)
+#https://www.mousephenotype.org/data/release
+mkdir ${tmp_path}/mouse_ko
+#release 2023-07-06; release 2024-05-07 for chromosome 3:
+wget -P ${tmp_path}/mouse_ko/ https://ftp.ebi.ac.uk/pub/databases/impc/all-data-releases/latest/results/genotype-phenotype-assertions-ALL.csv.gz
+#release 2023-11-22; release 2024-05-15 for chromosome 3:
+wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/human_mouse_hcop_fifteen_column.txt.gz
+#run the analysis:
+Rscript src/mouse_ko/mouse_ko.r > ${tmp_path}/mouse_ko/output_mouse_ko_${region}
+#Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/mouse_ko_genes_raw_chr3_49524027_50524027_rs778801698.txt genes into var2genes_raw${region}.xlsx.
+cp ${tmp_path}/mouse_ko/results_chr3_noMHC_500kb.csv input/mko_results_500kb${region}.csv
+grep "3_rs778801698_49524027_50524027" input/mko_results_500kb${region}.csv | awk -F ","  '{print $6}' | sort -u > input/mko_results_500kb_only_${region}_genes.csv
+
+################
+#4 NEARBY RARE MENDELIAN DISEASE GENE
+################
+#From Jing's code as well as my own input:
+#Download genotype-phenotype data from https://www.orphadata.com/genes/:
+mkdir ${tmp_path}/rare_disease/
+#latest release 2023-06-22:
+#downloaded locally and converted in xlsx in Excel - uploaded in /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product6.xlsx
+#dowload description of the file:
+wget -P src/report/ https://www.orphadata.com/docs/OrphadataFreeAccessProductsDescription.pdf
+#Downloaded hpo: human phenotype ontology provides a standardized vocabulary of phenotypic abnormalities encounterd in human disease
+#latest release June 2023:
+#Downloaded locally and converted in xlsx in Excel - uploaded in /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/en_product4.xlsx
+#https://github.com/Orphanet/Orphadata_aggregated/blob/master/Rare%20diseases%20with%20associated%20phenotypes/en_product4.xml
+#run the analysis:
+Rscript src/rare_disease/rare_disease.r > ${tmp_path}/rare_disease/output_rare_disease
+#Upload /home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/rare_disease_genes_raw.txt genes into var2genes_raw.xlsx.
+grep "3_" ${tmp_path}/rare_disease/results_chr3_noMHC_500kb_by_gene.csv > input/raredis_results_500kb_only_${region}_genes.csv
+
+################
+#5 RARE VARIANT UKBiobank ANALYSIS in RAP
+################
+#Not on chromosome 3 and in that region !
+
+################
+#6 TABLES FOR EACH ANALYSIS AND MERGE GENES FOR GENE PRIORITISATION AND VISUALISATION - add genes from chr 3 rs778801698
+################
+#TO NOTE: ONLY FOR
+#nearest gene
+#functional annotation
+#eQTL
+#mouse_KO
+#PoPS
+#pQTL
+#rare_disease
+#SINGLE AND GENE-BASED COLLAPSING ANALYSIS: no genes for variant-to-gene mapping, so I did not add them to this table
+Rscript src/Locus_to_genes_table.R
+Rscript src/genes_heatmap.R
+cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
+cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/

@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
-#SBATCH --time=01:00:00
+#SBATCH --time=72:00:00
 #SBATCH --mem=24gb
 #SBATCH --account=gen1
 #SBATCH --export=NONE
@@ -13,11 +13,16 @@
 #Rationale: look-up in pQTL in SCALLOP pQTL - script from Chiara
 
 PQTL_DATA="/data/gen1/reference/SCALLOP"
-SNP_LIST="/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt"
+#SNP_LIST="/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt"
+#for 3_rs778801698:
+SNP_LIST="/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt"
 PQTL_PATH="/scratch/gen1/nnp5/Var_to_Gen_tmp/scallop_pqtl"
 
 ## List of variants with columns: ID, CHROM, POS
-cat ${SNP_LIST} | awk '{print $3"_"$4"_"$5"_"$6,$3,$4}' > ${PQTL_PATH}/snps_list.txt
+#cat ${SNP_LIST} | awk '{print $3"_"$4"_"$5"_"$6,$3,$4}' > ${PQTL_PATH}/snps_list.txt
+#for chromsome 3_rs778801698:
+cat ${SNP_LIST} | awk '$1 == "3_rs778801698_49524027_50524027" {print $3"_"$4"_"$5"_"$6,$3,$4}'  > ${PQTL_PATH}/snps_list.txt
+
 
 # Set up log file
 touch ${PQTL_PATH}/log_pQTL_SCALLOP_analysis

@@ -18,7 +18,9 @@ getN <- function(x, y) x %>% pull({{y}}) %>% n_distinct
 
 
 ##Retrieve Sentinel SNPs - highest PIP in the fine-mapped loci:
-sig_list_tmp <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt")
+#sig_list_tmp <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt")
+#chr 3 rs778801698:
+sig_list_tmp <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt")
 setnames(sig_list_tmp,"chromosome","chr")
 setnames(sig_list_tmp,"position","pos")
 sig_list_tmp$sentinel <- paste0(sig_list_tmp$chr,"_",sig_list_tmp$pos,"_",sig_list_tmp$allele1,"_",sig_list_tmp$allele2)
@@ -47,9 +49,9 @@ refseq <- ucsc %>%
 
 ## Mouse genotype-phenotype data
 ## Store in /scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/ and downloaded from:
-#latest release 2023-07-06:
+#release 2023-07-06: release 2024-05-07 for chromosome 3:
 #wget -P ${tmp_path}/mouse_ko/ https://ftp.ebi.ac.uk/pub/databases/impc/all-data-releases/latest/results/genotype-phenotype-assertions-ALL.csv.gz
-#latest release 2023-11-22:
+#release 2023-11-22: release 2024-05-15 for chromosome 3:
 #wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/human_mouse_hcop_fifteen_column.txt.gz
 
 orthologs <- read_tsv("human_mouse_hcop_fifteen_column.txt.gz")
@@ -190,7 +192,8 @@ results_by_gene <- results %>%
 results_by_snp_phyper %>% filter(!is.na(hyperG_p)) %>% count(hyperG_p < 0.05) %>%
   pander(caption="By SNP hypergeometric results")
 
-out_base <- paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/results_", DISTANCE/1000, "kb")
+#out_base <- paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/results_", DISTANCE/1000, "kb")
+out_base <- paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/mouse_ko/results_chr3_noMHC_", DISTANCE/1000, "kb")
 write_csv(results, paste0(out_base, ".csv"), na = "")
 write_csv(results_mko, paste0(out_base, "_mko.csv"), na = "")
 write_csv(results_by_snp_phyper, paste0(out_base, "_by_snp.csv"), na = "")
@@ -206,7 +209,8 @@ inner_join(results_mko %>%
   group_by(Symbol, mouse_symbol) %>%
   arrange(p_value) %>%
   slice(1) %>%
-  write_csv("mouse_ko.csv")
+  write_csv("mouse_ko_chr3_49524027_5052402.csv")
 
 #save genes only:
-fwrite(as.data.frame(results_by_gene$Symbol), "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/mouse_ko_genes_raw.txt", na = "",col.names=F,quote=F)
+#fwrite(as.data.frame(results_by_gene$Symbol), "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/mouse_ko_disease_genes_raw.txt", na = "",col.names=F,quote=F)
+fwrite(as.data.frame(results_by_gene$Symbol), "/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/mouse_ko_genes_raw_chr3_49524027_50524027_rs778801698.txt", na = "",col.names=F,quote=F)
