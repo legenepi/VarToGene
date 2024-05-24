@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 #Rationale: Look at PoPS results and create a summary of them
-##‘We currently suggest taking the highest scoring gene in each GWAS locus.
+##We currently suggest taking the highest scoring gene in each GWAS locus.
 ##You could further filter this set to only include genes in top 10% of PoP scores across all genes.
 ##Negative scores generally mean low evidence -- this is the predicted MAGMA z-score!!’ (https://github.com/FinucaneLab/pops/issues/4)
 ##From TSH paper: ‘prioritized genes for all autosomal TSH sentinel variants within a 500kb (±250kb) window of
@@ -13,8 +13,9 @@
 library(data.table)
 library(tidyverse)
 
-
-sig_list <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt")
+#sig_list <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt")
+#chr 3 rs778801698:
+sig_list <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt")
 setnames(sig_list,"chromosome","chr")
 setnames(sig_list,"position","pos")
 sig_list$sentinel <- paste0(sig_list$chr,"_",sig_list$pos,"_",sig_list$allele1,"_",sig_list$allele2)

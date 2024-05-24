@@ -19,7 +19,9 @@ python ${popsdir}/pops/pops.feature_selection.py \
     --gene_results ${tmp_path}/pops/SA \
 	  --out ${tmp_path}/pops/SA \
 
-for i in {1..22}
+#for i in {1..22}
+#for chr3 rs778801698
+i=3
 do
     python ${popsdir}/pops/pops.predict_scores.py \
 	    --gene_loc ${popsdir}/data/gene_loc.txt \
