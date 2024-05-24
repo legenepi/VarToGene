@@ -14,4 +14,4 @@ read GENE < <(awk -F'\t' 'NR == '$((i))' { print $1 }' ${tmp_path}${CREDSET}_eqt
 
 module load R
 
-Rscript src/coloc_UBClung/003_run_coloc_susie_lung_eQTL.r "eqtlGenWB" $CREDSET $GENE
+Rscript src/coloc/003_run_coloc_susie_eQTLGen.R "eqtlGenWB" $CREDSET $GENE

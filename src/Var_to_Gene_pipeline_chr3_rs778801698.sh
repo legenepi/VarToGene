@@ -51,8 +51,6 @@ cs=('SA_3_50024027_C_CA')
 cs_all="/data/gen1/UKBi/replsugg_valid_credset_chr3_noMHC.txt"
 
 ###GTExv8 eQTL###
-###GTExv8 eQTL###
-
 ##Create eQTl files in hg19 for Colon Transverse, Colon Sigmoid, Skin_Not_Sun_Exposed_Suprapubic, Skin_Sun_Exposed_Lower_leg
 #From GTExV8 .parquet files and in hg38.
 mkdir ${tmp_path}/liftover_gtexv8
@@ -140,20 +138,74 @@ for c in ${!tissue[*]}; do
 echo ${tissue[c]}; echo "Total:"
 wc -l ${tmp_path}/SA_*_${tissue[c]}_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
 echo "Analysed:"; grep ${tissue[c]} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $1}' | sort -u | wc -l
-done
-
 ##Check how many genes per tissue have been analysed for colocalisation:
 ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
 ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
+done
+
+###eqtlGen eQTL###
+mkdir ${tmp_path}/results/eqtlgen
+mkdir ${tmp_path}/eqtlgen
+dos2unix src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
+chmod +x src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
+sbatch src/coloc/000_submit_edit_eQTLGen.sh
+
+#Create files for eQTLGen colocalisation:
+dos2unix src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
+chmod +x src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
+
+for c in ${!cs[@]}; do
+
+    sbatch --export=CREDSET="${cs[c]}" ./src/coloc/001_submit_eqtl_lookup_eQTLGen.sh
+
+done
+
+##Get the LD matrix:
+##Create the file with gtex-locus pairs:
+dos2unix src/coloc/002_prepare_LDinput_eqtlgen.R
+chmod +x src/coloc/002_prepare_LDinput_eqtlgen.R
+Rscript src/coloc/002_prepare_LDinput_eqtlgen.R "eqtlGenWB"
+
+##Get LD:
+#with parameters for eqtlGen
+sbatch src/coloc/002_get_LD.sh
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-1247283.out
+
+##Run the colocalisation for GTExV8:
+#.sh will run .R script:
+mkdir ${tmp_path}/results/eqtlgen
+dos2unix src/coloc/003_submit_coloc_susie_eQTLGen.sh
+chmod +x src/coloc/003_run_coloc_susie_eQTLGen.R
+for c in ${!cs[*]}; do
+
+  N=`cat ${tmp_path}/eqtlgen/${cs[c]}_eqtlGenWB_genes.txt | wc -l`
+
+  sbatch --array=1-${N}%20 --export=CREDSET="${cs[c]}" ./src/coloc/003_submit_coloc_susie_eQTLGen.sh
+
+ sleep 5
+
+done
+
+######QUALITY CHECKS:
+#to find number of genes:
+wc -l ${tmp_path}/eqtlgen/SA_*_eqtlGenWB_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
+##Check that all genes for each tissue have been analysed:
+grep "eqtlGenWB" ${tmp_path}/logerror/coloc_susie_eqtlgen*.out | awk -F ":" '{print $1}' | sort -u | wc -l
+
+##Check how many genes per tissue have been analysed for colocalisation:
+ls -lthr  ${tmp_path}/results/eqtlgen/*all_coloc.rds | grep "eqtlGenWB" | wc -l
+ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep "eqtlGenWB" | wc -l
+
+#Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
+Rscript coloc/004_concat_coloc_results_chr3_
 
 
 #gtex converted in gene symbol:
 #https://www.biotools.fr/human/ensembl_symbol_converter
 #added in GTExV8_eQTL_genes_symbol table in the input/var2gene.xlsx file.
-
 awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_GTEx.tsv \
     > output/coloc_asthma_GTEx.tsv
-
 awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTEx.tsv \
     > output/colocsusie_asthma_GTEx.tsv
-
+awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_eqtlgen.tsv \
+    > output/coloc_asthma_eqtlgen.tsv
