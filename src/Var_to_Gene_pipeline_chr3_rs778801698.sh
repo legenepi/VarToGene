@@ -199,6 +199,17 @@ ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep "eqtlGenWB" | wc -l
 #Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
 Rscript src/coloc/004_concat_coloc_results_chr3_50024027.R
 
+awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_GTEx.tsv \
+    > output/coloc_asthma_GTEx.tsv
+
+awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTEx.tsv \
+    > output/colocsusie_asthma_GTEx.tsv
+
+awk 'NR ==1; $11 == "TRUE" {print $0}' /scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_eqtlgen.tsv \
+    > output/coloc_asthma_eqtlgen.tsv
+
+ awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_eqtlgen.tsv \
+    > output/colocsusie_asthma_eqtlgen.tsv
 
 #gtex converted in gene symbol:
 #https://www.biotools.fr/human/ensembl_symbol_converter
@@ -230,3 +241,82 @@ Rscript src/coloc/004_concat_coloc_results_chr3_50024027.R
 #eqtlGen: There is a colocalisation for RBM6:
 #nsnps	hit1	hit2	PP.H0.abf	PP.H1.abf	PP.H2.abf	PP.H3.abf	PP.H4.abf	idx1	idx2	snp	n_index	pheno	gene	tissue	coloc_susie
 #1384	0	0	3.352464447545198e-4	0.10008140361218355	0.899583349943249	SA	3_50024027_C_CA	RBM6	eqtlGenWB	FALSE
+
+###UBCLung eQTL###
+mkdir ${tmp_path}/results/ubclung
+mkdir ${tmp_path}/ubclung
+dos2unix src/coloc_UBClung/*
+chmod +x src/coloc_UBClung/*
+for c in ${!cs[*]}; do
+
+  sbatch --export=CREDSET="${cs[c]}" ./src/coloc_UBClung/000_submit_lookup_lung_eQTL.sh
+
+done
+
+
+##Get the LD matrix:
+##Create the file with gtex-locus pairs:
+dos2unix src/coloc_UBClung/002_prepare_LDinput_ubclung.R
+chmod +x src/coloc_UBClung/002_prepare_LDinput_ubclung.R
+Rscript src/coloc_UBClung/002_prepare_LDinput_ubclung.R "UBCLung"
+
+##Get LD:
+#with parameters for UBCLung
+sbatch src/coloc/002_get_LD.sh
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-1250380.out
+
+##Create UBCLung eQTL regional data from eQTL summary stats:
+mkdir ${tmp_path}/ubclung/eQTL_region_stat/
+module load tabix
+lung_eQTL="/data/gen1/reference/lung_eQTL"
+
+for c in ${!cs[@]}
+    do
+      CREDSET="${cs[c]}"
+      read chr < <(echo $CREDSET | awk -F "_" '{print $2}')
+      read pos < <(echo $CREDSET | awk -F "_" '{print $3}')
+      pos1=`expr $pos - 1000000`
+      pos2=`expr $pos + 1000000`
+      if (( pos1 < 0 )); then
+          pos1=0
+      fi
+      tabix -h ${lung_eQTL}/METAANALYSIS_Laval_UBC_Groningen_chr${chr}_formatted.txt.gz ${chr}:${pos1}-${pos2} > ${tmp_path}/ubclung/eQTL_region_stat/${CREDSET}_eQTL_region.txt
+done
+
+##Run colocalisation:
+dos2unix src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh
+dos2unix src/coloc_UBClung/003_run_coloc_susie_lung_eQTL.r
+chmod +x src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh
+chmod +x src/coloc_UBClung/003_run_coloc_susie_lung_eQTL.r
+
+for c in ${!cs[*]}; do
+
+  N=`cat ${tmp_path}/ubclung/${cs[c]}_UBCLung_probesets.txt | wc -l`
+
+  sbatch --array=1-${N}%20 --export=CREDSET="${cs[c]}" ./src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh
+
+ sleep 5
+
+done
+
+######QUALITY CHECKS:
+#to find number of genes: 14
+wc -l ${tmp_path}/ubclung/SA_*_UBCLung_probesets.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
+##Check that all genes for each tissue have been analysed:
+grep "UBClung" ${tmp_path}/logerror/coloc_susie_UBCLung*.out | awk -F ":" '{print $1}' | sort -u | wc -l
+
+##Check how many genes per tissue have been analysed for colocalisation:
+ls -lthr  ${tmp_path}/results/ubclung/*all_coloc.rds | grep "ubclung" | wc -l
+ls -lthr ${tmp_path}/results/ubclung/*all_susie*.rds | grep "UBCLung" | wc -l
+
+
+#Find statistically significant colocalisation results for UBCLung, and add results into var2gene_raw.xlsx:
+#R gave error for xlsx and Java, so I find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
+Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
+
+awk 'NR ==1; $13 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_ubclung.tsv \
+    > output/coloc_asthma_ubclung.tsv
+#no TRUE colocsusie resutls for UBCLung
+
+#Added genes into Var_to_Gene/input/var2genes_raw_chr3_49524027_50524027_rs77880169.xlsx file :
+#The only gene for colocalisation among the three method is RBM6 from ubclung.
