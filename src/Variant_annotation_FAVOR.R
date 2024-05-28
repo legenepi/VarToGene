@@ -17,8 +17,8 @@ suppressMessages(library(VennDiagram))
 library(RColorBrewer)
 
 #args <- commandArgs(T)
-#favor_file <- args[1]
-favor_file <- "/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/FAVOR_credset_chrpos38_2023_08_08.csv"
+favor_file <- args[1]
+#favor_file <- "/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/FAVOR_credset_chrpos38_2023_08_08.csv"
 favor <- fread(favor_file)
 
 favor.digest <- favor %>% select("Variant (VCF)", "Chromosome", "Position", "rsID", "Genecode Comprehensive Category",
@@ -79,7 +79,7 @@ sentinel_b38_NG$Nearest_gene[8] <- "IL33"
 sentinel_b38_NG$Nearest_gene[9] <- "IL1RL1"
 sentinel_b38_NG$Nearest_gene[16] <- "HLA-DQA1"
 sentinel_b38_NG$Nearest_gene[17] <- "AC044784.1"
-fwrite(sentinel_b38_NG,"output/PIP_sentinels_nearestgenes",sep="\t",quote=F)
+fwrite(sentinel_b38_NG,paste0("output/PIP_sentinels_nearestgenes",region),sep="\t",quote=F)
 nearest_gene <- unique(unlist(strsplit(sentinel_b38_NG$Nearest_gene,",")))
 
 #Categorical annotation:
@@ -96,7 +96,7 @@ summary(as.factor(favor.digest$"Genecode.Comprehensive.Exonic.Info"))
 fantom5 <- favor.digest %>% filter(!is.na(CAGE.Promoter) | !is.na(CAGE.Enhancer))
 fantom5_genes <- unique(fantom5$Genecode.Comprehensive.Info)
 fantom5_df <- fantom5 %>% select(Chromosome, Position, "Genecode.Comprehensive.Info", CAGE.Promoter, CAGE.Enhancer) %>% rename(Nearest_gene="Genecode.Comprehensive.Info")
-fwrite(fantom5_df,"output/fnc_annot_fantom5",sep="\t",quote=F,row.names=F)
+fwrite(fantom5_df,paste0("output/fnc_annot_fantom5",sep="\t",region)quote=F,row.names=F)
 
 
 #Functional integrative score:
@@ -130,13 +130,13 @@ dev.off()
 inscores.aPCs_df <- inscores %>% select(Chromosome, Position, Genecode.Comprehensive.Info, "CADD.phred","aPC.Protein.Function", "aPC.Conservation","aPC.Epigenetics.Active",
                                       "aPC.Epigenetics.Repressed","aPC.Epigenetics.Transcription","aPC.Local.Nucleotide.Diversity",
                                       "aPC.Mutation.Density", "aPC.Transcription.Factor", "aPC.Mappability")
-fwrite(inscores.aPCs_df,"output/fnc_annot_inscores",sep="\t",quote=F,row.names=F)
+fwrite(inscores.aPCs_df,paste0("output/fnc_annot_inscores",sep="\t",region),quote=F,row.names=F)
 
 #Clinical annotation:
 clinvar <- favor.digest %>% filter(!is.na(Clinical.Significance))
 clin_genes <- unique(clinvar$Gene.Reported)
 clinvar_df <- clinvar %>% select(Chromosome, Position, Clinical.Significance, Gene.Reported)
-fwrite(clinvar_df,"output/fnc_annot_clinvar",sep="\t",quote=F,row.names=F)
+fwrite(clinvar_df,paste0("output/fnc_annot_clinvar",sep="\t",region),quote=F,row.names=F)
 
 #Genes from Variant Annotation:
 #fantom5_genes, inscores_genes, clin_genes
@@ -154,44 +154,6 @@ inscores_genes <- unlist(strsplit(inscores_genes, ';', fixed=TRUE))
 clin_genes <- unlist(strsplit(clin_genes, '|', fixed=TRUE))
 clin_genes <- gsub(":.*", "", clin_genes) %>% unique()
 
-
-##Venn diagram to visualise overlap:
-myCol <- brewer.pal(3, "Pastel2")
-
-# Chart
-venn.diagram(
-        x = list(fantom5_genes, inscores_genes, clin_genes),
-        category.names = c("fantom5" , "inscores" , "clin"),
-        filename = '/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/FAVOR_venn_diagramm_genes.png',
-        output=TRUE,
-
-        # Output features
-        imagetype="png" ,
-        height = 520 ,
-        width = 650 ,
-        resolution = 400,
-        compression = "lzw",
-
-        # Circles
-        lwd = 2,
-        lty = 'blank',
-        fill = myCol,
-
-        # Numbers
-        cex = .3,
-        fontface = "bold",
-        fontfamily = "sans",
-
-        # Set names
-        cat.cex = 0.3,
-        cat.fontface = "bold",
-        cat.default.pos = "outer",
-        cat.fontfamily = "sans",
-        rotation = 1
-)
-
-varannot_genes <- list(unique(c(fantom5_genes,inscores_genes,clin_genes)))
-
 #Save the genes:
-fwrite(as.data.frame(nearest_gene),"input/nearest_genes_raw",row.names=FALSE, col.names=FALSE,quote=F)
-write.xlsx(varannot_genes,"/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw.xlsx",sheetName = "varannot_genes", row.names=FALSE, col.names=FALSE)
+fwrite(as.data.frame(nearest_gene),paste0("input/nearest_genes_raw",region),row.names=FALSE, col.names=FALSE,quote=F)
+write.xlsx(varannot_genes,paste0("/alice-home/3/n/nnp5/PhD/PhD_project/Var_to_Gene/input/var2genes_raw",region,".xlsx"),sheetName = "varannot_genes", row.names=FALSE, col.names=FALSE)

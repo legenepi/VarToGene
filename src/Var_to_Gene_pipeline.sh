@@ -177,7 +177,7 @@ Rscript src/coloc/002_prepare_LDinput_eqtlgen.R "eqtlGenWB"
 sbatch src/coloc/002_get_LD.sh
 ##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-170767.out
 
-##Run the colocalisation for GTExV8:
+##Run the colocalisation for eQTlGen:
 #.sh will run .R script:
 mkdir ${tmp_path}/results/eqtlgen
 dos2unix src/coloc/003_submit_coloc_susie_eQTLGen.sh

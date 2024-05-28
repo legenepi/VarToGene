@@ -23,7 +23,8 @@ print(start)
 print(end)
 print(chr)
 print(snp_lead)
-df <- fread("/scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot/gwas_credset_annot") %>% select(-snpid)
+#cp /scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot/gwas_credset_annot input/gwas_credset_annot
+df <- fread("input/gwas_credset_annot") %>% select(-snpid)
 df <- df %>% mutate(snpid = paste0(chromosome,"_",posb37,"_",pmin(a1,a2),"_",pmax(a1,a2)))
 df_sugg <- df %>% filter(pval <= 0.000005)
 r2 <- fread(r2_file) %>% select(CHR_B,BP_B,SNP_B,R2)
@@ -44,7 +45,7 @@ annot_r2 <- df_r2 %>% ggplot(aes(posb37, logP, shape = Functional_annotation, co
   geom_point(size=2) +
   scale_shape_manual(values=c("downstream"=15, "exonic"=16, "intergenic"=17, "intronic"=18, "ncRNA_exonic"=19, "ncRNA_intronic"=10, "unknown"=11,"upstream;downstream"=12, "UTR3"=13, "UTR5"=14)) +
   geom_point(data=df_r2[df_r2$credset==1,], pch=21, fill=NA, size=4, colour="red", stroke=1, alpha=0.5) +
-  geom_text(aes(label=ifelse(R2>0.95,as.character(snpid),'')),hjust=0,vjust=0,size=2.5,colour="black") +
+  #geom_text(aes(label=ifelse(R2>0.95,as.character(snpid),'')),hjust=0,vjust=0,size=2.5,colour="black") + #the rsid names create messy plot - removed it
   theme_minimal() +
   theme(legend.position = "right") + sc +
   ggtitle(paste0(locus_ggtitle," (snp lead:", snp_lead,")")) + theme(plot.title = element_text(hjust=0.5)) + xlim(start,end) + ylab("-log10(pvalue)")

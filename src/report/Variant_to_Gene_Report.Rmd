@@ -367,7 +367,16 @@ Out of the 98 genes, 23 genes were supported by at least 2 criteria (Figure 2):
 knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/V2G_heatmap_subplots.png")
 ```
 
-## Locus-to-gene
+# Update - Variant-to-gene on chromosome 3, region 49524027 50524027 (rs778801698)
+src/Var_to_Gene_pipeline_chr3_rs778801698.sh
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Var_to_Gene_pipeline_chr3_rs778801698.sh'), eval=FALSE, hide=TRUE}
+```
+src/coloc/004_concat_coloc_results_chr3_50024027.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/004_concat_coloc_results_chr3_50024027.R'), eval=FALSE, hide=TRUE}
+```
+
+
+# Locus-to-gene
 A separate folder with region plots for each locus has been provided along with this report.
 <br>
 The represented genomic region shows a window of +/- 1Mb from the sentinel variant, defined as the SNP with the highest posterior inclusion probability.

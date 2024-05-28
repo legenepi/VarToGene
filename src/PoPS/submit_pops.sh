@@ -20,9 +20,19 @@ python ${popsdir}/pops/pops.feature_selection.py \
 	  --out ${tmp_path}/pops/SA \
 
 #for i in {1..22}
-#for chr3 rs778801698
+#i=3
+#    python ${popsdir}/pops/pops.predict_scores.py \
+#	    --gene_loc ${popsdir}/data/gene_loc.txt \
+#	    --gene_results ${tmp_path}/pops/SA \
+#	    --features ${popsdir}/data/PoPS.features.txt.gz \
+#	    --selected_features  ${tmp_path}/pops/SA.features \
+#	    --control_features ${popsdir}/data/control.features \
+#	    --chromosome ${i} \
+#	    --out ${tmp_path}/pops/SA
+#done
+
+
 i=3
-do
     python ${popsdir}/pops/pops.predict_scores.py \
 	    --gene_loc ${popsdir}/data/gene_loc.txt \
 	    --gene_results ${tmp_path}/pops/SA \
@@ -31,4 +41,3 @@ do
 	    --control_features ${popsdir}/data/control.features \
 	    --chromosome ${i} \
 	    --out ${tmp_path}/pops/SA
-done

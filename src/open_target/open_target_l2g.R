@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+TO BE FINISHED !
+
 #Rationale: Use the locus2gene pipeline of OpenTarget to query 10 asthma studies published btw 2018-2023 and the fine-mapped
 #sentinel variants found by our severe asthma GWAS. Output: L2G genes from these 10 studies.
 

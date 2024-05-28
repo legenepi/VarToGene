@@ -16,12 +16,16 @@ library(tidyverse)
 #sig_list <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset.txt")
 #chr 3 rs778801698:
 sig_list <- fread("/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt")
+region <- "chr3_49524027_50524027_rs778801698"
 setnames(sig_list,"chromosome","chr")
 setnames(sig_list,"position","pos")
 sig_list$sentinel <- paste0(sig_list$chr,"_",sig_list$pos,"_",sig_list$allele1,"_",sig_list$allele2)
 locus <- unique(sig_list$locus)
 gene_loc <- fread("/data/gen1/LF_HRC_transethnic/PoPS/data/gene_loc.txt")
 gene_features <- fread("/data/gen1/LF_HRC_transethnic/PoPS/data/PoPS.features.txt.gz")
+
+#chr3:
+locus <- sig_list %>% filter(locus == "3_rs778801698_49524027_50524027") %>% select(locus) %>% unique()
 
 ##### sentinel 500 kb total window #####
 result <- data.frame(matrix(ncol = 16,nrow = 0))
@@ -86,12 +90,12 @@ for(i in locus){
 }
 names(result) <- c("ENSGID","sentinel","PoPS_score","signal_id","gene_rank","prioritized","Feature1","Feature2","Feature3","Feature4","Feature5","Feature6","Feature7","Feature8","Feature9","Feature10")
 result <- result[order(signal_id,gene_rank)]
-write.table(result,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_250kb_window.txt", row.names=F, quote=F, sep="\t")
+write.table(result,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/",region,"all_result_summary_250kb_window.txt"), row.names=F, quote=F, sep="\t")
 #save results for only prioritised genes:
-write.table(result[gene_rank==1,],"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/prioritized_genes_250kb_window.txt", row.names=F, quote=F, sep="\t")
+write.table(result[gene_rank==1,],paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/",region,"prioritized_genes_250kb_window.txt"), row.names=F, quote=F, sep="\t")
 #save prioritised genes only:
 genes_250 <- unique(result %>% filter(gene_rank == 1) %>% select(ENSGID))
-write.table(genes_250,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/pops_var2genes_raw_250kbwindow.txt", row.names=F, quote=F, sep="\t", col.names=F)
+write.table(genes_250,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/",region,"pops_var2genes_raw_250kbwindow.txt"), row.names=F, quote=F, sep="\t", col.names=F)
 #two locus not present when looking at 500kb total window:
 #10_rs201499805_rs1444789_8542744_9564361 and 15_rs11071559_60569988_61569988
 
@@ -158,11 +162,11 @@ for(i in locus){
 }
 names(result) <- c("ENSGID","sentinel","PoPS_score","signal_id","gene_rank","prioritized","Feature1","Feature2","Feature3","Feature4","Feature5","Feature6","Feature7","Feature8","Feature9","Feature10")
 result <- result[order(signal_id,gene_rank)]
-write.table(result,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_500kb_window.txt", row.names=F, quote=F, sep="\t")
-write.table(result[gene_rank==1,],"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/prioritized_genes_500kb_window.txt", row.names=F, quote=F, sep="\t")
+write.table(result,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/",region,"all_result_summary_500kb_window.txt"), row.names=F, quote=F, sep="\t")
+write.table(result[gene_rank==1,],paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/",region,"prioritized_genes_500kb_window.txt"), row.names=F, quote=F, sep="\t")
 #save prioritised genes only:
 genes_500 <- unique(result %>% filter(gene_rank == 1) %>% select(ENSGID))
-write.table(genes_500,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/pops_var2genes_raw_500kbwindow.txt", row.names=F, quote=F, sep="\t", col.names=F)
+write.table(genes_500,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/",region,"pops_var2genes_raw_500kbwindow.txt"), row.names=F, quote=F, sep="\t", col.names=F)
 #locus 15_rs11071559_60569988_61569988 reveals a gene !
 
 ################# mapping features ###############
@@ -180,7 +184,7 @@ genes <- as_tibble(getBM(attributes=c('hgnc_symbol', 'ensembl_gene_id', 'strand'
 genes <- as.data.table(genes)
 setnames(genes,"ensembl_gene_id","ENSGID")
 merged <- merge(pops,genes,by="ENSGID")
-write.table(merged,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_250kb_window_gene_mapped.txt", row.names=F, quote=F, sep="\t")
+write.table(merged,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/",region,"all_result_summary_250kb_window_gene_mapped.txt"), row.names=F, quote=F, sep="\t")
 
 #500Kb window results
 pops <- fread("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/prioritized_genes_500kb_window.txt")
@@ -194,7 +198,7 @@ genes <- as_tibble(getBM(attributes=c('hgnc_symbol', 'ensembl_gene_id', 'strand'
 genes <- as.data.table(genes)
 setnames(genes,"ensembl_gene_id","ENSGID")
 merged <- merge(pops,genes,by="ENSGID")
-write.table(merged,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_result_summary_500kb_window_gene_mapped.txt", row.names=F, quote=F, sep="\t")
+write.table(merged,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/",region,"all_result_summary_500kb_window_gene_mapped.txt"), row.names=F, quote=F, sep="\t")
 
 detach("package:biomaRt", unload=TRUE)
 
@@ -207,8 +211,8 @@ w500_use <- w500[!sentinel%in%w250$sentinel,]
 merged <- rbind(w250,w500_use)
 merged <- merged[PoPS_score>0,]
 
-write.table(merged,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_results_merged_table.txt", row.names=F, quote=F, sep="\t")
+write.table(merged,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/",region,"all_results_merged_table.txt"), row.names=F, quote=F, sep="\t")
 
 #save final list of genes:
 genes <- unique(merged %>% select(gene_symbol))
-write.table(genes,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/pops_var2genes_raw.txt", row.names=F, quote=F, sep="\t")
+write.table(genes,paste0("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/pops_var2genes_raw_",region,".txt"), row.names=F, quote=F, sep="\t")

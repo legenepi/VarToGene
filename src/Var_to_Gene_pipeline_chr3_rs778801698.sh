@@ -315,8 +315,11 @@ ls -lthr ${tmp_path}/results/ubclung/*all_susie*.rds | grep "UBCLung" | wc -l
 Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
 
 awk 'NR ==1; $13 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_ubclung.tsv \
-    > output/coloc_asthma_ubclung.tsv
-#no TRUE colocsusie resutls for UBCLung
+    > output/coloc_asthma_ubclung_${region}.tsv
+
+awk '$13 == "TRUE" {print $14}' ${tmp_path}/results/coloc_asthma_ubclung.tsv \
+    > input/ubclung_gene_${region}.tsv
+
 
 #Added genes into Var_to_Gene/input/var2genes_raw_chr3_49524027_50524027_rs77880169.xlsx file :
 #The only gene for colocalisation among the three method is RBM6 from ubclung.
@@ -373,13 +376,14 @@ sbatch --array 0 src/pQTL_coloc/000_submit_lookup_ukbpqtl.sh
 #combine look-up ukb-pqtl files with Nick's script (from /data/gen1/UKBiobank/olink/pQTL/orion_pain):
 cd ${tmp_path}/ukb_pqtl/
 /home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/pQTL_coloc/001_combine_pqtl.awk *rs*/* \
-    > ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt
-cp ${tmp_path}/ukb_pqtl/lookup_ukbpqtl.txt output/lookup_ukbpqtl_${region}.txt
-cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene/ #of wherever the folder 'Var_to_Gene' is located
+    > ${tmp_path}/ukb_pqtl/lookup_ukbpqtl_${region}.txt
+cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene/
+cp ${tmp_path}/ukb_pqtl/lookup_ukbpqtl_${region}.txt output/lookup_ukbpqtl_${region}.txt
+ #of wherever the folder 'Var_to_Gene' is located
 #extract gene showing look-up results:
 awk 'NR > 1 {print $2}' ${tmp_path}/ukb_pqtl/lookup_ukbpqtl_${region}.txt | sort -u \
     > input/ukbpqtl_var2genes_raw_${region}
-
+#5 genes
 
 ###deCODE pQTL LOOK-UP###
 #Found this script of Nick for decode lookup (from /data/gen1/TSH/coloc_susie/lookup_decode.awk):
@@ -393,7 +397,7 @@ sbatch src/pQTL_coloc/000_submit_lookup_decode.sh
 #filter out gene name with significant pQTL:
 awk 'NR > 1 && $5 > 0 {print $1}' ${tmp_path}/decode_pqtl/log_pQTL_decode_analysis | sed 's/.txt//g' \
     > input/decode_pqtl_var2genes_raw_${region}
-
+#no results
 
 ###SCALLOP pQTL LOOK-UP###
 #From Chiara's script R:\TobinGroup\GWAtraits\Chiara\pQTL_SCALLOP and Nick's script scallop_lookup.awk
@@ -401,18 +405,13 @@ mkidr ${tmp_path}/scallop_pqtl
 #From Chiara and Nick script:
 sbatch src/pQTL_coloc/000_submit_lookup_scallop.sh
 #filter out gene name with significant pQTL:
-awk 'NR > 1 && $5 > 0 {print $1}' ${tmp_path}/scallop_pqtl/log_pQTL_SCALLOP_analysis | sed 's/.txt//g' \
+awk 'NR > 1 && $5 == 1 {print $1}' ${tmp_path}/scallop_pqtl/log_pQTL_SCALLOP_analysis | sed 's/.txt//g' \
     > input/scallop_pqtl_var2genes_raw_${region}
-
-##Chrom	Pos	MarkerName	Allele1	Allele2	Freq1	FreqSE	Effect	StdErr	P-value	Direction	TotalSampleSize Gene
-awk -F "\t" '$10 < 5e-8 {print $0, $13="CA-125"}' ${tmp_path}/scallop_pqtl/XX.txt \
-    > input/scallop_ukbpqtl_${region}.txt
-awk -F "\t" '$10 < 5e-8 {print $0, $13="ST2"}' ${tmp_path}/scallop_pqtl/XX.txt \
-    >> input/scallop_ukbpqtl_${region}.txt
+#no results
 
 
 #Merge genes from the different pQTL look-up analyses:
-cat input/ukbpqtl_var2genes_raw input/scallop_pqtl_var2genes_raw input/decode_pqtl_var2genes_raw \
+cat input/ukbpqtl_var2genes_raw_${region} input/scallop_pqtl_var2genes_raw_${region} input/decode_pqtl_var2genes_raw_${region} \
     | awk '{print $2="pQTL", $1}' > input/pqtl_lookup_genes_merged_${region}
 
 
@@ -489,3 +488,27 @@ Rscript src/Locus_to_genes_table.R
 Rscript src/genes_heatmap.R
 cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
+
+################
+#6 TABLES FOR EACH ANALYSIS AND MERGE GENES FOR GENE PRIORITISATION AND VISUALISATION
+################
+#TO NOTE: ONLY FOR
+#nearest gene
+#functional annotation
+#eQTL
+#mouse_KO
+#PoPS
+#pQTL
+#rare_disease
+#SINGLE AND GENE-BASED COLLAPSING ANALYSIS: no genes for variant-to-gene mapping, so I did not add them to this table
+Rscript src/Locus_to_genes_table.R
+Rscript src/genes_heatmap.R
+cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
+cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
+
+################
+#7 REGION PLOTS WITH VAR2GENE RESULTS
+################
+#bash Region_plot_V2G.sh
+#Region_plot_V2G.R
+#Region_plot_V2G_2.R

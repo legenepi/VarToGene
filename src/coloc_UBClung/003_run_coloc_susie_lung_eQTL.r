@@ -169,6 +169,8 @@ eqtlGWAS$N = N
 ############################
 # Check datasets are ok
 ############################
+eqtlGWAS$MAF <- as.numeric(eqtlGWAS$MAF)
+GWAS$MAF <- as.numeric(GWAS$MAF)
 check_dataset(eqtlGWAS, req="LD") -> eqtlGWAS_check
 check_dataset(GWAS, req="LD") -> GWAS_check
 

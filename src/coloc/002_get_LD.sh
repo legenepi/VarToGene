@@ -19,12 +19,12 @@ module load R
 #DIR="/scratch/gen1/nnp5/Var_to_Gen_tmp"
 
 #For eqtlGen:
-pairs_lookup_file="/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen/eqtlGenWB_Pairs_lookup.txt"
-DIR="/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen"
+#pairs_lookup_file="/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen/eqtlGenWB_Pairs_lookup.txt"
+#DIR="/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen"
 
 #For UBCLung:
-#pairs_lookup_file="/scratch/gen1/nnp5/Var_to_Gen_tmp/ubclung/UBCLung_Pairs_lookup.txt"
-#DIR="/scratch/gen1/nnp5/Var_to_Gen_tmp/ubclung"
+pairs_lookup_file="/scratch/gen1/nnp5/Var_to_Gen_tmp/ubclung/UBCLung_Pairs_lookup.txt"
+DIR="/scratch/gen1/nnp5/Var_to_Gen_tmp/ubclung"
 
 cd ${DIR}
 
