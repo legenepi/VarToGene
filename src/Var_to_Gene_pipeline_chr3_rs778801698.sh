@@ -489,11 +489,48 @@ Rscript src/Locus_to_genes_table_chr3_rs778801698.R
 Rscript src/genes_heatmap.R
 cp src/report/var2gene_full_3_rs778801698_49524027_50524027.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 cp output/V2G_heatmap_subplots_chr3_noMHC.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
+cp output/v2g_gene_prioritisation_chr3_noMHC.txt /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 
 
 ################
 #7 REGION PLOTS WITH VAR2GENE RESULTS
 ################
-#bash Region_plot_V2G.sh
+awk -F "," '{print $1, $2, $3, $8, $9, $10, $11, $12}' input/FAVOR_credset_chrpos38_2024_05_14_${region}.txt.csv \
+    > ${tmp_path}/digest_FAVOR_credset_chrpos38_2024_05_14_${region}.txt
+
+##Calculate R2 with respect to variant with highest PIP in each locus:
+##Use the 10,000 European ancestry individuals in /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB:
+##find all credible set variants in EUR_UKB by chr and pos (alleles can be flipped):
+awk '{print $3"_"$4"_"}' /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt | \
+    grep -F -f - /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr3_EUR_selected_nodups.bim | \
+    awk '{print $2}' > ${tmp_path}/cs_variants_EUR_UKB_${region}
+
+##find the sentinel SNP in EUR_UKB by chr and pos (alleles can be flipped):
+grep "3_50024027_" /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr3_EUR_selected_nodups.bim | \
+    awk '{print $2}' > ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region}
+
+line=1
+SNP=$(awk -v row="$line" ' NR == row {print $0 } ' ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region})
+chr=$(awk -F "_" -v row="$line" ' NR == row {print $1 } ' ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region})
+SNP_tmp=$(awk -F "_" -v row="$line" ' NR == row {print $1"_"$2 } ' ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region})
+start=$(grep ${SNP_tmp}"_" input/highest_PIP_sentinels | awk '{print $1}' | awk -F "_" '{print $(NF-1)}')
+end=$(grep ${SNP_tmp}"_" input/highest_PIP_sentinels | awk '{print $1}' | awk -F "_" '{print $(NF)}')
+
+#create R2 according to leading p-value:
+#Calculate R2 with respect to the leading SNP:
+module unload plink2/2.00a
+module load plink
+start="49524027"
+end="50524027"
+
+plink --bfile /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr${chr}_EUR_selected_nodups \
+    --chr ${chr} --from-bp ${start} --to-bp ${end} \
+    --allow-no-sex --r2 inter-chr --ld-snp ${SNP} --ld-window-r2 0 \
+    --out ${tmp_path}/${SNP}_${start}_${end}_ld_file
+
+to be finished with the two regionlot scripts
 #Region_plot_V2G.R
 #Region_plot_V2G_2.R
+
+#how many evidence for each gene?
+awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation_chr3_noMHC.txt| sort | uniq -c | sort -k1 -r
