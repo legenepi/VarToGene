@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 
 #Rationale: visualisation of genes prioritised from all analyses
+#NB: add genes related to chr 3 rs778801698 and delete genes of the MHC region.
 
 library(scales)
 library(tidyverse)
@@ -23,12 +24,47 @@ mouseko <- read_excel(genes_raw, sheet = "Mouseko_genes",col_names = "gene")
 mouseko$evidence <- as.factor("mouse_KO")
 raredis <- read_excel(genes_raw, sheet = "Raredisease_genes",col_names = "gene")
 raredis$evidence <- as.factor("rare_disease")
-
 #merge:
 v2g_full <- rbind(nearest_gene,annotation,eqtl,pqtl,pops,mouseko,raredis)
 #Rename ILRL1 and ST2 into unique name: "IL1RL1/ST2"
 v2g_full$gene <- sub("^IL1RL1$","IL1RL1/ST2",v2g_full$gene)
 v2g_full$gene <- sub("^ST2$","IL1RL1/ST2",v2g_full$gene)
+#genes with mhc and without chr3:
+length(unique(v2g_full$gene))
+
+#chr3:
+genes_raw_chr3 <- "input/var2genes_raw_chr3_49524027_50524027_rs77880169.xlsx"
+nearest_gene_chr3 <- read_excel(genes_raw_chr3, sheet = "nearest_genes",col_names = "gene")
+nearest_gene_chr3$evidence <- "nearest"
+annotation_chr3 <- read_excel(genes_raw_chr3 , sheet = "varannot_genes",col_names = "gene")
+annotation_chr3$evidence <- as.factor("func_annot")
+eqtl_chr3 <- read_excel(genes_raw_chr3, sheet = "eQTL_genes_merge",col_names = "gene")
+eqtl_chr3$evidence <- "eQTL"
+pqtl_chr3 <- read_excel(genes_raw_chr3, sheet = "pQTL_genes_merge",col_names = "gene")
+pqtl_chr3$evidence <- "pQTL"
+pops_chr3 <- read_excel(genes_raw_chr3, sheet = "PoPS_genes",col_names = "gene")
+pops_chr3$evidence <- as.factor("PoPS")
+mouseko_chr3 <- read_excel(genes_raw_chr3, sheet = "Mouseko_genes",col_names = "gene")
+mouseko_chr3$evidence <- as.factor("mouse_KO")
+raredis_chr3 <- read_excel(genes_raw_chr3, sheet = "Raredisease_genes",col_names = "gene")
+raredis_chr3$evidence <- as.factor("rare_disease")
+#merge:
+v2g_full_chr3 <- rbind(nearest_gene_chr3,annotation_chr3,eqtl_chr3,pqtl_chr3,pops_chr3,mouseko_chr3,raredis_chr3)
+#genes chr3:
+length(unique(v2g_full_chr3$gene))
+
+#merge previous results with chr3 results:
+v2g_full <- rbind(v2g_full, v2g_full_chr3)
+#genes with mhc and with chr3:
+length(unique(v2g_full$gene))
+
+#delete genes of MHC region:
+mhc_locus_gene <- read_excel("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/report/var2gene_full.xlsx", sheet = "Sheet1") %>%
+                  filter(locus == "6_rs9271365_32086794_33086794")
+mhc_genes <- unique(gsub("\\(.*", "",mhc_locus_gene$gene))
+v2g_full <- v2g_full %>% filter(! gene %in% mhc_genes)
+#genes without mhc and with chr3:
+length(unique(v2g_full$gene))
 
 #table with all the possible combination:
 v2g_full_combination <- unique(expand.grid(x = v2g_full$gene, y = v2g_full$evidence, KEEP.OUT.ATTRS = TRUE)) %>% arrange(x)
@@ -46,10 +82,10 @@ setnames(v2g_full_combination, "rn", "gene")
 # reshape your data
 v2g_full_combination2 <- melt(v2g_full_combination, id.var = "gene")
 length(unique(v2g_full_combination2$gene))
-fwrite(v2g_full_combination2,"./output/v2g_gene_prioritisation.txt",sep="\t",quote=F)
+fwrite(v2g_full_combination2,"./output/v2g_gene_prioritisation_chr3_noMHC.txt",sep="\t",quote=F)
 
 # Plot
-##use this to find which colour I want: fro the pie, I extract the index for the colour I want:
+##use this to find which colour I want: for the pie, I extract the index for the colour I want:
 ##everytime it changes, so I noted down the actual code of the colour: ##18: col[18] #9EBCDA
 #n <- 30
 #colrs <- brewer.pal.info[brewer.pal.info$colorblind == TRUE, ]
@@ -72,14 +108,14 @@ fc_heatmap_all <- function(df,x_val,y_val,fill_val) {
       }
 
 
-#Split plot into 7 plots of 14 genes each:
+#Split plot into 3 plots of 37 genes each (tot of 111 genes):
 test <- v2g_full_combination2 %>%
     arrange(gene, variable) %>%
     group_by() %>%
-    mutate(facet=c(rep(7, ceiling(n()/7)),rep(6, ceiling(n()/7)),rep(5, ceiling(n()/7)),rep(4, ceiling(n()/7)),rep(3, ceiling(n()/7)),rep(2, ceiling(n()/7)), rep(1, floor(n()/7)))) %>%
+    mutate(facet=c(rep(3, ceiling(n()/3)),rep(2, ceiling(n()/3)),rep(1, ceiling(n()/3)))) %>%
     ungroup
 
-png("./output/V2G_heatmap_subplots.png", width=1000, height = 950)
+png("./output/V2G_heatmap_subplots_chr3_noMHC.png", width=1000, height = 950)
 fc_heatmap_all(test,test$variable,test$gene,test$value) + facet_wrap(~facet, scales="free", ncol=3) +
         theme(strip.background = element_blank(), strip.text = element_blank(),
         axis.text.x=element_text(angle=75, vjust=0, hjust=0, face="bold"),

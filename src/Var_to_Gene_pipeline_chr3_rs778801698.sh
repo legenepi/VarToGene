@@ -430,6 +430,7 @@ bash PoPS.sh
 #if no top genes in +/- 250Kb, enlarge the window to +/-500Kb:
 Rscript src/PoPS/PoPS_summary.R
 
+#Put genes in the input/var2genes_raw_chr3_49524027_50524027_rs77880169.xlsx
 
 ################
 #3 NEARBY HUMAN ORTHOLOG MOUSE KO GENE
