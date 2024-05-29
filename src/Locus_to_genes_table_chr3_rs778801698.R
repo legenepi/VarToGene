@@ -85,7 +85,7 @@ credset_gwas_ukbpqtl2 <- credset_gwas_ukbpqtl %>% filter(!is.na(evidence))
 #No results
 
 ##PoPS:
-pops <- fread("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/all_results_merged_table.txt")
+pops <- fread("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/chr3_49524027_50524027_rs778801698all_results_merged_table.txt")
 pops <- pops %>% rename(locus=signal_id) %>% relocate(gene_symbol, .before = ENSGID)
 pops$evidence <- as.factor("pops")
 credset_gwas_pops <- credset_gwas %>% left_join(pops, by=c("locus","sentinel"))
@@ -124,7 +124,7 @@ v2g_all <- credset_gwas_ubclung2 %>%
            full_join(credset_gwas_ukbpqtl2,by=col_for_join) %>%
            full_join(credset_gwas_raredis2,by=col_for_join) %>%
            full_join(credset_gwas_mko2,by=col_for_join) %>%
-           #full_join(credset_gwas_pops2,by=col_for_join) %>%
+           full_join(credset_gwas_pops2,by=col_for_join) %>%
            select(all_of(col_for_join)) %>% arrange(chr,posb37,locus,gene,evidence) %>% unique()
 
 v2g_minimal <- v2g_all %>% select(locus,snpid,chr,posb37,gene) %>% select(locus,gene) %>% unique()
@@ -132,8 +132,6 @@ v2g_minimal <- v2g_all %>% select(locus,snpid,chr,posb37,gene) %>% select(locus,
 #Save each results for each analysis into a tables to populate a xlsx file:
 df_list <- list(v2g_minimal,v2g_all,credset_gwas_ng2,fantom5_inscores_clinvar,credset_gwas_ubclung2,
 credset_gwas_ukbpqtl2,credset_gwas_raredis2,credset_gwas_mko2,credset_gwas_pops2)
-df_list <- list(v2g_minimal,v2g_all,credset_gwas_ng2,fantom5_inscores_clinvar,credset_gwas_ubclung2,
-credset_gwas_ukbpqtl2,credset_gwas_raredis2,credset_gwas_mko2)
 write_xlsx(df_list,path = "src/report/var2gene_full_3_rs778801698_49524027_50524027.xlsx", col_names = TRUE, format_headers = TRUE)
 
 ##Rare variant ExWAS: (Single rare-variant and Gene-collpasing rare variant): no genes/results form these analyses

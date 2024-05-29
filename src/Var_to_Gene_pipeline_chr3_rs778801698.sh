@@ -484,27 +484,11 @@ grep "3_" ${tmp_path}/rare_disease/results_chr3_noMHC_500kb_by_gene.csv > input/
 #pQTL
 #rare_disease
 #SINGLE AND GENE-BASED COLLAPSING ANALYSIS: no genes for variant-to-gene mapping, so I did not add them to this table
-Rscript src/Locus_to_genes_table.R
+Rscript src/Locus_to_genes_table_chr3_rs778801698.R
 Rscript src/genes_heatmap.R
-cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
-cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
+cp src/report/var2gene_full_3_rs778801698_49524027_50524027.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
+cp output/V2G_heatmap_subplots_chr3_noMHC.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 
-################
-#6 TABLES FOR EACH ANALYSIS AND MERGE GENES FOR GENE PRIORITISATION AND VISUALISATION
-################
-#TO NOTE: ONLY FOR
-#nearest gene
-#functional annotation
-#eQTL
-#mouse_KO
-#PoPS
-#pQTL
-#rare_disease
-#SINGLE AND GENE-BASED COLLAPSING ANALYSIS: no genes for variant-to-gene mapping, so I did not add them to this table
-Rscript src/Locus_to_genes_table.R
-Rscript src/genes_heatmap.R
-cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
-cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 
 ################
 #7 REGION PLOTS WITH VAR2GENE RESULTS

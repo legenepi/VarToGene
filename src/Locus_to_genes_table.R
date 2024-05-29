@@ -158,4 +158,6 @@ df_list <- list(v2g_minimal,v2g_all,credset_gwas_ng2,fantom5_inscores_clinvar,cr
 credset_gwas_ubclung2,credset_gwas_ukbpqtl2,credset_gwas_scallop2,credset_gwas_raredis2,credset_gwas_mko2,credset_gwas_pops2)
 write_xlsx(df_list,path = "src/report/var2gene_full.xlsx", col_names = TRUE, format_headers = TRUE)
 
+#Create input/var2gene_full_noMHC.xlsx manually
+
 ##Rare variant ExWAS: (Single rare-variant and Gene-collpasing rare variant): no genes/results form these analyses
