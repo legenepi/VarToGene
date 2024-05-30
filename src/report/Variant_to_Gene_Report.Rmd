@@ -367,7 +367,7 @@ Out of the 98 genes, 23 genes were supported by at least 2 criteria (Figure 2):
 knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/V2G_heatmap_subplots.png")
 ```
 
-# Update - Variant-to-gene on chromosome 3, region 49524027 50524027 (rs778801698)
+# Update - Variant-to-gene on chromosome 3, region 49524027-50524027 (rs778801698)
 src/Var_to_Gene_pipeline_chr3_rs778801698.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Var_to_Gene_pipeline_chr3_rs778801698.sh'), eval=FALSE, hide=TRUE}
 ```
@@ -383,7 +383,36 @@ src/Locus_to_genes_table_chr3_rs778801698.R
 src/Region_plot_V2G_chr3_rs778801698.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Region_plot_V2G_chr3_rs778801698.R'), eval=FALSE, hide=TRUE}
 ```
+# Updated Conclusion
+The variant-to-gene mapping from chr 3 region 49524027-50524027 (rs778801698) revealed 22 additional genes. Among these,
+RBM6 show four lines of evidence.
 
+Full variant-to-gene results available here for this locus:
+```{r echo=FALSE}
+xfun::embed_file('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/report/var2gene_full_3_rs778801698_49524027_50524027.xlsx')
+```
+<br>
+I also removed the nine genes in the MHC region. So, in conclusion, I obtained a total of 111 genes (98-9+22=111).
+<br>
+Among these 111 genes, 23 genes were supported by at least 2 criteria (Figure 2):
+
+ -  14 genes by two criteria: AC034102.4,AC034114.2,AC044784.1,AC116366.3,CACNA2D2,CAMK4,HDAC7,IKZF3,IL33,NR1D1,ORMDL3,PGAP3,PPP1R1B,SUOX
+
+ -  6 genes by three criteria: D2HGDH,IL4R,NSMCE1,RORA,RPS26,SMAD3
+
+ -  2 genes by four criteria: BACH2,RMB6
+
+ -  1 gene by five criteria: IL1RL1/ST2
+
+```{r, echo=FALSE, out.width = "110%", fig.align = "center"}
+knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/V2G_heatmap_subplots_chr3_noMHC.png")
+```
+<br>
+The combined results with previous loci, without MHC region and with the chr3 region 49524027-50524027 (rs778801698), can
+be found at:
+```{r echo=FALSE}
+xfun::embed_file('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/report/var2gene_full_noMHC_chr3.xlsx')
+```
 
 # Locus-to-gene
 A separate folder with region plots for each locus has been provided along with this report.
