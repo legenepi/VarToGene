@@ -37,7 +37,7 @@ awk '{print $1"-"$2}' input/hglft_genome_credset_vars_${region}.bed | sed 's/chr
 
 Rscript src/Variant_annotation_FAVOR_chr3.R \
     input/FAVOR_credset_chrpos38_2024_05_14_${region}.txt.csv ${region}
-
+cp input/FAVOR_credset_chrpos38_2024_05_14_${region}.txt.csv /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 #copy and paste the gene for FANTOM5-ClinVar-Integrative Functional Score in the varannot_gene sheet of input/var2genes_raw_chr3_49524027_50524027_rs778801698.xlsx"
 
 ################
@@ -503,7 +503,7 @@ awk -F "," '{print $1, $2, $3, $8, $9, $10, $11, $12}' input/FAVOR_credset_chrpo
 ##find all credible set variants in EUR_UKB by chr and pos (alleles can be flipped):
 awk '{print $3"_"$4"_"}' /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt | \
     grep -F -f - /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr3_EUR_selected_nodups.bim | \
-    awk '{print $2}' > ${tmp_path}/cs_variants_EUR_UKB_${region}
+    awk '{print $2}' > ${tmp_path}/regionalplot/cs_variants_EUR_UKB_${region}
 
 ##find the sentinel SNP in EUR_UKB by chr and pos (alleles can be flipped):
 grep "3_50024027_" /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr3_EUR_selected_nodups.bim | \
@@ -512,25 +512,27 @@ grep "3_50024027_" /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_ch
 line=1
 SNP=$(awk -v row="$line" ' NR == row {print $0 } ' ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region})
 chr=$(awk -F "_" -v row="$line" ' NR == row {print $1 } ' ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region})
-SNP_tmp=$(awk -F "_" -v row="$line" ' NR == row {print $1"_"$2 } ' ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region})
-start=$(grep ${SNP_tmp}"_" input/highest_PIP_sentinels | awk '{print $1}' | awk -F "_" '{print $(NF-1)}')
-end=$(grep ${SNP_tmp}"_" input/highest_PIP_sentinels | awk '{print $1}' | awk -F "_" '{print $(NF)}')
+start="49524027"
+end="50524027"
 
 #create R2 according to leading p-value:
 #Calculate R2 with respect to the leading SNP:
 module unload plink2/2.00a
 module load plink
-start="49524027"
-end="50524027"
+
 
 plink --bfile /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr${chr}_EUR_selected_nodups \
     --chr ${chr} --from-bp ${start} --to-bp ${end} \
     --allow-no-sex --r2 inter-chr --ld-snp ${SNP} --ld-window-r2 0 \
     --out ${tmp_path}/${SNP}_${start}_${end}_ld_file
 
-to be finished with the two regionlot scripts
-#Region_plot_V2G.R
-#Region_plot_V2G_2.R
+Rscript src/Region_plot_V2G_chr3_rs778801698.R
+
+Rscript src/Region_plot_V2G_2.R \
+    ${tmp_path}/${SNP}_${start}_${end}_ld_file.ld \
+    ${chr}_${SNP}_${start}_${end} \
+    output/region_plots_V2G/rp_v2g_${chr}_${SNP}_${start}_${end}.pdf \
+    ${start} ${end} ${chr} ${SNP}
 
 #how many evidence for each gene?
 awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation_chr3_noMHC.txt| sort | uniq -c | sort -k1 -r

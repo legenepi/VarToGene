@@ -371,8 +371,17 @@ knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/V2G_hea
 src/Var_to_Gene_pipeline_chr3_rs778801698.sh
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Var_to_Gene_pipeline_chr3_rs778801698.sh'), eval=FALSE, hide=TRUE}
 ```
+src/Variant_annotation_FAVOR_chr3.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Locus_to_genes_table_chr3_rs778801698.R'), eval=FALSE, hide=TRUE}
+```
 src/coloc/004_concat_coloc_results_chr3_50024027.R
 ```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/coloc/004_concat_coloc_results_chr3_50024027.R'), eval=FALSE, hide=TRUE}
+```
+src/Locus_to_genes_table_chr3_rs778801698.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Locus_to_genes_table_chr3_rs778801698.R'), eval=FALSE, hide=TRUE}
+```
+src/Region_plot_V2G_chr3_rs778801698.R
+```{r, code = readLines('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/Region_plot_V2G_chr3_rs778801698.R'), eval=FALSE, hide=TRUE}
 ```
 
 

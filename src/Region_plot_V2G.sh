@@ -53,8 +53,8 @@ end=$(grep ${SNP_tmp}"_" input/highest_PIP_sentinels | awk '{print $1}' | awk -F
 
 Rscript src/Region_plot_V2G_2.R \
     ${PATH_TMP}/${SNP}_${start}_${end}_ld_file.ld \
-    output/region_plots_V2G/rp_v2g_${chr}_${SNP}_${start}_${end}.pdf \
     ${chr}_${SNP}_${start}_${end} \
+    output/region_plots_V2G/rp_v2g_${chr}_${SNP}_${start}_${end}.pdf \
     ${start} ${end} ${chr} ${SNP}
 
 done

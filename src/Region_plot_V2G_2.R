@@ -24,7 +24,10 @@ print(end)
 print(chr)
 print(snp_lead)
 #cp /scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot/gwas_credset_annot input/gwas_credset_annot
+#cp /scratch/gen1/nnp5/Var_to_Gen_tmp/regionalplot/gwas_credset_annot_chr3_49524027_50524027_rs778801698 input/gwas_credset_annot_chr3_49524027_50524027_rs778801698
 df <- fread("input/gwas_credset_annot") %>% select(-snpid)
+#if chr3 s778801698:
+df <- fread("input/gwas_credset_annot_chr3_49524027_50524027_rs778801698") %>% select(-snpid)
 df <- df %>% mutate(snpid = paste0(chromosome,"_",posb37,"_",pmin(a1,a2),"_",pmax(a1,a2)))
 df_sugg <- df %>% filter(pval <= 0.000005)
 r2 <- fread(r2_file) %>% select(CHR_B,BP_B,SNP_B,R2)
@@ -54,8 +57,9 @@ annot_r2 <- df_r2 %>% ggplot(aes(posb37, logP, shape = Functional_annotation, co
 ##Plot with functional annotation, R2 and gene location:
 #Treated the gene plot as a gantt chart plot !
 #prioritised genes and evidence:
-l2g <- read_excel("src/report/locus2gene.xlsx",sheet = "L2G_clean") %>% filter(grepl(end,locus)) %>% select(gene)
-
+#l2g <- read_excel("src/report/locus2gene.xlsx",sheet = "L2G_clean") %>% filter(grepl(end,locus)) %>% select(gene)
+#if chr3 rs778801698:
+l2g <- read_excel("src/report/locus2gene.xlsx",sheet = "L2G_clean_chr3_rs778801698") %>% filter(grepl(end,locus)) %>% select(gene) %>% unique()
 
 #This gene list is from the R package LocusZooms
 genes <- fread("/home/n/nnp5/software/LocusZooms/Gencode_GRCh37_Genes_UniqueList2021.txt")
@@ -81,4 +85,5 @@ plot_gantt_gene <- qplot(ymin = Start,
 
 
 plot_grid(annot_r2 + theme(legend.justification = c(0,1)), plot_gantt_gene + theme(legend.justification = c(0,1)), ncol=1, align='v', rel_heights = c(2,1))
-ggsave(locus, width = 50, height = 60, units = "cm")
+ggsave(locus_ggtitle, width = 80, height = 60, units = "cm")
+ggsave(locus_ggtitle, width = 50, height = 60, units = "cm")
