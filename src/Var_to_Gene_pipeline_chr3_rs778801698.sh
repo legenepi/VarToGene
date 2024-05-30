@@ -536,3 +536,6 @@ Rscript src/Region_plot_V2G_2.R \
 
 #how many evidence for each gene?
 awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation_chr3_noMHC.txt| sort | uniq -c | sort -k1 -r
+
+#Create table with no MHC and adding chr3 results: src/report/var2gene_full_chr3_noMHC.xlsx
+cp src/report/var2gene_full_noMHC_chr3.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
