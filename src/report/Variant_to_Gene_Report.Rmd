@@ -414,6 +414,19 @@ be found at:
 xfun::embed_file('/home/n/nnp5/PhD/PhD_project/Var_to_Gene/src/report/var2gene_full_noMHC_chr3.xlsx')
 ```
 
+# Update Sept 2024 - remove chromosome 3 region
+After the meta-analysis with 4 cohorts, we did not replicate the locus on chromosome 3, so we removed it from fine-mapping
+and variant-to-gene mapping. I also edited the nearest gene for locus 5_rs2188962_rs848_131270805_132496500 with sentinel 5_131885240_G_C:
+I checked on NCBI, it is an intronic variant of IL5, so the nearest gene is IL5 and I removed AC116366.3.
+<br>
+Here the results wihtout chromosome 3 and MHC locus: we obtained 89 genes. Nerest genes revealed 17 genes, functional annotation 36,
+eQTL 15, pQTL 6, PoPS 15, mouse knockout 28, rare disease 4. The genes supported by three or more lines of evidence were 8 genes:
+D2HGDH,IL4R,NSMCE1,RORA,RPS26,SMAD3,BACH2,IL1RL1/ST2.
+
+```{r, echo=FALSE, out.width = "110%", fig.align = "center"}
+knitr::include_graphics("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/output/V2G_heatmap_subplots_nochr3_noMHC.png")
+```
+
 # Locus-to-gene
 A separate folder with region plots for each locus has been provided along with this report.
 <br>
