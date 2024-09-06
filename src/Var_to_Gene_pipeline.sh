@@ -475,6 +475,9 @@ Rscript src/genes_heatmap.R
 cp output/V2G_heatmap_subplots.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 cp src/report/var2gene_full.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
 
+#89 genes, nochr3, no MHC - Enrichment analysis in STRING:
+awk -F "\t" '$7 < 0.001 {print}' src/report/STRING_enrichment_89gene_06092024.all.tsv > src/report/STRING_FDR001_06092024.txt
+
 ################
 #7 REGION PLOTS WITH VAR2GENE RESULTS
 ################
