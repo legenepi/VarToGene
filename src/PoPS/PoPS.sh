@@ -17,7 +17,7 @@ cd /home/n/nnp5/PhD/PhD_project/Var_to_Gene
 
 #Step 0: Generate gene-level association statistics as by MAGMA to have genes.out and genes.raw files:
 ##bfile and gene-annot: already downloaded with respect to TSH/lung function analysis - use the same.
-## pval: sumstats file from severe asthma GWAS as this:
+##pval: sumstats file from severe asthma GWAS as this:
 #SNP	p	N
 #rs147324274	0.9139	124358
 #rs369318156	0.4323	124358
