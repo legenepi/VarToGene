@@ -1,6 +1,13 @@
 #!/usr/bin/env Rscript
 
 #Rationale: Variant Annotation with FAVOR for additional credset SNPs March 2025.
+#To obtain FAVOR: first liftOver for b38, then online FAVOR:
+#liftOver online:
+#input/Additional_credset_snps_March2025/Credible_sets.xlsx
+#input/Additional_credset_snps_March2025/LiftOver_output_b38_additional_credset_snps.bed
+###use FAVOR webtool:
+#input/Additional_credset_snps_March2025/
+#https://favor.genohub.org/FAVOR_input_additional_credset_SNPs.txt
 
 sink(stderr())
 
