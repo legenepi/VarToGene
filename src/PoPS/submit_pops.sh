@@ -15,13 +15,13 @@ popsdir="/data/gen1/LF_HRC_transethnic/PoPS"
 module load python3
 #pip install --upgrade pytz
 
-python ${popsdir}/pops/pops.feature_selection.py \
-    --features ${popsdir}/data/PoPS.features.txt.gz \
-    --gene_results ${tmp_path}/pops/SA \
-	  --out ${tmp_path}/pops/SA \
+#python ${popsdir}/pops/pops.feature_selection.py \
+#    --features ${popsdir}/data/PoPS.features.txt.gz \
+#    --gene_results ${tmp_path}/pops/SA \
+#	  --out ${tmp_path}/pops/SA \
 
 #for i in {1..22}
-#i=3
+#do
 #    python ${popsdir}/pops/pops.predict_scores.py \
 #	    --gene_loc ${popsdir}/data/gene_loc.txt \
 #	    --gene_results ${tmp_path}/pops/SA \
@@ -45,14 +45,14 @@ python ${popsdir}/pops/pops.feature_selection.py \
 
 
 
-#for i in {2,5,6,8,9,10,11,12,15}
-#i=2
-#    python ${popsdir}/pops/pops.predict_scores.py \
-#	    --gene_loc ${popsdir}/data/gene_loc.txt \
-#	    --gene_results ${tmp_path}/pops/SA \
-#	    --features ${popsdir}/data/PoPS.features.txt.gz \
-#	    --selected_features  ${tmp_path}/pops/SA.features \
-#	    --control_features ${popsdir}/data/control.features \
-#	    --chromosome ${i} \
-#	    --out ${tmp_path}/pops/SA
-#done
+for i in {2,5,6,8,9,10,11,12,15}
+do
+    python ${popsdir}/pops/pops.predict_scores.py \
+	    --gene_loc ${popsdir}/data/gene_loc.txt \
+	    --gene_results ${tmp_path}/pops/SA \
+	    --features ${popsdir}/data/PoPS.features.txt.gz \
+	    --selected_features  ${tmp_path}/pops/SA.features \
+	    --control_features ${popsdir}/data/control.features \
+	    --chromosome ${i} \
+	    --out ${tmp_path}/pops/SA
+done

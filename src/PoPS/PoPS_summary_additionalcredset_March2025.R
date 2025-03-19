@@ -88,12 +88,12 @@ for(i in locus){
 }
 names(result) <- c("ENSGID","sentinel","PoPS_score","signal_id","gene_rank","prioritized","Feature1","Feature2","Feature3","Feature4","Feature5","Feature6","Feature7","Feature8","Feature9","Feature10")
 result <- result[order(signal_id,gene_rank)]
-write.table(result,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/"additional_credsetMarch2025_all_result_summary_250kb_window.txt"), row.names=F, quote=F, sep="\t")
+write.table(result,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_all_result_summary_250kb_window.txt", row.names=F, quote=F, sep="\t")
 #save results for only prioritised genes:
-write.table(result[gene_rank==1,],paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/"additional_credsetMarch2025_prioritized_genes_250kb_window.txt"), row.names=F, quote=F, sep="\t")
+write.table(result[gene_rank==1,],"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_prioritized_genes_250kb_window.txt", row.names=F, quote=F, sep="\t")
 #save prioritised genes only:
 genes_250 <- unique(result %>% filter(gene_rank == 1) %>% select(ENSGID))
-write.table(genes_250,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/"additional_credsetMarch2025_pops_var2genes_raw_250kbwindow.txt"), row.names=F, quote=F, sep="\t", col.names=F)
+write.table(genes_250,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_pops_var2genes_raw_250kbwindow.txt", row.names=F, quote=F, sep="\t", col.names=F)
 
 ##### sentinel 1 mb total window #####
 result <- data.frame(matrix(ncol = 16,nrow = 0))
@@ -160,17 +160,17 @@ for(i in locus){
 }
 names(result) <- c("ENSGID","sentinel","PoPS_score","signal_id","gene_rank","prioritized","Feature1","Feature2","Feature3","Feature4","Feature5","Feature6","Feature7","Feature8","Feature9","Feature10")
 result <- result[order(signal_id,gene_rank)]
-write.table(result,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/"additional_credsetMarch2025_all_result_summary_500kb_window.txt"), row.names=F, quote=F, sep="\t")
-write.table(result[gene_rank==1,],paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/"additional_credsetMarch2025_prioritized_genes_500kb_window.txt"), row.names=F, quote=F, sep="\t")
+write.table(result,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_all_result_summary_500kb_window.txt", row.names=F, quote=F, sep="\t")
+write.table(result[gene_rank==1,],"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_prioritized_genes_500kb_window.txt", row.names=F, quote=F, sep="\t")
 #save prioritised genes only:
 genes_500 <- unique(result %>% filter(gene_rank == 1) %>% select(ENSGID))
-write.table(genes_500,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/"additional_credsetMarch2025_pops_var2genes_raw_500kbwindow.txt"), row.names=F, quote=F, sep="\t", col.names=F)
+write.table(genes_500,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_pops_var2genes_raw_500kbwindow.txt", row.names=F, quote=F, sep="\t", col.names=F)
 
 ################# mapping features ###############
 # Get gene information using biomaRt for all genes
 library(biomaRt)         # Requires R/4.1.0
 #250Kb window results
-pops <- fread(paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/"additional_credsetMarch2025_prioritized_genes_500kb_window.txt"))
+pops <- fread("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_prioritized_genes_250kb_window.txt")
 ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl", version = "GRCh37")
 genes <- as_tibble(getBM(attributes=c('hgnc_symbol', 'ensembl_gene_id', 'strand'),
   filters=c('ensembl_gene_id'),
@@ -181,11 +181,11 @@ genes <- as_tibble(getBM(attributes=c('hgnc_symbol', 'ensembl_gene_id', 'strand'
 genes <- as.data.table(genes)
 setnames(genes,"ensembl_gene_id","ENSGID")
 merged <- merge(pops,genes,by="ENSGID")
-write.table(merged,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/"additional_credsetMarch2025_all_result_summary_250kb_window_gene_mapped.txt"), row.names=F, quote=F, sep="\t")
+write.table(merged,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_all_result_summary_250kb_window_gene_mapped.txt", row.names=F, quote=F, sep="\t")
 
 merged <- as.data.frame(merged[PoPS_score>0,])
-write.table(merged,paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/"additional_credsetMarch2025_all_results_merged_table.txt"), row.names=F, quote=F, sep="\t")
+write.table(merged,"/scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_all_results_merged_table.txt", row.names=F, quote=F, sep="\t")
 
 #save final list of genes:
 genes <- unique(merged$gene_symbol)
-write.table(genes,paste0("/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/Additional_credset_snps_March2025/pops_var2genes_raw_additional_credsetMarch2025".txt"), row.names=F, quote=F, sep="\t")
+write.table(genes,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/Additional_credset_snps_March2025/pops_var2genes_raw_additional_credsetMarch2025.txt", row.names=F, quote=F, sep="\t")
