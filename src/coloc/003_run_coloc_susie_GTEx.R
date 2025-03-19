@@ -28,8 +28,11 @@ cred_set %>%
 ############################
 ## Read asthma GWAS sumstat, eQTL GWAS, and LD matrix
 ############################
-GWAS = read_delim(paste0(tmp_path, cred_set, "_GWASpairs.txt.gz")) %>%
-  rename(chr = b37chr, pos = bp, beta = LOG_ODDS, SE = se) %>%
+#GWAS = read_delim(paste0(tmp_path, cred_set, "_GWASpairs.txt.gz")) %>%
+#rename(chr = b37chr, pos = bp, beta = LOG_ODDS, SE = se) %>%
+#for credset rs705705.12.55935504.56935504:
+GWAS = read_delim(paste0(tmp_path, tissue, "_",  cred_set, "_GWASpairs.txt")) %>%
+  rename(chr = chrom.gwas, pos = pos.gwas, beta = beta.gwas, SE = se.gwas, a1 = allele1.y, a2 = allele2.y, pval = pval.gwas) %>%
   select(-snpid) %>%
   arrange(chr, pos) %>%
   drop_na(beta) %>%
@@ -42,7 +45,10 @@ GWAS <- GWAS %>% mutate(snp = paste0(chr, "_", position, "_", pmin(a1, a2), "_",
 
 GWAS$N <- as.numeric(38405)
 
-eqtlGWAS = read_delim(paste0(tmp_path, cred_set, "_", tissue, "_pairs.txt.gz")) %>%
+#eqtlGWAS = read_delim(paste0(tmp_path, cred_set, "_", tissue, "_pairs.txt.gz")) %>%
+#for credset rs705705.12.55935504.56935504:
+eqtlGWAS = read_delim(paste0(tmp_path, cred_set, "_", tissue, "_pairs.txt")) %>%
+  rename(pos = pos.eqtl, chrom = chrom.eqtl, beta = beta.eqtl, se = se.eqtl, pval = pval.eqtl) %>%
   mutate(ID      = gsub(x=ID, pattern=":", replacement="_"),
          varbeta = se^2) %>%
   arrange(chrom, pos)  %>%

@@ -25,11 +25,86 @@ tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp"
 Rscript src/Variant_annotation_FAVOR_additional_credset_SNPs.R
 
 ################
-#2.1 COLOCALISATION - eQTL - NEED TO DELETE - WAIT FOR KATH DISCUSSION
+#2.1 COLOCALISATION - eQTL
+#KATH RAN LOOK-UP:
+#COLOCALISATION TO BE RUN FOR rs705705.12.55935504.56935504
+#CHECK GTExV8 LOOK-UP FOR 5_rs2188962_rs848 BECAUSE IT LOOKS LIKE THE GENES ARE DIFFERENT FROM THE ONES I REPORTED IN
+#THE SUPPLEMENTARY TABLE FOR COLOCALISATION RESULTS.
 #GTExV8, eQTLGen, UBCLung
 ################
-##Exclude chromosome 6 - no eQTL colocalisation for this locus.
-##Genomic boundaries: PIP-max causal variant +/- 1Mb
+
+##variables needed:
+tissue=('Stomach' 'Small_Intestine_Terminal_Ileum' 'Lung' 'Esophagus_Muscularis' 'Esophagus_Gastroesophageal_Junction' 'Artery_Tibial' 'Artery_Coronary' 'Artery_Aorta' 'Colon_Transverse' 'Colon_Sigmoid' 'Skin_Sun_Exposed_Lower_leg' 'Skin_Not_Sun_Exposed_Suprapubic')
+
+##Get the LD matrix:
+##Create the file with gtex-locus pairs:
+for t in ${!tissue[*]}; do Rscript ./src/coloc/002_prepare_LDinput.R "${tissue[t]}"; done
+
+##Get LD:
+#with parameters for GTExV8
+sbatch ./src/coloc/002_get_LD.sh
+
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-3596057.out
+
+##Run the colocalisation for GTExV8:
+#.sh will run .R script:
+mkdir ${tmp_path}/results
+mkdir ${tmp_path}/results/gtex
+#credset:
+cs=('SA_12_57493727_G_T')
+#create GWASpairs.txt.gz for the credible set:
+#create ${tmp_path}/${cs}_GWASpairs.txt
+zcat /scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/new_lookups/susie_replsugg_credset.rs705705.12.55935504.56935504_${tissue}_lookup.txt.gz | \
+    awk '{print $2, $4, $5, $9, $10, $11, $12, $13, $14, $15}' \
+    > ${tmp_path}/${tissue}_${cs}_GWASpairs.txt
+
+#create ${tmp_path}/${cs}_${tissue}_pairs.txt:
+zcat /scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/new_lookups/susie_replsugg_credset.rs705705.12.55935504.56935504_${tissue}_lookup.txt.gz | \
+    awk '{print $3, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25}' \
+    > ${tmp_path}/${cs}_${tissue}_pairs.txt
+
+#run for each Tissue:
+tissue='Stomach'
+tissue='Small_Intestine_Terminal_Ileum'
+tissue='Lung'
+tissue='Esophagus_Muscularis'
+tissue='Esophagus_Gastroesophageal_Junction'
+tissue='Artery_Tibial'
+tissue='Artery_Coronary'
+tissue='Artery_Aorta'
+tissue='Colon_Transverse'
+tissue='Colon_Sigmoid'
+tissue='Skin_Sun_Exposed_Lower_leg'
+tissue='Skin_Not_Sun_Exposed_Suprapubic'
+
+#create gene file for each tissue:
+zcat /scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/new_lookups/susie_replsugg_credset.rs705705.12.55935504.56935504_${tissue}_lookup.txt.gz | \
+    awk '{print $16}' | sort | uniq | grep -v "gene_id\|NA" > ${tmp_path}/${cs}_${tissue}_genes.txt
+
+
+for c in ${!cs[*]}; do
+
+  N=`cat ${tmp_path}/${cs[c]}_${tissue}_genes.txt | wc -l`
+
+  sbatch --array=1-${N}%20 --export=TISSUE="${tissue}",CREDSET="${cs[c]}" ./src/coloc/003_submit_coloc_susie_GTEx.sh
+
+ sleep 5
+
+done
+
+######QUALITY CHECKS:
+##Check that all genes for each tissue have been analysed:
+for c in ${!tissue[*]}; do
+echo ${tissue[c]}; echo "Total:"
+wc -l ${tmp_path}/SA_*_${tissue[c]}_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
+echo "Analysed:"; grep ${tissue[c]} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $1}' | sort -u | wc -l
+##Check how many genes per tissue have been analysed for colocalisation:
+ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
+ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
+done
+
+
+
 
 cs=('SA_3_50024027_C_CA')
 cs_all="/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt"
@@ -51,8 +126,6 @@ sbatch src/coloc/000B_eqtl_gtex_liftover.sh
 
 sbatch --array=3 src/coloc/000C_submit_eqtl_gtex_conversion.sh
 
-##variables needed:
-tissue=('Stomach' 'Small_Intestine_Terminal_Ileum' 'Lung' 'Esophagus_Muscularis' 'Esophagus_Gastroesophageal_Junction' 'Artery_Tibial' 'Artery_Coronary' 'Artery_Aorta' 'Colon_Transverse' 'Colon_Sigmoid' 'Skin_Sun_Exposed_Lower_leg' 'Skin_Not_Sun_Exposed_Suprapubic')
 
 ##Divide the credible sets into separate files:
 Rscript ./src/coloc/000_preprocess_cs.R $cs_all $tmp_path/
