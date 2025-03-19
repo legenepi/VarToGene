@@ -23,7 +23,6 @@ tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp"
 #https://favor.genohub.org/FAVOR_input_additional_credset_SNPs.txt
 
 Rscript src/Variant_annotation_FAVOR_additional_credset_SNPs.R
-#copy and paste the gene for FANTOM5-ClinVar-Integrative Functional Score in the varannot_gene sheet of input/var2genes_raw_chr3_49524027_50524027_rs778801698.xlsx"
 
 ################
 #2.1 COLOCALISATION - eQTL - NEED TO DELETE - WAIT FOR KATH DISCUSSION
@@ -342,9 +341,10 @@ bash PoPS.sh
 
 #Look at the results and find top score genes within a +/-250Kb from highest-PIP variant for each locus -
 #if no top genes in +/- 250Kb, enlarge the window to +/-500Kb:
-Rscript src/PoPS/PoPS_summary.R
-
-#Put genes in the input/var2genes_raw_chr3_49524027_50524027_rs77880169.xlsx
+Rscript src/PoPS/PoPS_summary_additionalcredset_March2025.R
+#Put genes in the Var_to_Gene/input/Additional_credset_snps_March2025/var2genes_raw_additionalcredset_March2025.xlsx
+cp /scratch/gen1/nnp5/Var_to_Gen_tmp/pops/results/additional_credsetMarch2025_all_results_merged_table.txt \
+    input/Additional_credset_snps_March2025/pops_var2genes_additional_credsetMarch2025_all_results_merged_table.txt
 
 ################
 #3 NEARBY HUMAN ORTHOLOG MOUSE KO GENE
@@ -360,7 +360,6 @@ wget -P ${tmp_path}/mouse_ko/ http://ftp.ebi.ac.uk/pub/databases/genenames/hcop/
 #run the analysis:
 Rscript src/mouse_ko/mouse_ko_additionalcredset_March2025.r
 #Upload the genes into input/Additional_credset_snps_March2025/var2genes_raw_additionalcredset_March2025.xlsx
-cp ${tmp_path}/mouse_ko/results_chr3_noMHC_500kb.csv input/mko_results_500kb${region}.csv
 
 ################
 #4 NEARBY RARE MENDELIAN DISEASE GENE
@@ -386,68 +385,5 @@ Rscript src/rare_disease/rare_disease_additionalcredset_March2025.r
 #Significant results not in these region !
 
 ################
-#6 TABLES FOR EACH ANALYSIS AND MERGE GENES FOR GENE PRIORITISATION AND VISUALISATION - add genes from chr 3 rs778801698
+#5 Combine all results for locus and gene - supplementary table with SNPs of interest.
 ################
-#TO NOTE: ONLY FOR
-#nearest gene
-#functional annotation
-#eQTL
-#mouse_KO
-#PoPS
-#pQTL
-#rare_disease
-#SINGLE AND GENE-BASED COLLAPSING ANALYSIS: no genes for variant-to-gene mapping, so I did not add them to this table
-Rscript src/Locus_to_genes_table_chr3_rs778801698.R
-Rscript src/genes_heatmap.R
-cp src/report/var2gene_full_3_rs778801698_49524027_50524027.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
-cp output/V2G_heatmap_subplots_chr3_noMHC.png /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
-cp output/v2g_gene_prioritisation_chr3_noMHC.txt /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
-
-
-################
-#7 REGION PLOTS WITH VAR2GENE RESULTS
-################
-awk -F "," '{print $1, $2, $3, $8, $9, $10, $11, $12}' input/FAVOR_credset_chrpos38_2024_05_14_${region}.txt.csv \
-    > ${tmp_path}/digest_FAVOR_credset_chrpos38_2024_05_14_${region}.txt
-
-##Calculate R2 with respect to variant with highest PIP in each locus:
-##Use the 10,000 European ancestry individuals in /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB:
-##find all credible set variants in EUR_UKB by chr and pos (alleles can be flipped):
-awk '{print $3"_"$4"_"}' /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt | \
-    grep -F -f - /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr3_EUR_selected_nodups.bim | \
-    awk '{print $2}' > ${tmp_path}/regionalplot/cs_variants_EUR_UKB_${region}
-
-##find the sentinel SNP in EUR_UKB by chr and pos (alleles can be flipped):
-grep "3_50024027_" /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr3_EUR_selected_nodups.bim | \
-    awk '{print $2}' > ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region}
-
-line=1
-SNP=$(awk -v row="$line" ' NR == row {print $0 } ' ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region})
-chr=$(awk -F "_" -v row="$line" ' NR == row {print $1 } ' ${tmp_path}/highest_PIP_sentinels_EUR_UKB_${region})
-start="49524027"
-end="50524027"
-
-#create R2 according to leading p-value:
-#Calculate R2 with respect to the leading SNP:
-module unload plink2/2.00a
-module load plink
-
-
-plink --bfile /data/gen1/LF_HRC_transethnic/LD_reference/EUR_UKB/ukb_imp_chr${chr}_EUR_selected_nodups \
-    --chr ${chr} --from-bp ${start} --to-bp ${end} \
-    --allow-no-sex --r2 inter-chr --ld-snp ${SNP} --ld-window-r2 0 \
-    --out ${tmp_path}/${SNP}_${start}_${end}_ld_file
-
-Rscript src/Region_plot_V2G_chr3_rs778801698.R
-
-Rscript src/Region_plot_V2G_2.R \
-    ${tmp_path}/${SNP}_${start}_${end}_ld_file.ld \
-    ${chr}_${SNP}_${start}_${end} \
-    output/region_plots_V2G/rp_v2g_${chr}_${SNP}_${start}_${end}.pdf \
-    ${start} ${end} ${chr} ${SNP}
-
-#how many evidence for each gene?
-awk '$3 == 1 {print $1}' output/v2g_gene_prioritisation_chr3_noMHC.txt| sort | uniq -c | sort -k1 -r
-
-#Create table with no MHC and adding chr3 results: src/report/var2gene_full_chr3_noMHC.xlsx
-cp src/report/var2gene_full_noMHC_chr3.xlsx /data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/
