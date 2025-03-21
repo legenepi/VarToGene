@@ -6,6 +6,7 @@
 module load R
 #intermediate files in:
 tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp"
+kath_tmp="/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex"
 
 ################
 #1.VARIANT ANNOTATION
@@ -27,7 +28,9 @@ Rscript src/Variant_annotation_FAVOR_additional_credset_SNPs.R
 ################
 #2.1 COLOCALISATION - eQTL
 #KATH RAN LOOK-UP:
-#COLOCALISATION TO BE RUN FOR rs705705.12.55935504.56935504
+#COLOCALISATION TO BE RUN FOR rs705705.12.55935504.56935504 AND rs2188962_rs848.5.131270805.132496500
+#rs2188962_rs848.5.131270805.132496500: there are two credset and therefore two PIP sentinel variant - run coloc separate.
+#PIP sentinel variant for rs2188962_rs848.5.131270805.132496500: rs1986009 and rs2070729
 #CHECK GTExV8 LOOK-UP FOR 5_rs2188962_rs848 BECAUSE IT LOOKS LIKE THE GENES ARE DIFFERENT FROM THE ONES I REPORTED IN
 #THE SUPPLEMENTARY TABLE FOR COLOCALISATION RESULTS.
 #GTExV8, eQTLGen, UBCLung
@@ -35,6 +38,15 @@ Rscript src/Variant_annotation_FAVOR_additional_credset_SNPs.R
 
 ##variables needed:
 tissue=('Stomach' 'Small_Intestine_Terminal_Ileum' 'Lung' 'Esophagus_Muscularis' 'Esophagus_Gastroesophageal_Junction' 'Artery_Tibial' 'Artery_Coronary' 'Artery_Aorta' 'Colon_Transverse' 'Colon_Sigmoid' 'Skin_Sun_Exposed_Lower_leg' 'Skin_Not_Sun_Exposed_Suprapubic')
+
+#Obtain GWASpairs from credible set regions:
+#.sh will run .R script:
+#credset:
+cs=('SA_12_57493727_G_T' 'SA_5_131887986_A_C' 'SA_5_131819921_A_C')
+for c in ${!cs[*]}; do
+  CREDSET="${cs[c]}"
+  Rscript src/coloc/001_run_GWASpairs.R $CREDSET
+done
 
 ##Get the LD matrix:
 ##Create the file with gtex-locus pairs:
@@ -50,18 +62,10 @@ sbatch ./src/coloc/002_get_LD.sh
 #.sh will run .R script:
 mkdir ${tmp_path}/results
 mkdir ${tmp_path}/results/gtex
-#credset:
-cs=('SA_12_57493727_G_T')
-#create GWASpairs.txt.gz for the credible set:
-#create ${tmp_path}/${cs}_GWASpairs.txt
-zcat /scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/new_lookups/susie_replsugg_credset.rs705705.12.55935504.56935504_${tissue}_lookup.txt.gz | \
-    awk '{print $2, $4, $5, $9, $10, $11, $12, $13, $14, $15}' \
-    > ${tmp_path}/${tissue}_${cs}_GWASpairs.txt
 
-#create ${tmp_path}/${cs}_${tissue}_pairs.txt:
-zcat /scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/new_lookups/susie_replsugg_credset.rs705705.12.55935504.56935504_${tissue}_lookup.txt.gz | \
-    awk '{print $3, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25}' \
-    > ${tmp_path}/${cs}_${tissue}_pairs.txt
+#Path for ${cs}_${tissue}_pairs.txt:
+#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs3024971.12.56993727.57993727_Lung_pairs.txt.gz
+
 
 #run for each Tissue:
 tissue='Stomach'
@@ -78,8 +82,11 @@ tissue='Skin_Sun_Exposed_Lower_leg'
 tissue='Skin_Not_Sun_Exposed_Suprapubic'
 
 #create gene file for each tissue:
-zcat /scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/new_lookups/susie_replsugg_credset.rs705705.12.55935504.56935504_${tissue}_lookup.txt.gz | \
-    awk '{print $16}' | sort | uniq | grep -v "gene_id\|NA" > ${tmp_path}/${cs}_${tissue}_genes.txt
+sort ${kath_tmp}/tmp/susie_replsugg_credset.rs3024971.12.56993727.57993727_${tissue}_genes.txt | uniq \
+   > ${tmp_path}/${cs}_${tissue}_genes.txt
+
+sort ${kath_tmp}/tmp/susie_replsugg_credset.rs2188962_rs848.5.131270805.132496500_${tissue}_genes.txt | uniq \
+   > ${tmp_path}/${cs}_${tissue}_genes.txt
 
 
 for c in ${!cs[*]}; do
@@ -99,128 +106,24 @@ echo ${tissue[c]}; echo "Total:"
 wc -l ${tmp_path}/SA_*_${tissue[c]}_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
 echo "Analysed:"; grep ${tissue[c]} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $1}' | sort -u | wc -l
 ##Check how many genes per tissue have been analysed for colocalisation:
+echo "Coloc analysed genes:"
 ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
-ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
-done
-
-
-
-
-cs=('SA_3_50024027_C_CA')
-cs_all="/data/gen1/UKBiobank_500K/severe_asthma/Noemi_PhD/data/replsugg_valid_credset_chr3_noMHC.txt"
-
-###GTExv8 eQTL###
-##Create eQTl files in hg19 for Colon Transverse, Colon Sigmoid, Skin_Not_Sun_Exposed_Suprapubic, Skin_Sun_Exposed_Lower_leg
-#From GTExV8 .parquet files and in hg38.
-mkdir ${tmp_path}/liftover_gtexv8
-mkdir ${tmp_path}/liftover_gtexv8/bed
-
-dos2unix src/coloc/000A_eqtl_gtex_extraction.R src/coloc/000B_eqtl_gtex_liftover.sh \
-    src/coloc/000C_eqtl_gtex_conversion.R src/coloc/000A_submit_eqtl_gtex_extraction.sh src/coloc/000C_submit_eqtl_gtex_conversion.sh
-chmod o+x src/coloc/000A_eqtl_gtex_extraction.R src/coloc/000B_eqtl_gtex_liftover.sh \
-    src/coloc/000C_eqtl_gtex_conversion.R src/coloc/000A_submit_eqtl_gtex_extraction.sh src/coloc/000C_submit_eqtl_gtex_conversion.sh
-
-sbatch --array=3 src/coloc/000A_submit_eqtl_gtex_extraction.sh
-
-sbatch src/coloc/000B_eqtl_gtex_liftover.sh
-
-sbatch --array=3 src/coloc/000C_submit_eqtl_gtex_conversion.sh
-
-
-##Divide the credible sets into separate files:
-Rscript ./src/coloc/000_preprocess_cs.R $cs_all $tmp_path/
-
-#Obtain GWASpairs from credible set regions:
-#.sh will run .R script:
-for c in ${!cs[*]}; do
-
-  sbatch --export=CREDSET="${cs[c]}" ./src/coloc/001_submit_GWASpairs.sh
-
-done
-
-#Create files for GTExV8:
-#.sh will run .R script:
-for t in ${!tissue[*]}; do
-
-  for c in ${!cs[@]}; do
-
-    sbatch --export=TISSUE="${tissue[t]}",CREDSET="${cs[c]}" ./src/coloc/001_submit_eqtl_lookup_GTEx.sh
-
-  done
-
-done
-
-
-##Get the LD matrix:
-##Create the file with gtex-locus pairs:
-for t in ${!tissue[*]}; do Rscript ./src/coloc/002_prepare_LDinput.R "${tissue[t]}"; done
-
-##Get LD:
-#with parameters for GTExV8
-sbatch ./src/coloc/002_get_LD.sh
-
-##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-1236385.out
-
-##Run the colocalisation for GTExV8:
-#.sh will run .R script:
-mkdir ${tmp_path}/results
-mkdir ${tmp_path}/results/gtex
-#run for each Tissue:
-tissue='Stomach'
-tissue='Small_Intestine_Terminal_Ileum'
-tissue='Lung'
-tissue='Esophagus_Muscularis'
-tissue='Esophagus_Gastroesophageal_Junction'
-tissue='Artery_Tibial'
-tissue='Artery_Coronary'
-tissue='Artery_Aorta'
-tissue='Colon_Transverse'
-tissue='Colon_Sigmoid'
-tissue='Skin_Sun_Exposed_Lower_leg'
-tissue='Skin_Not_Sun_Exposed_Suprapubic'
-
-for c in ${!cs[*]}; do
-
-  N=`cat ${tmp_path}/${cs[c]}_${tissue}_genes.txt | wc -l`
-
-  sbatch --array=1-${N}%20 --export=TISSUE="${tissue}",CREDSET="${cs[c]}" ./src/coloc/003_submit_coloc_susie_GTEx.sh
-
- sleep 5
-
-done
-
-######QUALITY CHECKS:
-##Check that all genes for each tissue have been analysed:
-for c in ${!tissue[*]}; do
-echo ${tissue[c]}; echo "Total:"
-wc -l ${tmp_path}/SA_*_${tissue[c]}_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
-echo "Analysed:"; grep ${tissue[c]} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $1}' | sort -u | wc -l
-##Check how many genes per tissue have been analysed for colocalisation:
-ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
+echo "Coloc susie analysed genes:"
 ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
 done
 
 ###eqtlGen eQTL###
 mkdir ${tmp_path}/results/eqtlgen
 mkdir ${tmp_path}/eqtlgen
-dos2unix src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
-chmod +x src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
-sbatch src/coloc/000_submit_edit_eQTLGen.sh
-
-#Create files for eQTLGen colocalisation:
-dos2unix src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
-chmod +x src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
-
-for c in ${!cs[@]}; do
-
-    sbatch --export=CREDSET="${cs[c]}" ./src/coloc/001_submit_eqtl_lookup_eQTLGen.sh
-
-done
+kath_tmp="/scratch/ukb/kaf19/Noemi_V2G/eQTLgen"
+#some data:
+#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs3024971.12.56993727.57993727_eqtlGenWB_pairs.txt.gz
+#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs2188962_rs848.5.131270805.132496500_eqtlGenWB_pairs.txt.gz
+#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs3024971.12.56993727.57993727_eqtlGenWB_genes.txt
+#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs2188962_rs848.5.131270805.132496500_eqtlGenWB_genes.txt
 
 ##Get the LD matrix:
 ##Create the file with gtex-locus pairs:
-dos2unix src/coloc/002_prepare_LDinput_eqtlgen.R
-chmod +x src/coloc/002_prepare_LDinput_eqtlgen.R
 Rscript src/coloc/002_prepare_LDinput_eqtlgen.R "eqtlGenWB"
 
 ##Get LD:
@@ -230,9 +133,6 @@ sbatch src/coloc/002_get_LD.sh
 
 ##Run the colocalisation for GTExV8:
 #.sh will run .R script:
-mkdir ${tmp_path}/results/eqtlgen
-dos2unix src/coloc/003_submit_coloc_susie_eQTLGen.sh
-chmod +x src/coloc/003_run_coloc_susie_eQTLGen.R
 for c in ${!cs[*]}; do
 
   N=`cat ${tmp_path}/eqtlgen/${cs[c]}_eqtlGenWB_genes.txt | wc -l`
