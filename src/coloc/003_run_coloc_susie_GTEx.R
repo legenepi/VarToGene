@@ -42,10 +42,7 @@ GWAS <- GWAS %>% mutate(snp = paste0(chr, "_", position, "_", pmin(a1, a2), "_",
 
 GWAS$N <- as.numeric(38405)
 
-#eqtlGWAS = read_delim(paste0(tmp_path, cred_set, "_", tissue, "_pairs.txt.gz")) %>%
-#for credset rs3024971.12.56993727.57993727:
-kath_tmp_path <- "/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/"
-eqtlGWAS = read_delim(paste0(kath_tmp_path,"susie_replsugg_credset.rs3024971.12.56993727.57993727_", tissue, "_pairs.txt.gz")) %>%
+eqtlGWAS = read_delim(paste0(tmp_path, cred_set, "_", tissue, "_pairs.txt.gz")) %>%
   mutate(ID      = gsub(x=ID, pattern=":", replacement="_"),
          varbeta = se^2) %>%
   arrange(chrom, pos)  %>%

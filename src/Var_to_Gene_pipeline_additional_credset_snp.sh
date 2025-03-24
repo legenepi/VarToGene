@@ -5,8 +5,8 @@
 
 module load R
 #intermediate files in:
-tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp"
-kath_tmp="/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex"
+tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
+#kath_tmp="/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex"
 
 ################
 #1.VARIANT ANNOTATION
@@ -31,22 +31,53 @@ Rscript src/Variant_annotation_FAVOR_additional_credset_SNPs.R
 #COLOCALISATION TO BE RUN FOR rs705705.12.55935504.56935504 AND rs2188962_rs848.5.131270805.132496500
 #rs2188962_rs848.5.131270805.132496500: there are two credset and therefore two PIP sentinel variant - run coloc separate.
 #PIP sentinel variant for rs2188962_rs848.5.131270805.132496500: rs1986009 and rs2070729
-#CHECK GTExV8 LOOK-UP FOR 5_rs2188962_rs848 BECAUSE IT LOOKS LIKE THE GENES ARE DIFFERENT FROM THE ONES I REPORTED IN
-#THE SUPPLEMENTARY TABLE FOR COLOCALISATION RESULTS.
-#GTExV8, eQTLGen, UBCLung
 ################
+#GTExV8
+################
+
+##copy the liftOver files for from Kath's scratch for chr5 and chr12, for tissues:
+#"Colon_Transverse", "Colon_Sigmoid", "Skin_Sun_Exposed_Lower_leg", "Skin_Not_Sun_Exposed_Suprapubic":
+chr=12
+cp /scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/processing/liftover_gtexv8/*v8.EUR.allpairs.chr$chr.hg19.txt.gz \
+    /scratch/gen1/nnp5/Var_to_Gen_tmp/liftover_gtexv8/
+
+chr=5
+cp /scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/processing/liftover_gtexv8/*v8.EUR.allpairs.chr$chr.hg19.txt.gz \
+    /scratch/gen1/nnp5/Var_to_Gen_tmp/liftover_gtexv8/
 
 ##variables needed:
 tissue=('Stomach' 'Small_Intestine_Terminal_Ileum' 'Lung' 'Esophagus_Muscularis' 'Esophagus_Gastroesophageal_Junction' 'Artery_Tibial' 'Artery_Coronary' 'Artery_Aorta' 'Colon_Transverse' 'Colon_Sigmoid' 'Skin_Sun_Exposed_Lower_leg' 'Skin_Not_Sun_Exposed_Suprapubic')
+cs=('SA_12_57493727_G_T' 'SA_5_131887986_A_C' 'SA_5_131819921_A_C')
+
+#Manually create the below file, with credset for the two loci of interest and edit
+#the colnames to match in the ./src/coloc/000_preprocess_cs_chr12_chr5_March2025.R
+cs_all="input/Additional_credset_snps_March2025/replsugg_valid_credset_chr12_chr5_March2025.txt.txt"
+
+##Divide the credible sets into separate files:
+Rscript ./src/coloc/000_preprocess_cs_chr12_chr5_March2025.R $cs_all $tmp_path
 
 #Obtain GWASpairs from credible set regions:
 #.sh will run .R script:
-#credset:
-cs=('SA_12_57493727_G_T' 'SA_5_131887986_A_C' 'SA_5_131819921_A_C')
 for c in ${!cs[*]}; do
-  CREDSET="${cs[c]}"
-  Rscript src/coloc/001_run_GWASpairs.R $CREDSET
+
+  sbatch --export=CREDSET="${cs[c]}" ./src/coloc/001_submit_GWASpairs.sh
+
 done
+
+#Create files for GTExV8:
+##'Colon Transverse' and 'Colon Sigmoid' miss from /data/gen1/ACEI/colocalisation_datasets/eQTL/GTeX/
+##Need to create these
+#.sh will run .R script:
+for t in ${!tissue[*]}; do
+
+  for c in ${!cs[@]}; do
+
+    sbatch --export=TISSUE="${tissue[t]}",CREDSET="${cs[c]}" ./src/coloc/001_submit_eqtl_lookup_GTEx.sh
+
+  done
+
+done
+
 
 ##Get the LD matrix:
 ##Create the file with gtex-locus pairs:
@@ -56,16 +87,12 @@ for t in ${!tissue[*]}; do Rscript ./src/coloc/002_prepare_LDinput.R "${tissue[t
 #with parameters for GTExV8
 sbatch ./src/coloc/002_get_LD.sh
 
-##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-3596057.out
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-3620457.out
 
 ##Run the colocalisation for GTExV8:
 #.sh will run .R script:
 mkdir ${tmp_path}/results
 mkdir ${tmp_path}/results/gtex
-
-#Path for ${cs}_${tissue}_pairs.txt:
-#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs3024971.12.56993727.57993727_Lung_pairs.txt.gz
-
 
 #run for each Tissue:
 tissue='Stomach'
@@ -80,13 +107,6 @@ tissue='Colon_Transverse'
 tissue='Colon_Sigmoid'
 tissue='Skin_Sun_Exposed_Lower_leg'
 tissue='Skin_Not_Sun_Exposed_Suprapubic'
-
-#create gene file for each tissue:
-sort ${kath_tmp}/tmp/susie_replsugg_credset.rs3024971.12.56993727.57993727_${tissue}_genes.txt | uniq \
-   > ${tmp_path}/${cs}_${tissue}_genes.txt
-
-sort ${kath_tmp}/tmp/susie_replsugg_credset.rs2188962_rs848.5.131270805.132496500_${tissue}_genes.txt | uniq \
-   > ${tmp_path}/${cs}_${tissue}_genes.txt
 
 
 for c in ${!cs[*]}; do
@@ -112,30 +132,61 @@ echo "Coloc susie analysed genes:"
 ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
 done
 
+##Check that all genes for each tissue have been analysed:
+grep ${tissue} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $1}' | sort -u | wc -l
+
+##Check how many genes per tissue have been analysed for colocalisation:
+ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
+ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
+
+#gtex converted in gene symbol:
+#https://www.biotools.fr/human/ensembl_symbol_converter
+#added in GTExV8_eQTL_genes_symbol table in the input/var2gene.xlsx file.
+
+awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_GTEx.tsv \
+    > output/Additional_credset_snps_March2025_output/coloc_asthma_GTEx.tsv
+
+awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTEx.tsv \
+    > output/Additional_credset_snps_March2025_output/colocsusie_asthma_GTEx.tsv
+
+
 ###eqtlGen eQTL###
+STILL TO BE EDITED
 mkdir ${tmp_path}/results/eqtlgen
 mkdir ${tmp_path}/eqtlgen
-kath_tmp="/scratch/ukb/kaf19/Noemi_V2G/eQTLgen"
-#some data:
-#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs3024971.12.56993727.57993727_eqtlGenWB_pairs.txt.gz
-#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs2188962_rs848.5.131270805.132496500_eqtlGenWB_pairs.txt.gz
-#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs3024971.12.56993727.57993727_eqtlGenWB_genes.txt
-#/scratch/ukb/kaf19/Noemi_V2G/eqtl_gtex/tmp/susie_replsugg_credset.rs2188962_rs848.5.131270805.132496500_eqtlGenWB_genes.txt
+dos2unix src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
+chmod +x src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
+sbatch src/coloc/000_submit_edit_eQTLGen.sh
+
+#Create files for eQTLGen colocalisation:
+dos2unix src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
+chmod +x src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
+
+for c in ${!cs[@]}; do
+
+    sbatch --export=CREDSET="${cs[c]}" ./src/coloc/001_submit_eqtl_lookup_eQTLGen.sh
+
+done
 
 ##Get the LD matrix:
 ##Create the file with gtex-locus pairs:
+dos2unix src/coloc/002_prepare_LDinput_eqtlgen.R
+chmod +x src/coloc/002_prepare_LDinput_eqtlgen.R
 Rscript src/coloc/002_prepare_LDinput_eqtlgen.R "eqtlGenWB"
 
 ##Get LD:
 #with parameters for eqtlGen
 sbatch src/coloc/002_get_LD.sh
-##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-1247283.out
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-170767.out
 
-##Run the colocalisation for GTExV8:
+##Run the colocalisation for eQTlGen:
 #.sh will run .R script:
+mkdir ${tmp_path}/results/eqtlgen
+dos2unix src/coloc/003_submit_coloc_susie_eQTLGen.sh
+chmod +x src/coloc/003_run_coloc_susie_eQTLGen.R
 for c in ${!cs[*]}; do
 
-  N=`cat ${tmp_path}/eqtlgen/${cs[c]}_eqtlGenWB_genes.txt | wc -l`
+  N=`cat ${tmp_path}eqtlgen/${cs[c]}_eqtlGenWB_genes.txt | wc -l`
 
   sbatch --array=1-${N}%20 --export=CREDSET="${cs[c]}" ./src/coloc/003_submit_coloc_susie_eQTLGen.sh
 
@@ -144,7 +195,7 @@ for c in ${!cs[*]}; do
 done
 
 ######QUALITY CHECKS:
-#to find number of genes:
+#to find number of genes: 468
 wc -l ${tmp_path}/eqtlgen/SA_*_eqtlGenWB_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
 ##Check that all genes for each tissue have been analysed:
 grep "eqtlGenWB" ${tmp_path}/logerror/coloc_susie_eqtlgen*.out | awk -F ":" '{print $1}' | sort -u | wc -l
@@ -153,53 +204,15 @@ grep "eqtlGenWB" ${tmp_path}/logerror/coloc_susie_eqtlgen*.out | awk -F ":" '{pr
 ls -lthr  ${tmp_path}/results/eqtlgen/*all_coloc.rds | grep "eqtlGenWB" | wc -l
 ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep "eqtlGenWB" | wc -l
 
-#Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
-Rscript src/coloc/004_concat_coloc_results_chr3_50024027.R
-
-awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_GTEx.tsv \
-    > output/coloc_asthma_GTEx.tsv
-
-awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTEx.tsv \
-    > output/colocsusie_asthma_GTEx.tsv
 
 awk 'NR ==1; $11 == "TRUE" {print $0}' /scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_eqtlgen.tsv \
     > output/coloc_asthma_eqtlgen.tsv
 
- awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_eqtlgen.tsv \
-    > output/colocsusie_asthma_eqtlgen.tsv
-
-#gtex converted in gene symbol:
-#https://www.biotools.fr/human/ensembl_symbol_converter
-
-#No genes that colocalised with the chose PP.H4.abf threshold.
 
 
-#Additional for curiosity only:
-#If I try filter for PP.H4.abf > 0.85
-#
-#GTEXv8: There is colocalisation for three genes: ENSG00000004534.14:RBM6, ENSG00000164078.12:MST1R, ENSG00000182179.12:UBA7.
-#nsnps PP.H4.abf gene tissue
-#1432 0.8969304215521776 ENSG00000004534.14 coronary
-#1434 0.8942873733156056 ENSG00000004534.14 not_sun_exposed_suprapubic
-#1434 0.8922308534250772 ENSG00000004534.14 sigmoid
-#1434 0.8921686387956137 ENSG00000004534.14 muscularis
-#1434 0.8921109118112002 ENSG00000004534.14 tibial
-#1434 0.8920935039077741 ENSG00000004534.14 transverse
-#1434 0.8919127349079411 ENSG00000004534.14 ensg00000004534.14_stomach
-#1434 0.8918331099081864 ENSG00000004534.14 sun_exposed_lower_leg
-#1434 0.8918261031810106 ENSG00000004534.14 aorta
-#1434 0.8916789774689768 ENSG00000004534.14 gastroesophageal_junction
-#1434 0.888817774187038 ENSG00000004534.14 ensg00000004534.14_lung
-#1434 0.867383436884697 ENSG00000164078.12 muscularis
-#1434 0.8562550686662334 ENSG00000164078.12 sun_exposed_lower_leg
-#1434 0.8548386547510476 ENSG00000182179.12 aorta
-#1434 0.8540520416172054 ENSG00000004534.14 intestine_terminal_ileum
-#
-#eqtlGen: There is a colocalisation for RBM6:
-#nsnps	hit1	hit2	PP.H0.abf	PP.H1.abf	PP.H2.abf	PP.H3.abf	PP.H4.abf	idx1	idx2	snp	n_index	pheno	gene	tissue	coloc_susie
-#1384	0	0	3.352464447545198e-4	0.10008140361218355	0.899583349943249	SA	3_50024027_C_CA	RBM6	eqtlGenWB	FALSE
 
 ###UBCLung eQTL###
+STILL TO BE EDITED
 mkdir ${tmp_path}/results/ubclung
 mkdir ${tmp_path}/ubclung
 dos2unix src/coloc_UBClung/*
@@ -291,6 +304,7 @@ awk '$13 == "TRUE" {print $14}' ${tmp_path}/results/coloc_asthma_ubclung.tsv \
 
 ###UKBIOBANK pQTL LOOK-UP###
 #Kath did this
+STILL TO BE EDITED BECAUSE I HAVE TO FILTER OUT FOR BONFERRONI CORRECTED THRESHOLD - FOR ALL NEW CREDSETS.
 
 ###deCODE pQTL LOOK-UP###
 PQTL_PATH="/scratch/gen1/nnp5/Var_to_Gen_tmp/decode_pqtl"
