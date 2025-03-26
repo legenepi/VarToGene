@@ -154,14 +154,10 @@ awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTE
 STILL TO BE EDITED
 mkdir ${tmp_path}/results/eqtlgen
 mkdir ${tmp_path}/eqtlgen
-dos2unix src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
-chmod +x src/coloc/000_submit_edit_eQTLGen.sh src/coloc/000_run_edit_eQTLGen.R
+
 sbatch src/coloc/000_submit_edit_eQTLGen.sh
 
 #Create files for eQTLGen colocalisation:
-dos2unix src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
-chmod +x src/coloc/001_submit_eqtl_lookup_eQTLGen.sh src/coloc/001_run_eqtl_lookup_eQTLGen.R
-
 for c in ${!cs[@]}; do
 
     sbatch --export=CREDSET="${cs[c]}" ./src/coloc/001_submit_eqtl_lookup_eQTLGen.sh
@@ -170,8 +166,6 @@ done
 
 ##Get the LD matrix:
 ##Create the file with gtex-locus pairs:
-dos2unix src/coloc/002_prepare_LDinput_eqtlgen.R
-chmod +x src/coloc/002_prepare_LDinput_eqtlgen.R
 Rscript src/coloc/002_prepare_LDinput_eqtlgen.R "eqtlGenWB"
 
 ##Get LD:
@@ -303,8 +297,23 @@ awk '$13 == "TRUE" {print $14}' ${tmp_path}/results/coloc_asthma_ubclung.tsv \
 ##Genomic boundaries: PIP-max causal variant +/- 1Mb
 
 ###UKBIOBANK pQTL LOOK-UP###
-#Kath did this
-STILL TO BE EDITED BECAUSE I HAVE TO FILTER OUT FOR BONFERRONI CORRECTED THRESHOLD - FOR ALL NEW CREDSETS.
+#Kath did the look-up
+#Noemi to FILTER OUT FOR BONFERRONI CORRECTED THRESHOLD - FOR ALL NEW CREDSETS.
+#UKBIOBANK - OLINK:
+THRESH=$(bc <<< "scale=10; 0.05/2923")  # threshold for updated number of protein
+##skip the header in all files except the first
+awk -v thresh="$THRESH" 'FNR==1 && NR!=1 {next} NR==1 || $13 < thresh' \
+    /scratch/ukb/kaf19/Noemi_V2G/ukb_olink/ukb_olink_* \
+    > input/Additional_credset_snps_March2025/ukbiobank_lookup_additional_credsetMarch2025.txt
+#add the genes into input/Additional_credset_snps_March2025/var2genes_raw_additionalcredset_March2025.xlsx
+
+
+#SCALLOP: #filter out gene name with significant pQTL:
+#files are for variants:
+TO BE CHECKED WITH KATH IF SHE RAN SCALLOP LOOKUP FOR ALL NEW CREDSET VARIANTS
+awk '$10 < 5E-8 {print $0}' /scratch/ukb/kaf19/Noemi_V2G/scallop/scallop_* \
+    > input/Additional_credset_snps_March2025/scallop_lookup_additional_credsetMarch2025.txt
+
 
 ###deCODE pQTL LOOK-UP###
 PQTL_PATH="/scratch/gen1/nnp5/Var_to_Gen_tmp/decode_pqtl"
