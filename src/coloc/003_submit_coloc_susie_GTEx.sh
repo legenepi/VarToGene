@@ -6,6 +6,7 @@
 #SBATCH --mem=32gb
 #SBATCH --account=gen1
 #SBATCH --export=NONE
+#SBATCH --nodelist=alice-lmem03
 
 tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 
