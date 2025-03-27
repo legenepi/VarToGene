@@ -18,7 +18,11 @@ tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/ubclung/"
 #  as_tibble %>%
 #  separate(cred_set, c("pheno", "chr", "pos", "a1", "a2"), sep="_")
 
-df <- data.frame(cred_set = "SA_3_50024027_C_CA") %>%
+#df <- data.frame(cred_set = "SA_3_50024027_C_CA") %>%
+#  as_tibble %>%
+#  separate(cred_set, c("pheno", "chr", "pos", "a1", "a2"), sep="_")
+
+df <- data.frame(cred_set = c("SA_12_57493727_G_T", "SA_5_131887986_A_C", "SA_5_131819921_A_C")) %>%
   as_tibble %>%
   separate(cred_set, c("pheno", "chr", "pos", "a1", "a2"), sep="_")
 

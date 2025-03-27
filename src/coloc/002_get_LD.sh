@@ -23,8 +23,8 @@ DIR="/scratch/gen1/nnp5/Var_to_Gen_tmp"
 #DIR="/scratch/gen1/nnp5/Var_to_Gen_tmp/eqtlgen"
 
 #For UBCLung:
-#pairs_lookup_file="/scratch/gen1/nnp5/Var_to_Gen_tmp/ubclung/UBCLung_Pairs_lookup.txt"
-#DIR="/scratch/gen1/nnp5/Var_to_Gen_tmp/ubclung"
+pairs_lookup_file="/scratch/gen1/nnp5/Var_to_Gen_tmp/ubclung/UBCLung_Pairs_lookup.txt"
+DIR="/scratch/gen1/nnp5/Var_to_Gen_tmp/ubclung"
 
 cd ${DIR}
 

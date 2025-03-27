@@ -2,7 +2,7 @@
 
 #Rationale: Collate results together and extract significant Variant/Locus-Tissue-Gene colocalisation, from GTExV8 and eQTLGen
 #ADDITIONAL CREDSET MARCH 2025: rs3024971.12.56993727.57993727 AND rs2188962_rs848.5.131270805.132496500
-NEED TO BE MODIFIED
+
 
 library(plyr)
 library(tidyverse)
@@ -63,7 +63,7 @@ data_summary %>% filter(coloc) %>% select(snp, pheno, gene)
 
 # Save all results to file
 print("GTExV8 eQTL coloc.susie results")
-write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_GTEx.tsv")
+write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_GTEx_addcredset_March2025.tsv")
 
 # .rds files containing coloc.susie results with eQTLs
 setwd("/scratch/gen1/nnp5/Var_to_Gen_tmp/results/gtex/")
@@ -107,7 +107,7 @@ summary_fct = function(df) {
 tmp_1 <- lapply(data_list, summary_fct)
 nonnull <- sapply(tmp_1, typeof)!="NULL"  # find all NULLs to omit
 ID <- file_split$snp
-index_row <- 1:232 #the length of tmp_1 which is the total nuber of all_susie.rds files
+index_row <- 1:length(tmp_1) #the length of tmp_1 which is the total nuber of all_susie.rds files
 tmp_2 <- map2(tmp_1, ID, ~cbind(.x, snp = .y))
 tmp_3 <- map2(tmp_2, index_row, ~cbind(.x, n_index = .y))
 tmp_4 <- tmp_3[nonnull]
@@ -126,7 +126,7 @@ data_summary_colocsusie %>% filter(coloc_susie) %>% select(snp, pheno, gene)
 
 
 # Save all results to file
-write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_GTEx.tsv")
+write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_GTEx_addcredset_March2025.tsv")
 
 #SAVE COLOC AND COLOC.SUSIE GENES INTO XLSX FILE:
 gene_coloc <- as.data.frame(data_summary %>% filter(coloc) %>% select(gene))
@@ -186,7 +186,7 @@ data_summary = ldply(lapply(data_list, summary_fct)) %>%
 data_summary %>% filter(coloc) %>% select(snp, pheno, gene)
 
 # Save all results to file
-write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_eqtlgen.tsv")
+write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_eqtlgen_addcredset_March2025.tsv")
 
 # .rds files containing coloc.susie results with eQTLs
 file_paths_eqtlgen= list.files(pattern="_all_susie.rds")
@@ -228,7 +228,7 @@ summary_fct = function(df) {
 tmp_1 <- lapply(data_list, summary_fct)
 nonnull <- sapply(tmp_1, typeof)!="NULL"  # find all NULLs to omit
 ID <- file_split$snp
-index_row <- 1:26 #the length of tmp_1 which is the total nuber of all_susie.rds files
+index_row <- 1:length(tmp_1) #the length of tmp_1 which is the total nuber of all_susie.rds files
 tmp_2 <- map2(tmp_1, ID, ~cbind(.x, snp = .y))
 tmp_3 <- map2(tmp_2, index_row, ~cbind(.x, n_index = .y))
 tmp_4 <- tmp_3[nonnull]
@@ -247,11 +247,6 @@ data_summary_colocsusie %>% filter(coloc_susie) %>% select(snp, pheno, gene)
 
 
 # Save all results to file
-write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_eqtlgen.tsv")
+write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_eqtlgen_addcredset_March2025.tsv")
 
-#SAVE COLOC AND COLOC.SUSIE GENES INTO XLSX FILE:
-#coloc.susie does not have any significant colocalisation:
-gene_coloc <- as.data.frame(data_summary %>% filter(coloc) %>% select(gene))
-gene_colocsusie <- as.data.frame(data_summary_colocsusie %>% filter(coloc_susie) %>% select(gene))
-gene_gtex <- rbind(gene_coloc,gene_colocsusie) %>% unique()
-write_tsv(gene_coloc,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/eqtlGen_eQTL_genes")
+#SAVE COLOC AND COLOC.SUSIE GENES INTO XLSX FILE.

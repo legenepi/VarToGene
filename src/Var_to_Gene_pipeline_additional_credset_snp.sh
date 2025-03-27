@@ -108,7 +108,6 @@ tissue='Colon_Sigmoid'
 tissue='Skin_Sun_Exposed_Lower_leg'
 tissue='Skin_Not_Sun_Exposed_Suprapubic'
 
-
 for c in ${!cs[*]}; do
 
   N=`cat ${tmp_path}/${cs[c]}_${tissue}_genes.txt | wc -l`
@@ -132,26 +131,8 @@ echo "Coloc susie analysed genes:"
 ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
 done
 
-##Check that all genes for each tissue have been analysed:
-grep ${tissue} ${tmp_path}/logerror/coloc_susie_gtex*.out | awk -F ":" '{print $1}' | sort -u | wc -l
-
-##Check how many genes per tissue have been analysed for colocalisation:
-ls -lthr  ${tmp_path}/results/gtex/*all_coloc.rds | grep ${tissue} | wc -l
-ls -lthr ${tmp_path}/results/gtex/*all_susie*.rds | grep ${tissue} | wc -l
-
-#gtex converted in gene symbol:
-#https://www.biotools.fr/human/ensembl_symbol_converter
-#added in GTExV8_eQTL_genes_symbol table in the input/var2gene.xlsx file.
-
-awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_GTEx.tsv \
-    > output/Additional_credset_snps_March2025_output/coloc_asthma_GTEx.tsv
-
-awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTEx.tsv \
-    > output/Additional_credset_snps_March2025_output/colocsusie_asthma_GTEx.tsv
-
 
 ###eqtlGen eQTL###
-STILL TO BE EDITED
 mkdir ${tmp_path}/results/eqtlgen
 mkdir ${tmp_path}/eqtlgen
 
@@ -171,13 +152,12 @@ Rscript src/coloc/002_prepare_LDinput_eqtlgen.R "eqtlGenWB"
 ##Get LD:
 #with parameters for eqtlGen
 sbatch src/coloc/002_get_LD.sh
-##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-170767.out
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-3653039.out
 
 ##Run the colocalisation for eQTlGen:
 #.sh will run .R script:
-mkdir ${tmp_path}/results/eqtlgen
-dos2unix src/coloc/003_submit_coloc_susie_eQTLGen.sh
-chmod +x src/coloc/003_run_coloc_susie_eQTLGen.R
+cs=('SA_12_57493727_G_T' 'SA_5_131887986_A_C' 'SA_5_131819921_A_C')
+
 for c in ${!cs[*]}; do
 
   N=`cat ${tmp_path}eqtlgen/${cs[c]}_eqtlGenWB_genes.txt | wc -l`
@@ -199,35 +179,47 @@ ls -lthr  ${tmp_path}/results/eqtlgen/*all_coloc.rds | grep "eqtlGenWB" | wc -l
 ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep "eqtlGenWB" | wc -l
 
 
-awk 'NR ==1; $11 == "TRUE" {print $0}' /scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_eqtlgen.tsv \
-    > output/coloc_asthma_eqtlgen.tsv
 
 
 
+#gtex converted in gene symbol:
+#https://www.biotools.fr/human/ensembl_symbol_converter
+#added in GTExV8_eQTL_genes_symbol table in the input/var2gene.xlsx file.
+
+
+#Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
+Rscript ./src/coloc/004_concat_coloc_results_additionalcredset_March2025.R
+
+awk 'NR ==1; $11 == "TRUE" {print $0}' ${tmp_path}/results/coloc_asthma_GTEx_addcredset_March2025.tsv \
+    > output/Additional_credset_snps_March2025_output/coloc_asthma_GTEx_addcredset_March2025.tsv
+
+awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTEx_addcredset_March2025.tsv \
+    > output/Additional_credset_snps_March2025_output/colocsusie_asthma_GTEx_addcredset_March2025.tsv
+
+awk 'NR ==1; $11 == "TRUE" {print $0}' /scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_eqtlgen_addcredset_March2025.tsv \
+    > output/coloc_asthma_eqtlgen_addcredset_March2025.tsv
+
+awk 'NR ==1; $11 == "TRUE" {print $0}' /scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_eqtlgen_addcredset_March2025.tsv \
+    > output/colocsusie_asthma_eqtlgen_addcredset_March2025.tsv
 
 ###UBCLung eQTL###
-STILL TO BE EDITED
 mkdir ${tmp_path}/results/ubclung
 mkdir ${tmp_path}/ubclung
-dos2unix src/coloc_UBClung/*
-chmod +x src/coloc_UBClung/*
+
 for c in ${!cs[*]}; do
 
   sbatch --export=CREDSET="${cs[c]}" ./src/coloc_UBClung/000_submit_lookup_lung_eQTL.sh
 
 done
 
-
 ##Get the LD matrix:
 ##Create the file with gtex-locus pairs:
-dos2unix src/coloc_UBClung/002_prepare_LDinput_ubclung.R
-chmod +x src/coloc_UBClung/002_prepare_LDinput_ubclung.R
 Rscript src/coloc_UBClung/002_prepare_LDinput_ubclung.R "UBCLung"
 
 ##Get LD:
 #with parameters for UBCLung
 sbatch src/coloc/002_get_LD.sh
-##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-1250380.out
+##to see if errors in the job: grep "Error" /scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/ld-3653062.out
 
 ##Create UBCLung eQTL regional data from eQTL summary stats:
 mkdir ${tmp_path}/ubclung/eQTL_region_stat/
@@ -239,8 +231,8 @@ for c in ${!cs[@]}
       CREDSET="${cs[c]}"
       read chr < <(echo $CREDSET | awk -F "_" '{print $2}')
       read pos < <(echo $CREDSET | awk -F "_" '{print $3}')
-      pos1=`expr $pos - 1000000`
-      pos2=`expr $pos + 1000000`
+      pos1=`expr $pos - 500000`
+      pos2=`expr $pos + 500000`
       if (( pos1 < 0 )); then
           pos1=0
       fi
@@ -248,11 +240,6 @@ for c in ${!cs[@]}
 done
 
 ##Run colocalisation:
-dos2unix src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh
-dos2unix src/coloc_UBClung/003_run_coloc_susie_lung_eQTL.r
-chmod +x src/coloc_UBClung/003_submit_coloc_susie_lung_eQTL.sh
-chmod +x src/coloc_UBClung/003_run_coloc_susie_lung_eQTL.r
-
 for c in ${!cs[*]}; do
 
   N=`cat ${tmp_path}/ubclung/${cs[c]}_UBCLung_probesets.txt | wc -l`
@@ -310,10 +297,8 @@ awk -v thresh="$THRESH" 'FNR==1 && NR!=1 {next} NR==1 || $13 < thresh' \
 
 #SCALLOP: #filter out gene name with significant pQTL:
 #files are for variants:
-TO BE CHECKED WITH KATH IF SHE RAN SCALLOP LOOKUP FOR ALL NEW CREDSET VARIANTS
 awk '$10 < 5E-8 {print $0}' /scratch/ukb/kaf19/Noemi_V2G/scallop/scallop_* \
     > input/Additional_credset_snps_March2025/scallop_lookup_additional_credsetMarch2025.txt
-
 
 ###deCODE pQTL LOOK-UP###
 PQTL_PATH="/scratch/gen1/nnp5/Var_to_Gen_tmp/decode_pqtl"

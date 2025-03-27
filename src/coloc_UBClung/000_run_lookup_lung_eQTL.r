@@ -27,8 +27,8 @@ eGene$bp <- gsub("^[0-9]*_","",eGene$SNP)
 eGene$bp <- gsub("_[A-Z]*_[A-Z]*","",eGene$bp)
 
 eGENE_lookup <- eGene %>% filter(chr == chr_sentinel,
-                                  bp >= location_sentinel-1000000,
-                                  bp <= location_sentinel+1000000)
+                                  bp >= location_sentinel-500000,
+                                  bp <= location_sentinel+500000)
 eGENE_lookup <-  eGENE_lookup %>% mutate(sentinel=cred_set)
 probeset <- eGENE_lookup %>% distinct(ProbeSet)
 
