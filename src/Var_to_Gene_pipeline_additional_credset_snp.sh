@@ -120,6 +120,8 @@ done
 
 ######QUALITY CHECKS:
 ##Check that all genes for each tissue have been analysed:
+tissue=('Stomach' 'Small_Intestine_Terminal_Ileum' 'Lung' 'Esophagus_Muscularis' 'Esophagus_Gastroesophageal_Junction' 'Artery_Tibial' 'Artery_Coronary' 'Artery_Aorta' 'Colon_Transverse' 'Colon_Sigmoid' 'Skin_Sun_Exposed_Lower_leg' 'Skin_Not_Sun_Exposed_Suprapubic')
+cs=('SA_12_57493727_G_T' 'SA_5_131887986_A_C' 'SA_5_131819921_A_C')
 for c in ${!tissue[*]}; do
 echo ${tissue[c]}; echo "Total:"
 wc -l ${tmp_path}/SA_*_${tissue[c]}_genes.txt | sed 's/_/ /g' | sort -k 3,4 -g | awk '{print $1}'
@@ -178,15 +180,6 @@ grep "eqtlGenWB" ${tmp_path}/logerror/coloc_susie_eqtlgen*.out | awk -F ":" '{pr
 ls -lthr  ${tmp_path}/results/eqtlgen/*all_coloc.rds | grep "eqtlGenWB" | wc -l
 ls -lthr ${tmp_path}/results/eqtlgen/*all_susie*.rds | grep "eqtlGenWB" | wc -l
 
-
-
-
-
-#gtex converted in gene symbol:
-#https://www.biotools.fr/human/ensembl_symbol_converter
-#added in GTExV8_eQTL_genes_symbol table in the input/var2gene.xlsx file.
-
-
 #Find statistically significant colocalisation results for GTExV8 and eqtlGen eQTL, and add results into var2gene_raw.xlsx:
 Rscript ./src/coloc/004_concat_coloc_results_additionalcredset_March2025.R
 
@@ -197,10 +190,15 @@ awk 'NR ==1; $16 == "TRUE" {print $0}' ${tmp_path}/results/colocsusie_asthma_GTE
     > output/Additional_credset_snps_March2025_output/colocsusie_asthma_GTEx_addcredset_March2025.tsv
 
 awk 'NR ==1; $11 == "TRUE" {print $0}' /scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_eqtlgen_addcredset_March2025.tsv \
-    > output/coloc_asthma_eqtlgen_addcredset_March2025.tsv
+    > output/Additional_credset_snps_March2025_output/coloc_asthma_eqtlgen_addcredset_March2025.tsv
 
 awk 'NR ==1; $11 == "TRUE" {print $0}' /scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_eqtlgen_addcredset_March2025.tsv \
-    > output/colocsusie_asthma_eqtlgen_addcredset_March2025.tsv
+    > output/Additional_credset_snps_March2025_output/colocsusie_asthma_eqtlgen_addcredset_March2025.tsv
+
+#gtex converted in gene symbol:
+#https://www.biotools.fr/human/ensembl_symbol_converter
+#GTEx and eqtlGen colocalised genes added in GTExV8_eQTL_genes_symbol table in the Y:\PhD\PhD_project\Var_to_Gene\input\Additional_credset_snps_March2025\var2genes_raw_additionalcredset_March2025.xlsx file.
+
 
 ###UBCLung eQTL###
 mkdir ${tmp_path}/results/ubclung
