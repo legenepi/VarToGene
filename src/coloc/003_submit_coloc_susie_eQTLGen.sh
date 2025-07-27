@@ -3,7 +3,7 @@
 #SBATCH --job-name=coloc_susie_eqtlgen
 #SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
 #SBATCH --time=0:30:0
-#SBATCH --mem=32gb
+#SBATCH --mem=20gb
 #SBATCH --account=gen1
 #SBATCH --export=NONE
 

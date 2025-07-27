@@ -74,7 +74,9 @@ data_summary %>% filter(coloc) %>% select(snp, pheno, gene_id)
 # Save all results to file
 #write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_ubclung.tsv")
 #for additional colocalisation analysis March 2025:
-write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_ubclung_addcredset_March2025.tsv")
+#write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_ubclung_addcredset_March2025.tsv")
+#for July 2025:
+write_tsv(x=data_summary, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/coloc_asthma_ubclung_July2025.tsv")
 
 # .rds files containing coloc.susie results with eQTLs
 file_paths_ubclung = list.files(pattern="_all_susie.rds")
@@ -142,7 +144,9 @@ data_summary_colocsusie %>% filter(coloc_susie) %>% select(snp, pheno, gene_id)
 # Save all results to file
 #write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_ubclung.tsv")
 #for additional colocalisation analysis March 2025:
-write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_ubclung_addcredset_March2025.tsv")
+#_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_ubclung_addcredset_March2025.tsv")
+#write July 2025:
+write_tsv(x=data_summary_colocsusie, file="/scratch/gen1/nnp5/Var_to_Gen_tmp/results/colocsusie_asthma_ubclung_July2025.tsv")
 
 #SAVE COLOC AND COLOC.SUSIE GENES INTO XLSX FILE:
 #coloc.susie does not have any significant colocalisation:
@@ -150,8 +154,7 @@ gene_coloc <- as.data.frame(data_summary %>% filter(coloc) %>% select(gene_id))
 gene_coloc_susie <- as.data.frame(data_summary_colocsusie %>% filter(coloc_susie) %>% select(gene_id))
 print(gene_coloc)
 #NO gene coloc_susie
-write.table(gene_coloc,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/UBCLungeqtl_var2genes_raw.txt", row.names=FALSE, col.names=FALSE, quote=F)
-
+#write.table(gene_coloc,"/home/n/nnp5/PhD/PhD_project/Var_to_Gene/input/UBCLungeqtl_var2genes_raw.txt", row.names=FALSE, col.names=FALSE, quote=F)
 
 
 #then add the genes in the /Var_to_Gene/input/var2genes_raw.xlsx file

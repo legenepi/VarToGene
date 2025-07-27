@@ -41,7 +41,8 @@ gwas_sumstat <- gwas_sumstat %>% setnames(c("b37chr","bp","a1","a2"),c("chrom","
 
 #credible set:
 cs <- fread(paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/", cred_set))
-cs <- cs %>% setnames("chromosome","chrom")
+#not needed for the eqtl look-up July 2025 (15 credible sets).
+#cs <- cs %>% setnames("chromosome","chrom")
 
 #merge credible set with gwas sumstat:
 cs_gwas_sumstat <- inner_join(cs,gwas_sumstat, by=c("chrom","position","allele1","allele2","snpid"))
@@ -54,4 +55,4 @@ cs_gwas_sumstat_eqtl <- cs_gwas_sumstat %>% setnames(c("position","LOG_ODDS"),c(
   left_join(eqtl, by="ID", suffix=c(".gwas", ".eqtl")) %>%
   mutate(beta.eqtl = if_else(AssessedAllele == allele1, beta.eqtl, -beta.eqtl))
 
-write_delim(x=cs, file=paste0(tmp_path, cred_set, "_", tissue, "_lookup.txt.gz"))
+write_delim(x=cs_gwas_sumstat_eqtl, file=paste0(tmp_path, cred_set, "_", tissue, "_lookup.txt.gz"))

@@ -224,7 +224,6 @@ for c in ${!cs[*]}; do
 
 done
 
-
 ##Get the LD matrix:
 ##Create the file with gtex-locus pairs:
 dos2unix src/coloc_UBClung/002_prepare_LDinput_ubclung.R

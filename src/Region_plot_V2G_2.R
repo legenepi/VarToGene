@@ -61,6 +61,7 @@ annot_r2 <- df_r2 %>% ggplot(aes(posb37, logP, shape = Functional_annotation, co
 #if chr3 rs778801698:
 l2g <- read_excel("src/report/locus2gene.xlsx",sheet = "L2G_clean_chr3_rs778801698") %>% filter(grepl(end,locus)) %>% select(gene) %>% unique()
 
+
 #This gene list is from the R package LocusZooms
 genes <- fread("/home/n/nnp5/software/LocusZooms/Gencode_GRCh37_Genes_UniqueList2021.txt")
 #filter gene in the locus:
@@ -81,7 +82,7 @@ plot_gantt_gene <- qplot(ymin = Start,
     theme(panel.grid = element_blank()) +
     ylab("posb37") +
     xlab("genes") +
-    ylim(start,end) + labs(title = paste0("V2G identified genes: ",l2g))
+    ylim(start,end) + labs(title = paste0("V2G identified genes: ",head(l2g,10),'\n', tail(l2g,12)))
 
 
 plot_grid(annot_r2 + theme(legend.justification = c(0,1)), plot_gantt_gene + theme(legend.justification = c(0,1)), ncol=1, align='v', rel_heights = c(2,1))

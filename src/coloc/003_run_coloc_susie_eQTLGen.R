@@ -179,9 +179,9 @@ if (is.null(GWAS_check) & is.null(eqtlGWAS_check)){
 ############################
 ## Run SuSie
 ############################
-susie_GWAS = runsusie(GWAS, r2.prune=0.2, check_R=FALSE)
-susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE, verbose=TRUE)
-susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
+susie_GWAS = runsusie(GWAS, r2.prune=0.2, check_R=FALSE, estimate_residual_variance = FALSE)
+susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE, verbose=TRUE, estimate_residual_variance = FALSE)
+susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS, estimate_residual_variance = FALSE)
 
 saveRDS(susie_all, paste0("/scratch/gen1/nnp5/Var_to_Gen_tmp/results/eqtlgen/", cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
 write_tsv(susie_all$summary %>% as_tibble,

@@ -150,10 +150,15 @@ GWAS$LD = LDmatrix
 ############################
 # 3) Format eQTL GWAS  
 ############################
+#eqtlGWAS_df <- eqtlGWAS  %>%
+#  filter(snp %in% colnames(LDmatrix)) %>% # Must be the same set of SNPs
+#  inner_join(bim) %>%
+#  mutate(beta=ifelse(allele1!=ref, -(beta), beta)) # Check allele alignment
+
 eqtlGWAS_df <- eqtlGWAS  %>%
-  filter(snp %in% colnames(LDmatrix)) %>% # Must be the same set of SNPs 
+  filter(snp %in% colnames(LDmatrix)) %>% # Must be the same set of SNPs
   inner_join(bim) %>%
-  mutate(beta=ifelse(allele1!=ref, -(beta), beta)) # Check allele alignment
+  mutate(beta=ifelse(allele1!=alt, -(beta), beta)) # Check allele alignment
 
 #Check eqtlGWAS has at least one variant with pval <= 0.000005:
 eqtlGWAS_sign <- eqtlGWAS_df %>% filter(pval <= 0.000005)
@@ -189,9 +194,10 @@ if (is.null(GWAS_check) & is.null(eqtlGWAS_check)){
 ############################
 ## Run SuSie
 ############################
-susie_GWAS = runsusie(GWAS, r2.prune=0.2, check_R=FALSE)
-susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE)
-susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS)
+susie_eQTLGWAS = runsusie(eqtlGWAS, r2.prune=0.2, check_R=FALSE, estimate_residual_variance = FALSE)
+print("susie_eQTLGWaS done")
+susie_GWAS = runsusie(GWAS, r2.prune=0.2, check_R=FALSE, estimate_residual_variance = FALSE)
+susie_all = coloc.susie(susie_GWAS, susie_eQTLGWAS, estimate_residual_variance = FALSE)
 
 saveRDS(susie_all, paste0(tmp_path,"results/gtex/", cred_set, "_", tissue, "_", gene, "_all_susie.rds"))
 write_tsv(susie_all$summary %>% as_tibble,

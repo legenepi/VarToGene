@@ -3,10 +3,9 @@
 #SBATCH --job-name=coloc_susie_gtex
 #SBATCH --output=/scratch/gen1/nnp5/Var_to_Gen_tmp/logerror/%x-%j.out
 #SBATCH --time=0:30:0
-#SBATCH --mem=32gb
+#SBATCH --mem=20gb
 #SBATCH --account=gen1
 #SBATCH --export=NONE
-#SBATCH --nodelist=alice-lmem03
 
 tmp_path="/scratch/gen1/nnp5/Var_to_Gen_tmp/"
 

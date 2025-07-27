@@ -64,12 +64,27 @@ eqtlGWAS$N <- 1/(2*eqtlGWAS$freq*(1-eqtlGWAS$freq)*eqtlGWAS$se*eqtlGWAS$se)-eqtl
 N = as.integer(mean(eqtlGWAS$N))
 eqtlGWAS$N = N
 eqtlGWAS <- mutate(eqtlGWAS,MAF=ifelse(freq>0.5,1-freq,freq))
+eqtlGWAS$MAF <- as.numeric(eqtlGWAS$MAF)
 eqtlGWAS <- mutate(eqtlGWAS,beta=ifelse(freq>0.5,-1*b,b))
 eqtlGWAS <- eqtlGWAS %>% mutate(varbeta = se^2)
 eqtlGWAS$allele1.eqtl <- toupper(eqtlGWAS$Allele1)
 eqtlGWAS <- select(eqtlGWAS,"snp","MAF","beta","se","varbeta","pval","allele1.eqtl","N")
 
 GWAS <- GWAS %>% filter(snp %in% eqtlGWAS$snp)
+
+############################
+#Do colocalisation ONLY IF GWAS and eqtlGWAS (eQTL tissue-gene) contains pvalue <= 5x10-6.
+############################
+GWAS_sign <- GWAS %>% filter(pval <= 0.000005)
+eqtlGWAS_sign <- eqtlGWAS %>% filter(pval <= 0.000005)
+if (dim(eqtlGWAS_sign)[1] < 1){
+    stop(paste0(signal," ",tissue, " ", probe, " GTExv8: No colocalisation is possible because eQTL data has pvalue >= 5x10-6."))
+}
+if (dim(GWAS_sign)[1] < 1){
+    stop(paste0(signal," ",tissue, " ", probe, " GTExv8: No colocalisation is possible because GWAS data has pvalue >= 5x10-6."))
+} else {
+    paste0(signal," ",tissue, " ", probe, " GTExv8: Starting colocalisation because both GWAS and eQTL data has pvalue <= 5x10-6.")
+}
 
 ############################
 # * if also want coloc results
@@ -181,6 +196,7 @@ if (is.null(GWAS_check) & is.null(eqtlGWAS_check)){
   cat(paste0(cred_set, "_", tissue, "_", probe, ": warning", "\n"),
       file=paste0(tmp_path,"GWAS_coloc_susie_check.txt"), append=TRUE)
 }
+
 
 ############################
 ## Run SuSie

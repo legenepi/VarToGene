@@ -10,6 +10,7 @@ library(tidyverse)
 library(data.table)
 
 cs <- fread(cred_set)
+cs <- cs %>% rename(chrom = Chr, position = Pos, snpid = SNP_ID)
 locus <- unique(cs$Replicated_locus)
 
 #split credset df into separate file for each locus:
@@ -18,16 +19,20 @@ locus <- unique(cs$Replicated_locus)
 for (i in locus){
 cs_tmp <- cs %>% filter(Credible_set == 1)
 cs_tmp <- cs_tmp %>% filter(Replicated_locus == as.character(i))
-chr <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP))  %>% select(Chr)
-location <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP)) %>% select(Pos)
+chrom <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP))  %>% select(chrom)
+location <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP)) %>% select(position)
 allele1 <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP))  %>% select(allele2)
 allele2 <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP))  %>% select(allele1)
-fwrite(cs_tmp, paste0(tmp_path,"SA_",chr,"_",location,"_",allele1, "_",allele2), quote=F, sep="\t")}
+fwrite(cs_tmp, paste0(tmp_path,"SA_",chrom,"_",location,"_",allele1, "_",allele2), quote=F, sep="\t")}
 
-cs_tmp <- cs %>% filter(Credible_set == 2)
-chr <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP))  %>% select(Chr)
-location <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP)) %>% select(Pos)
+for (i in locus){
+cs_tmp <- cs %>% filter(Replicated_locus == as.character(i))
+cs_tmp <- cs_tmp %>% filter(Credible_set == 2)
+if (dim(cs_tmp)[1] > 0) {
+chrom <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP))  %>% select(chrom)
+location <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP)) %>% select(position)
 allele1 <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP))  %>% select(allele2)
 allele2 <- cs_tmp %>% filter(PIP == max(cs_tmp$PIP))  %>% select(allele1)
-fwrite(cs_tmp, paste0(tmp_path,"SA_",chr,"_",location,"_",allele1, "_",allele2), quote=F, sep="\t")
+fwrite(cs_tmp, paste0(tmp_path,"SA_",chrom,"_",location,"_",allele1, "_",allele2), quote=F, sep="\t")}}
 
+warnings()
