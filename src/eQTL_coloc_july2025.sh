@@ -282,3 +282,9 @@ Rscript ./src/coloc_UBClung/004_concat_coloc_results_ubclung.R
 
 #cp all results into /rfs/:
 cp ${tmp_path}/results/coloc*.tsv /rfs/TobinGroup/nnp5/data/
+
+
+#pQTL look-up:
+#check if proteins identified by one study are present in the other ?
+awk '{print $13}' /scratch/ukb/kaf19/Noemi_V2G/scallop/scallop_* | awk -F "/|.txt" '{print $6}' | sort -u > ../Thesis_analysis/input/protein_scallop_all
+awk '{print $2}' /scratch/ukb/kaf19/Noemi_V2G/ukb_olink/ukb_olink_* | sort -u | grep -v "CHROM" > ../Thesis_analysis/input/protein_ukb_all
